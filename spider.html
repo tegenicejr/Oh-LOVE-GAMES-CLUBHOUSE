@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>スパイダーソリティア (Spider Solitaire)</title>
+  <style>
+    :root {
+      --bg-desk: #120e0a;
+      --felt-green: #173822;
+      --felt-rim: #3d2919;
+      --brass-gold: #d4a359;
+      --card-w: 52px;
+      --card-h: 74px;
+      --overlap-hidden: 10px;
+      --overlap-open: 20px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-desk);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      color: #fff;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .viewport {
+      width: 100%;
+      min-height: 100%;
+      padding: calc(12px + env(safe-area-inset-top)) 6px calc(40px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: radial-gradient(circle at 50% 25%, #2a1c11 0%, var(--bg-desk) 100%);
+      position: relative;
+    }
+
+    /* 2段トップバー */
+    .topbar {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding: 0 4px;
+    }
+    .topbar-upper {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .tool-btn {
+      background: linear-gradient(145deg, #2c1c12 0%, #191008 100%);
+      border: 1.5px solid #4d3320;
+      color: var(--brass-gold);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.15);
+      transition: transform 0.12s, border-color 0.12s;
+    }
+    .tool-btn:hover { border-color: var(--brass-gold); transform: translateY(-2px); }
+    .tool-btn:active { transform: scale(0.92); }
+
+    .topbar-lower {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2px;
+    }
+    .stats-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .stat-badge {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1.5px solid #442d1c;
+      border-radius: 12px;
+      padding: 5px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #cfc2b4;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stat-val {
+      color: var(--brass-gold);
+      font-size: 1rem;
+      font-weight: 900;
+      font-feature-settings: "tnum";
+    }
+
+    /* 高級フェルト卓 */
+    .table-felt {
+      position: relative;
+      width: 100%;
+      max-width: 680px;
+      background: radial-gradient(circle at 50% 35%, #1e4a2d 0%, #112918 80%, #0b1a0f 100%);
+      border: 8px solid var(--felt-rim);
+      border-radius: 20px;
+      padding: 12px 6px 40px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.95), inset 0 0 35px rgba(0,0,0,0.85);
+      min-height: 520px;
+    }
+
+    /* 上部エリア（完成組札スロット ＆ 山札） */
+    .top-zones {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 0 6px;
+    }
+    .completed-slots {
+      display: flex;
+      gap: 4px;
+      min-height: var(--card-h);
+      align-items: center;
+    }
+    .comp-pile {
+      width: 32px;
+      height: 46px;
+      border: 1px dashed rgba(212, 163, 89, 0.4);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.25);
+    }
+    .comp-pile.filled {
+      border: 1px solid var(--brass-gold);
+      background: #111;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+    }
+
+    .stock-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+    .stock-deck {
+      width: var(--card-w);
+      height: var(--card-h);
+      position: relative;
+    }
+
+    /* 10本の場札カラム */
+    .tableau {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 4px;
+      position: relative;
+      width: 100%;
+    }
+    .column {
+      position: relative;
+      min-height: 380px;
+    }
+    .column-slot-base {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: var(--card-h);
+      border: 1px dashed rgba(255,255,255,0.18);
+      border-radius: 5px;
+      pointer-events: none;
+    }
+
+    /* === リアル・トランプカード造形 === */
+    .card {
+      width: 100%;
+      max-width: var(--card-w);
+      height: var(--card-h);
+      border-radius: 5px;
+      position: absolute;
+      left: 0;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.45);
+      cursor: pointer;
+      transform-origin: center top;
+      transition: transform 0.12s ease;
+      touch-action: none;
+    }
+    @media (max-width: 580px) {
+      :root {
+        --card-w: 36px;
+        --card-h: 52px;
+        --overlap-hidden: 8px;
+        --overlap-open: 16px;
+      }
+    }
+
+    /* カード裏面（英国ギロシェ模様） */
+    .card.back {
+      background: repeating-linear-gradient(45deg, #1e3799, #1e3799 4px, #0c2461 4px, #0c2461 8px);
+      border: 2px solid #fff;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.5), inset 0 0 4px #000;
+    }
+
+    /* カード表面（象牙紙・印字） */
+    .card.face {
+      background: linear-gradient(180deg, #ffffff 0%, #faf8f5 70%, #f0ebd8 100%);
+      border: 1px solid #b2bec3;
+      padding: 2px 3px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card.face.red { color: #d63031; }
+    .card.face.black { color: #2d3436; }
+
+    .card-corner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 0.95;
+      font-weight: 900;
+      font-size: 0.78rem;
+    }
+    .card-corner svg {
+      width: 10px;
+      height: 10px;
+      margin-top: 1px;
+    }
+    .card-center-suit {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 22px;
+      height: 22px;
+      opacity: 0.85;
+      pointer-events: none;
+    }
+    .card.selected {
+      transform: translateY(-4px) scale(1.04);
+      outline: 2.5px solid var(--brass-gold);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.7), 0 0 10px rgba(212, 163, 89, 0.7);
+      z-index: 100 !important;
+    }
+    .card.hinted {
+      outline: 3px solid #2ecc71;
+      animation: hintP 0.7s infinite alternate;
+    }
+    @keyframes hintP {
+      from { transform: translateY(0); }
+      to { transform: translateY(-4px); }
+    }
+
+    /* モーダル */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.82);
+      backdrop-filter: blur(5px);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-sheet {
+      background: #1e150f;
+      border: 3px solid #4a3424;
+      border-radius: 20px;
+      padding: 22px;
+      width: 88%;
+      max-width: 460px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.95);
+      color: #ede2d5;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-title {
+      text-align: center;
+      color: var(--brass-gold);
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    .modal-body {
+      overflow-y: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      color: #c9b9aa;
+      margin-bottom: 16px;
+      padding-right: 6px;
+    }
+    .modal-body::-webkit-scrollbar { width: 6px; }
+    .modal-body::-webkit-scrollbar-thumb { background: #4a3424; border-radius: 3px; }
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #332014;
+    }
+    .theme-select {
+      background: #2c1a10;
+      color: #fff;
+      border: 1.5px solid var(--brass-gold);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      outline: none;
+    }
+    .modal-close-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(180deg, #d4a359, #aa782e);
+      border: none;
+      border-radius: 12px;
+      color: #140c06;
+      font-weight: 900;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="viewport">
+    <div class="topbar">
+      <!-- 上段操作系 -->
+      <div class="topbar-upper">
+        <div class="tool-btn" onclick="toggleSettingsModal(true)" title="設定">⚙️</div>
+        <div class="tool-btn" onclick="restartGame()" title="最初から">🔄</div>
+        <div class="tool-btn" onclick="undoMove()" title="1手戻す">↩️</div>
+        <div class="tool-btn" onclick="getHint()" title="ヒント">💡</div>
+        <div class="tool-btn" onclick="toggleRulesModal(true)" title="あそびかた">📖</div>
+      </div>
+
+      <!-- 下段ステータス -->
+      <div class="topbar-lower">
+        <div class="stats-group">
+          <div class="stat-badge">手数 <span id="stat-moves" class="stat-val">0</span></div>
+          <div class="stat-badge">完成 <span id="stat-completed" class="stat-val">0/8</span></div>
+        </div>
+        <div class="stat-badge">難易度: <span id="stat-diff" style="color:var(--brass-gold); margin-left:4px;">初級 (♠1種)</span></div>
+      </div>
+    </div>
+
+    <!-- フェルト卓 -->
+    <div class="table-felt">
+      <div class="top-zones">
+        <!-- 完成した8組のスロット -->
+        <div class="completed-slots" id="completed-slots"></div>
+        <!-- 山札ストック -->
+        <div class="stock-area" onclick="dealStock()">
+          <span style="font-size:0.75rem; font-weight:800; color:var(--brass-gold);">山札配当</span>
+          <div class="stock-deck" id="stock-deck"></div>
+        </div>
+      </div>
+
+      <!-- 10列の場札 -->
+      <div class="tableau" id="tableau"></div>
+    </div>
+  </div>
+
+  <!-- 📖 あそびかた説明書 -->
+  <div id="modal-rules" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">📖 スパイダーソリティアのあそびかた</div>
+      <div class="modal-body">
+        <p>104枚のカードを並び替え、<b>KからAまでの13枚の階段</b>を8組完成させて消去するゲームです。</p>
+        <br>
+        <b style="color:var(--brass-gold);">【カードの移動ルール】</b>
+        <ul style="padding-left:18px; margin:6px 0;">
+          <li>マークに関係なく、<b>数字が1つ小さいカード</b>の上に重ねられます（例: 8の上に7）。</li>
+          <li><b>同じマークで連続した階段</b>の束は、まとめて一緒に動かせます。</li>
+          <li>空になった列には、どのカード（またはカードの束）でも置くことができます。</li>
+        </ul>
+        <br>
+        <b style="color:var(--brass-gold);">【消去と山札配当】</b>
+        <ul style="padding-left:18px; margin:6px 0;">
+          <li>同じマークで<b>「K・Q・J・10…2・A」</b>が揃うと自動で完成枠へ消去されます。</li>
+          <li>動かせる手がなくなったら、右上の<b>山札をタップ</b>すると全10列にカードが1枚ずつ配られます（※空列がある時は配れません）。</li>
+        </ul>
+      </div>
+      <button class="modal-close-btn" onclick="toggleRulesModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <!-- ⚙️ 設定モーダル -->
+  <div id="modal-settings" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">⚙️ ゲーム設定</div>
+      <div class="modal-body">
+        <div class="setting-item">
+          <span>難易度（マークの種類）</span>
+          <select id="diff-selector" class="theme-select" onchange="changeDifficulty(this.value)">
+            <option value="1" selected>初級 (1スート: ♠ のみ)</option>
+            <option value="2">中級 (2スート: ♠ ＋ ♥)</option>
+            <option value="4">上級 (4スート: ♠ ♥ ♦ ♣ すべて)</option>
+          </select>
+        </div>
+      </div>
+      <button class="modal-close-btn" onclick="toggleSettingsModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    /* ========================================================
+       Web Audio API サウンド
+       ======================================================== */
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    window.addEventListener('pointerdown', () => getAudio(), { once: true });
+
+    function playCardSlideSound() {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(400, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
+      } catch(e) {}
+    }
+
+    function playFanfareSound() {
+      try {
+        const ctx = getAudio();
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+          gain.gain.setValueAtTime(0.22, ctx.currentTime + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.08 + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.08);
+          osc.stop(ctx.currentTime + idx * 0.08 + 0.26);
+        });
+      } catch(e) {}
+    }
+
+    /* ========================================================
+       SVG ベクタースート
+       ======================================================== */
+    const SUIT_SVGS = {
+      spades: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 C8 8 3 10 3 15 C3 18.5 6 20 8.5 20 C10.5 20 11.5 19 12 17.5 C12.5 19 13.5 20 15.5 20 C18 20 21 18.5 21 15 C21 10 16 8 12 2 Z M10.5 19 L9 22 L15 22 L13.5 19 Z"/></svg>`,
+      hearts: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21 C12 21 3 14 3 8.5 C3 5.5 5.5 3 8.5 3 C10.5 3 11.5 4 12 5 C12.5 4 13.5 3 15.5 3 C18.5 3 21 5.5 21 8.5 C21 14 12 21 12 21 Z"/></svg>`,
+      diamonds: `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12,2 21,12 12,22 3,12"/></svg>`,
+      clubs: `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7" r="4.5"/><circle cx="7" cy="14" r="4.5"/><circle cx="17" cy="14" r="4.5"/><polygon points="10.5,14 13.5,14 15,22 9,22"/></svg>`
+    };
+    const RANK_LABELS = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+    /* ========================================================
+       ゲーム状態管理
+       ======================================================== */
+    let suitCount = 1;
+    let tableau = [[], [], [], [], [], [], [], [], [], []];
+    let stock = [];
+    let completedSets = 0;
+    let moveCount = 0;
+    let selectedCol = null;
+    let selectedIndex = null;
+    let historyStack = [];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initGame();
+    });
+
+    function initGame() {
+      tableau = [[], [], [], [], [], [], [], [], [], []];
+      stock = [];
+      completedSets = 0;
+      moveCount = 0;
+      selectedCol = null;
+      selectedIndex = null;
+      historyStack = [];
+
+      let deck = [];
+      let suitsToUse = [];
+      if (suitCount === 1) suitsToUse = Array(8).fill('spades');
+      else if (suitCount === 2) suitsToUse = [...Array(4).fill('spades'), ...Array(4).fill('hearts')];
+      else suitsToUse = [...Array(2).fill('spades'), ...Array(2).fill('hearts'), ...Array(2).fill('diamonds'), ...Array(2).fill('clubs')];
+
+      suitsToUse.forEach(suit => {
+        for (let r = 1; r <= 13; r++) {
+          deck.push({ suit, rank: r, faceUp: false });
+        }
+      });
+      deck.sort(() => Math.random() - 0.5);
+
+      // 最初の54枚を場札へ配当（前4列は6枚、後6列は5枚）
+      for (let c = 0; c < 10; c++) {
+        const count = (c < 4) ? 6 : 5;
+        for (let i = 0; i < count; i++) {
+          const card = deck.pop();
+          if (i === count - 1) card.faceUp = true;
+          tableau[c].push(card);
+        }
+      }
+
+      // 残り50枚を山札へ（10枚 × 5回分）
+      stock = [];
+      while (deck.length > 0) {
+        stock.push(deck.splice(0, 10));
+      }
+
+      updateUI();
+      renderTableau();
+      renderStock();
+      renderCompleted();
+    }
+
+    function saveState() {
+      historyStack.push({
+        tableau: JSON.parse(JSON.stringify(tableau)),
+        stock: JSON.parse(JSON.stringify(stock)),
+        completedSets,
+        moveCount
+      });
+    }
+
+    function undoMove() {
+      if (historyStack.length === 0) return;
+      const last = historyStack.pop();
+      tableau = last.tableau;
+      stock = last.stock;
+      completedSets = last.completedSets;
+      moveCount = last.moveCount;
+      selectedCol = null;
+      selectedIndex = null;
+      playCardSlideSound();
+      updateUI();
+      renderTableau();
+      renderStock();
+      renderCompleted();
+    }
+
+    function updateUI() {
+      document.getElementById('stat-moves').textContent = moveCount;
+      document.getElementById('stat-completed').textContent = `${completedSets}/8`;
+      const diffText = suitCount === 1 ? '初級 (♠1種)' : suitCount === 2 ? '中級 (♠♥2種)' : '上級 (4種)';
+      document.getElementById('stat-diff').textContent = diffText;
+    }
+
+    /* ========================================================
+       描画
+       ======================================================== */
+    function renderCompleted() {
+      const container = document.getElementById('completed-slots');
+      container.innerHTML = '';
+      for (let i = 0; i < 8; i++) {
+        const pile = document.createElement('div');
+        pile.className = 'comp-pile' + (i < completedSets ? ' filled' : '');
+        if (i < completedSets) {
+          pile.innerHTML = `<span style="color:var(--brass-gold); font-size:0.75rem; font-weight:900;">K</span>`;
+        }
+        container.appendChild(pile);
+      }
+    }
+
+    function renderStock() {
+      const deckEl = document.getElementById('stock-deck');
+      deckEl.innerHTML = '';
+      stock.forEach((_, idx) => {
+        const c = document.createElement('div');
+        c.className = 'card back';
+        c.style.position = 'absolute';
+        c.style.left = `${idx * 2}px`;
+        c.style.top = '0';
+        deckEl.appendChild(c);
+      });
+    }
+
+    function renderTableau() {
+      const container = document.getElementById('tableau');
+      container.innerHTML = '';
+
+      for (let c = 0; c < 10; c++) {
+        const colEl = document.createElement('div');
+        colEl.className = 'column';
+        colEl.dataset.col = c;
+        colEl.onclick = (e) => {
+          if (e.target === colEl || e.target.classList.contains('column-slot-base')) {
+            onColumnEmptyClick(c);
+          }
+        };
+
+        const base = document.createElement('div');
+        base.className = 'column-slot-base';
+        colEl.appendChild(base);
+
+        let topOffset = 0;
+        tableau[c].forEach((card, idx) => {
+          const cardEl = document.createElement('div');
+          const isSelected = (selectedCol === c && idx >= selectedIndex);
+
+          if (!card.faceUp) {
+            cardEl.className = 'card back';
+          } else {
+            const isRed = (card.suit === 'hearts' || card.suit === 'diamonds');
+            cardEl.className = `card face ${isRed ? 'red' : 'black'}` + (isSelected ? ' selected' : '');
+            cardEl.innerHTML = `
+              <div class="card-corner">
+                <span>${RANK_LABELS[card.rank]}</span>
+                ${SUIT_SVGS[card.suit]}
+              </div>
+              <div class="card-center-suit">${SUIT_SVGS[card.suit]}</div>
+              <div class="card-corner" style="transform: rotate(180deg);">
+                <span>${RANK_LABELS[card.rank]}</span>
+                ${SUIT_SVGS[card.suit]}
+              </div>
+            `;
+          }
+
+          cardEl.style.top = `${topOffset}px`;
+          cardEl.style.zIndex = idx + 1;
+          topOffset += card.faceUp ? 22 : 11;
+
+          cardEl.onclick = (e) => {
+            e.stopPropagation();
+            onCardClick(c, idx);
+          };
+
+          colEl.appendChild(cardEl);
+        });
+
+        container.appendChild(colEl);
+      }
+    }
+
+    /* ========================================================
+       操作ロジック
+       ======================================================== */
+    function isValidSequence(colIdx, startIdx) {
+      const col = tableau[colIdx];
+      for (let i = startIdx; i < col.length - 1; i++) {
+        if (!col[i].faceUp || !col[i + 1].faceUp) return false;
+        if (col[i].suit !== col[i + 1].suit) return false;
+        if (col[i].rank !== col[i + 1].rank + 1) return false;
+      }
+      return true;
+    }
+
+    function onCardClick(colIdx, cardIdx) {
+      const col = tableau[colIdx];
+      const card = col[cardIdx];
+
+      if (!card.faceUp) return;
+
+      // 1. すでに選択中の束がある場合、移動を試みる
+      if (selectedCol !== null) {
+        if (selectedCol === colIdx) {
+          // 同じ列内タップ：再選択または解除
+          if (selectedIndex === cardIdx) {
+            selectedCol = null;
+            selectedIndex = null;
+          } else if (isValidSequence(colIdx, cardIdx)) {
+            selectedIndex = cardIdx;
+          }
+          renderTableau();
+          return;
+        }
+
+        // 別列の末尾カードをタップした場合：移動
+        if (cardIdx === col.length - 1) {
+          const movingCard = tableau[selectedCol][selectedIndex];
+          if (card.rank === movingCard.rank + 1) {
+            executeMove(selectedCol, selectedIndex, colIdx);
+            return;
+          }
+        }
+
+        // 移動不可能な場所をタップした場合は選択切り替えを試みる
+        if (isValidSequence(colIdx, cardIdx)) {
+          selectedCol = colIdx;
+          selectedIndex = cardIdx;
+          renderTableau();
+        }
+        return;
+      }
+
+      // 2. 新規選択
+      if (isValidSequence(colIdx, cardIdx)) {
+        selectedCol = colIdx;
+        selectedIndex = cardIdx;
+
+        // ワンタップ自動移動の試行（快適操作）
+        const movingCard = col[cardIdx];
+        let targetCol = null;
+
+        // まず「同じマークでランクが1上」の列を探す
+        for (let c = 0; c < 10; c++) {
+          if (c === colIdx) continue;
+          const targetCard = tableau[c][tableau[c].length - 1];
+          if (targetCard && targetCard.faceUp && targetCard.rank === movingCard.rank + 1 && targetCard.suit === movingCard.suit) {
+            targetCol = c;
+            break;
+          }
+        }
+        // なければ「マーク違いでランクが1上」の列を探す
+        if (targetCol === null) {
+          for (let c = 0; c < 10; c++) {
+            if (c === colIdx) continue;
+            const targetCard = tableau[c][tableau[c].length - 1];
+            if (targetCard && targetCard.faceUp && targetCard.rank === movingCard.rank + 1) {
+              targetCol = c;
+              break;
+            }
+          }
+        }
+
+        if (targetCol !== null) {
+          executeMove(selectedCol, selectedIndex, targetCol);
+          return;
+        }
+
+        renderTableau();
+      }
+    }
+
+    function onColumnEmptyClick(colIdx) {
+      if (selectedCol !== null) {
+        if (tableau[colIdx].length === 0) {
+          executeMove(selectedCol, selectedIndex, colIdx);
+        }
+      }
+    }
+
+    function executeMove(fromCol, fromIdx, toCol) {
+      saveState();
+      playCardSlideSound();
+
+      const movingCards = tableau[fromCol].splice(fromIdx);
+      tableau[toCol].push(...movingCards);
+
+      // 元の列の最後尾を表に向ける
+      if (tableau[fromCol].length > 0) {
+        const last = tableau[fromCol][tableau[fromCol].length - 1];
+        if (!last.faceUp) last.faceUp = true;
+      }
+
+      selectedCol = null;
+      selectedIndex = null;
+      moveCount++;
+
+      // KからAのセット完成チェック
+      checkCompletedSet(toCol);
+
+      updateUI();
+      renderTableau();
+    }
+
+    function checkCompletedSet(colIdx) {
+      const col = tableau[colIdx];
+      if (col.length < 13) return;
+
+      const last13 = col.slice(col.length - 13);
+      if (!last13[0].faceUp || last13[0].rank !== 13) return;
+
+      const targetSuit = last13[0].suit;
+      for (let i = 0; i < 13; i++) {
+        if (last13[i].suit !== targetSuit || last13[i].rank !== (13 - i)) {
+          return;
+        }
+      }
+
+      // 13枚完成
+      col.splice(col.length - 13, 13);
+      completedSets++;
+      playFanfareSound();
+
+      if (col.length > 0) {
+        col[col.length - 1].faceUp = true;
+      }
+
+      renderCompleted();
+
+      if (completedSets === 8) {
+        setTimeout(() => alert('🎉 お見事！スパイダーソリティアを完全制覇しました！'), 300);
+      }
+    }
+
+    function dealStock() {
+      if (stock.length === 0) return;
+
+      // 空列がある場合は配当不可（クラシック公式ルール）
+      const hasEmpty = tableau.some(col => col.length === 0);
+      if (hasEmpty) {
+        alert('空いている列があると山札を配れません！カードを置いてください。');
+        return;
+      }
+
+      saveState();
+      playCardSlideSound();
+
+      const cards = stock.pop();
+      for (let c = 0; c < 10; c++) {
+        const card = cards[c];
+        card.faceUp = true;
+        tableau[c].push(card);
+        checkCompletedSet(c);
+      }
+
+      renderStock();
+      renderTableau();
+    }
+
+    function getHint() {
+      document.querySelectorAll('.card.hinted').forEach(c => c.classList.remove('hinted'));
+
+      for (let fromC = 0; fromC < 10; fromC++) {
+        const col = tableau[fromC];
+        for (let i = 0; i < col.length; i++) {
+          if (!col[i].faceUp || !isValidSequence(fromC, i)) continue;
+
+          const moving = col[i];
+          for (let toC = 0; toC < 10; toC++) {
+            if (fromC === toC) continue;
+            const targetCol = tableau[toC];
+
+            if (targetCol.length === 0) {
+              if (i > 0 && !col[i - 1].faceUp) {
+                highlightHint(fromC, i);
+                return;
+              }
+            } else {
+              const targetCard = targetCol[targetCol.length - 1];
+              if (targetCard.faceUp && targetCard.rank === moving.rank + 1) {
+                highlightHint(fromC, i);
+                return;
+              }
+            }
+          }
+        }
+      }
+      alert('動かせる手がありません。山札を配るか1手戻してください🔀');
+    }
+
+    function highlightHint(colIdx, cardIdx) {
+      const colEl = document.querySelector(`.column[data-col="${colIdx}"]`);
+      if (colEl) {
+        const cardEls = colEl.querySelectorAll('.card');
+        if (cardEls[cardIdx]) cardEls[cardIdx].classList.add('hinted');
+      }
+    }
+
+    /* ========================================================
+       モーダル & 設定
+       ======================================================== */
+    function toggleRulesModal(show) {
+      document.getElementById('modal-rules').classList.toggle('active', show);
+    }
+    function toggleSettingsModal(show) {
+      document.getElementById('modal-settings').classList.toggle('active', show);
+    }
+    function changeDifficulty(val) {
+      suitCount = parseInt(val, 10);
+      toggleSettingsModal(false);
+      initGame();
+    }
+    function restartGame() {
+      if (confirm('最初から配り直しますか？')) initGame();
+    }
+  </script>
+</body>
+</html>
