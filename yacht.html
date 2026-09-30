@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ヨット (Yacht Craft Edition)</title>
+  <style>
+    :root {
+      --craft-desk: #1b1613;
+      --craft-slate-bg: #1c2024;
+      --craft-slate-edge: #2e343d;
+      --craft-leather: #5a3421;
+      --craft-leather-inner: #3a1e11;
+      --craft-brass: #d4af37;
+      --craft-brass-glow: rgba(212, 175, 55, 0.45);
+      --craft-chalk: #f1f2f6;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--craft-desk);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", sans-serif;
+      color: #fff;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .craft-viewport {
+      width: 100%;
+      min-height: 100%;
+      padding: calc(20px + env(safe-area-inset-top)) 12px calc(60px + env(safe-area-inset-bottom));
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at 50% 35%, #2a201a 0%, var(--craft-desk) 100%);
+      position: relative;
+    }
+
+    .craft-stage {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+      align-items: stretch;
+      max-width: 880px;
+      width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .craft-stage {
+        flex-direction: column-reverse;
+        align-items: center;
+      }
+    }
+
+    /* 左側：黒板スレート（完全日本語） */
+    .craft-slate {
+      width: 280px;
+      background: linear-gradient(145deg, #181c20 0%, #111417 100%);
+      border: 3px solid var(--craft-slate-edge);
+      border-radius: 14px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.1), inset 0 0 30px rgba(0,0,0,0.7);
+      padding: 14px 12px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    @media (max-width: 768px) {
+      .craft-slate {
+        width: 100%;
+        max-width: 440px;
+      }
+    }
+
+    .craft-slate-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px dashed rgba(255,255,255,0.15);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+    .craft-slate-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--craft-brass);
+      letter-spacing: 1px;
+      text-shadow: 0 0 8px var(--craft-brass-glow);
+    }
+    .craft-slate-round {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--craft-chalk);
+      background: rgba(255,255,255,0.08);
+      padding: 3px 8px;
+      border-radius: 8px;
+    }
+
+    .craft-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 4px;
+      font-size: 0.85rem;
+    }
+    .craft-table tr {
+      background: rgba(255,255,255,0.02);
+      border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+    .craft-table tr.pickable {
+      cursor: pointer;
+    }
+    .craft-table tr.pickable:hover {
+      background: rgba(212, 175, 55, 0.14);
+    }
+    .craft-table tr.golden-glow {
+      background: rgba(212, 175, 55, 0.22) !important;
+      box-shadow: inset 0 0 10px var(--craft-brass-glow);
+    }
+
+    .craft-td-label {
+      padding: 6px 8px;
+      color: #b0b7c3;
+      font-weight: 700;
+      border-radius: 6px 0 0 6px;
+    }
+    .craft-td-score {
+      width: 65px;
+      text-align: right;
+      padding: 6px 10px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--craft-chalk);
+      border-radius: 0 6px 6px 0;
+    }
+    .craft-td-score.ghost {
+      color: var(--craft-brass);
+      opacity: 0.8;
+      animation: chalkBlink 1.4s infinite;
+    }
+    .craft-td-score.zero {
+      color: #e74c3c;
+      opacity: 0.65;
+    }
+    .craft-td-score.penciled {
+      color: #ffffff;
+      text-shadow: 0 0 6px rgba(255,255,255,0.6);
+    }
+
+    .craft-subtotal-tr {
+      background: rgba(212, 175, 55, 0.05) !important;
+      border-top: 1px solid rgba(212, 175, 55, 0.2);
+    }
+    .craft-subtotal-tr td {
+      color: var(--craft-brass) !important;
+      font-size: 0.8rem;
+    }
+    .craft-total-tr {
+      background: linear-gradient(90deg, #2b2317 0%, #1d1810 100%) !important;
+      border: 1.5px solid var(--craft-brass);
+    }
+    .craft-total-tr td {
+      color: #fff !important;
+      font-size: 1.25rem;
+      font-weight: 900;
+      text-shadow: 0 0 10px var(--craft-brass-glow);
+    }
+
+    @keyframes chalkBlink {
+      0%, 100% { opacity: 0.35; }
+      50% { opacity: 1; }
+    }
+
+    /* 右側：サドルレザートレイ & ツールバー */
+    .craft-arena-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .craft-top-tools {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .craft-tool-btn {
+      background: #2a1f18;
+      border: 1.5px solid #4a382c;
+      color: var(--craft-brass);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+      transition: all 0.15s ease;
+    }
+    .craft-tool-btn:hover {
+      background: #423126;
+      color: #fff;
+      transform: translateY(-2px);
+      border-color: var(--craft-brass);
+    }
+
+    .craft-leather-tray {
+      width: 100%;
+      min-height: 400px;
+      background: radial-gradient(circle at 50% 40%, var(--craft-leather) 0%, var(--craft-leather-inner) 100%);
+      border: 8px solid #3c2014;
+      border-radius: 36px;
+      box-shadow: 0 24px 50px rgba(0,0,0,0.85), inset 0 4px 14px rgba(0,0,0,0.9), inset 0 0 40px rgba(0,0,0,0.6);
+      padding: 18px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      outline: 2px dashed rgba(212, 163, 115, 0.35);
+      outline-offset: -12px;
+    }
+
+    .craft-rivet {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: radial-gradient(circle at 35% 35%, #f1c40f 0%, #b78a10 70%, #5a4205 100%);
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.6), inset 0 1px 1px #fff;
+    }
+    .rivet-tl { top: 12px; left: 12px; }
+    .rivet-tr { top: 12px; right: 12px; }
+    .rivet-bl { bottom: 12px; left: 12px; }
+    .rivet-br { bottom: 12px; right: 12px; }
+
+    .craft-keep-shelf {
+      display: flex;
+      justify-content: space-around;
+      background: rgba(0,0,0,0.45);
+      border: 1.5px solid rgba(212, 175, 55, 0.25);
+      border-radius: 18px;
+      padding: 10px 6px;
+      margin-bottom: 12px;
+      box-shadow: inset 0 4px 8px rgba(0,0,0,0.8);
+      position: relative;
+      z-index: 2;
+    }
+    .craft-keep-slot {
+      width: 52px;
+      height: 52px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 12px;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .craft-keep-slot-tag {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #7d6150;
+      letter-spacing: 0.5px;
+    }
+
+    .craft-tray-floor {
+      flex: 1;
+      min-height: 200px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      position: relative;
+      padding: 10px;
+      box-sizing: border-box;
+      z-index: 2;
+    }
+
+    /* 王道の白ダイス */
+    .craft-die {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(145deg, #ffffff 0%, #f4f1eb 70%, #ded9ce 100%);
+      border-radius: 14px;
+      box-sizing: border-box;
+      box-shadow: 0 12px 20px rgba(0,0,0,0.5), inset 1px 2px 2px rgba(255,255,255,1), inset -1px -2px 3px rgba(0,0,0,0.12);
+      cursor: pointer;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      padding: 6px;
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+    }
+    .craft-die:hover {
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: 0 16px 24px rgba(0,0,0,0.6);
+    }
+    .craft-die.rolling {
+      animation: dieTumbleAnim 0.45s infinite linear;
+    }
+    @keyframes dieTumbleAnim {
+      0% { transform: rotate(0deg) scale(0.92); }
+      50% { transform: rotate(180deg) scale(1.1); }
+      100% { transform: rotate(360deg) scale(0.92); }
+    }
+
+    .craft-pip {
+      width: 8px;
+      height: 8px;
+      background: #1a1a1a;
+      border-radius: 50%;
+      margin: auto;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.9), 0 1px 1px rgba(255,255,255,0.7);
+    }
+    .craft-pip.red {
+      width: 14px;
+      height: 14px;
+      background: radial-gradient(circle at 35% 35%, #ff4b4b, #c0392b);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), 0 1px 1px rgba(255,255,255,0.8);
+    }
+
+    .craft-keep-slot .craft-die {
+      width: 46px;
+      height: 46px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+    }
+
+    .craft-controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 14px;
+      align-items: center;
+      width: 100%;
+    }
+    .craft-roll-btn {
+      flex: 1;
+      background: linear-gradient(180deg, #d4af37 0%, #aa841e 100%);
+      color: #1a140a;
+      font-size: 1.1rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      padding: 14px;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.6);
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .craft-roll-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      background: linear-gradient(180deg, #f1c40f 0%, #b78a10 100%);
+    }
+    .craft-roll-btn:disabled {
+      background: #3a2e26;
+      color: #635245;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .craft-charges {
+      display: flex;
+      gap: 8px;
+      background: #17110d;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid #4a382c;
+    }
+    .craft-bullet {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, var(--craft-brass) 60%, #5a4205 100%);
+      box-shadow: 0 0 8px var(--craft-brass-glow);
+      transition: all 0.25s;
+    }
+    .craft-bullet.spent {
+      background: #33251c;
+      box-shadow: none;
+    }
+
+    /* 確認モーダル */
+    .craft-modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(5px);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+    }
+    .craft-modal-backdrop.active {
+      display: flex;
+    }
+    .craft-modal-box {
+      background: #241a14;
+      border: 3px solid #5a4231;
+      border-radius: 20px;
+      padding: 24px;
+      width: 88%;
+      max-width: 340px;
+      box-shadow: 0 20px 45px rgba(0,0,0,0.85);
+      text-align: center;
+      color: #f7ede2;
+    }
+    .craft-modal-box h3 {
+      margin-top: 0;
+      color: var(--craft-brass);
+      font-size: 1.25rem;
+    }
+    .craft-modal-desc {
+      font-size: 0.9rem;
+      color: #bfa693;
+      line-height: 1.5;
+      margin: 14px 0 20px;
+    }
+    .craft-modal-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .craft-m-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+    }
+    .craft-m-btn.cancel {
+      background: #443226;
+      color: #f7ede2;
+    }
+    .craft-m-btn.confirm {
+      background: linear-gradient(180deg, #e67e22 0%, #c0392b 100%);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="craft-viewport">
+    <div class="craft-stage">
+
+      <!-- 1. 左側：黒板スレート（完全日本語） -->
+      <div class="craft-slate">
+        <div class="craft-slate-header">
+          <span class="craft-slate-title">ヨット 得点板</span>
+          <span class="craft-slate-round" id="craft-round-lbl">ターン 1 / 12</span>
+        </div>
+
+        <table class="craft-table">
+          <tr id="row-aces" class="pickable" onclick="craftSelectScore('aces')">
+            <td class="craft-td-label">⚀ エース (1)</td>
+            <td class="craft-td-score" id="val-aces">-</td>
+          </tr>
+          <tr id="row-deuces" class="pickable" onclick="craftSelectScore('deuces')">
+            <td class="craft-td-label">⚁ デュース (2)</td>
+            <td class="craft-td-score" id="val-deuces">-</td>
+          </tr>
+          <tr id="row-threes" class="pickable" onclick="craftSelectScore('threes')">
+            <td class="craft-td-label">⚂ トレイ (3)</td>
+            <td class="craft-td-score" id="val-threes">-</td>
+          </tr>
+          <tr id="row-fours" class="pickable" onclick="craftSelectScore('fours')">
+            <td class="craft-td-label">⚃ フォー (4)</td>
+            <td class="craft-td-score" id="val-fours">-</td>
+          </tr>
+          <tr id="row-fives" class="pickable" onclick="craftSelectScore('fives')">
+            <td class="craft-td-label">⚄ ファイブ (5)</td>
+            <td class="craft-td-score" id="val-fives">-</td>
+          </tr>
+          <tr id="row-sixes" class="pickable" onclick="craftSelectScore('sixes')">
+            <td class="craft-td-label">⚅ シックス (6)</td>
+            <td class="craft-td-score" id="val-sixes">-</td>
+          </tr>
+
+          <!-- 上段ボーナス -->
+          <tr class="craft-subtotal-tr">
+            <td class="craft-td-label">ボーナス (63以上で+35)</td>
+            <td class="craft-td-score" id="val-bonus" style="font-size:0.95rem;">0/63</td>
+          </tr>
+
+          <tr id="row-choice" class="pickable" onclick="craftSelectScore('choice')">
+            <td class="craft-td-label">チョイス</td>
+            <td class="craft-td-score" id="val-choice">-</td>
+          </tr>
+          <tr id="row-fourKind" class="pickable" onclick="craftSelectScore('fourKind')">
+            <td class="craft-td-label">フォーダイス</td>
+            <td class="craft-td-score" id="val-fourKind">-</td>
+          </tr>
+          <tr id="row-fullHouse" class="pickable" onclick="craftSelectScore('fullHouse')">
+            <td class="craft-td-label">フルハウス</td>
+            <td class="craft-td-score" id="val-fullHouse">-</td>
+          </tr>
+          <tr id="row-sStraight" class="pickable" onclick="craftSelectScore('sStraight')">
+            <td class="craft-td-label">S.ストレート (15)</td>
+            <td class="craft-td-score" id="val-sStraight">-</td>
+          </tr>
+          <tr id="row-bStraight" class="pickable" onclick="craftSelectScore('bStraight')">
+            <td class="craft-td-label">B.ストレート (30)</td>
+            <td class="craft-td-score" id="val-bStraight">-</td>
+          </tr>
+          <tr id="row-yacht" class="pickable" onclick="craftSelectScore('yacht')">
+            <td class="craft-td-label" style="color:var(--craft-brass); font-weight:800;">ヨット (50)</td>
+            <td class="craft-td-score" id="val-yacht">-</td>
+          </tr>
+
+          <!-- 合計スコア -->
+          <tr class="craft-total-tr">
+            <td class="craft-td-label">総合得点</td>
+            <td class="craft-td-score" id="val-total" style="font-size:1.3rem;">0</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- 2. 右側：サドルレザートレイ & ツールバー -->
+      <div class="craft-arena-col">
+        <div class="craft-top-tools">
+          <button class="craft-tool-btn" onclick="craftPromptRestart()">🔄 最初からやり直す</button>
+        </div>
+
+        <div class="craft-leather-tray">
+          <div class="craft-rivet rivet-tl"></div>
+          <div class="craft-rivet rivet-tr"></div>
+          <div class="craft-rivet rivet-bl"></div>
+          <div class="craft-rivet rivet-br"></div>
+
+          <!-- キープ棚 -->
+          <div class="craft-keep-shelf">
+            <div class="craft-keep-slot" onclick="craftReleaseSlot(0)" id="slot-0"><span class="craft-keep-slot-tag">キープ 1</span></div>
+            <div class="craft-keep-slot" onclick="craftReleaseSlot(1)" id="slot-1"><span class="craft-keep-slot-tag">キープ 2</span></div>
+            <div class="craft-keep-slot" onclick="craftReleaseSlot(2)" id="slot-2"><span class="craft-keep-slot-tag">キープ 3</span></div>
+            <div class="craft-keep-slot" onclick="craftReleaseSlot(3)" id="slot-3"><span class="craft-keep-slot-tag">キープ 4</span></div>
+            <div class="craft-keep-slot" onclick="craftReleaseSlot(4)" id="slot-4"><span class="craft-keep-slot-tag">キープ 5</span></div>
+          </div>
+
+          <!-- トレイ床面 -->
+          <div class="craft-tray-floor" id="craft-tray-floor"></div>
+        </div>
+
+        <!-- 操作バー -->
+        <div class="craft-controls">
+          <button id="craft-roll-button" class="craft-roll-btn" onclick="craftRollDice()">サイコロを振る</button>
+          <div class="craft-charges" title="残りロール回数">
+            <div class="craft-bullet" id="bullet-1"></div>
+            <div class="craft-bullet" id="bullet-2"></div>
+            <div class="craft-bullet" id="bullet-3"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 最初からやり直す確認モーダル -->
+  <div id="craft-restart-modal" class="craft-modal-backdrop">
+    <div class="craft-modal-box">
+      <h3>🔄 最初からやり直す</h3>
+      <div class="craft-modal-desc">
+        現在のスコアとゲーム状況を破棄して、ターン1から新しく始めますか？
+      </div>
+      <div class="craft-modal-actions">
+        <button class="craft-m-btn cancel" onclick="craftCloseRestartModal()">続ける</button>
+        <button class="craft-m-btn confirm" onclick="craftConfirmRestart()">リセット</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ========================================================
+       サウンドエンジン（Web Audio API）
+    ======================================================== */
+    let craftAudioCtx = null;
+    function getCraftAudio() {
+      if (!craftAudioCtx) craftAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (craftAudioCtx.state === 'suspended') craftAudioCtx.resume();
+      return craftAudioCtx;
+    }
+
+    // 初回タップ時のアンロック
+    window.addEventListener('touchstart', () => { getCraftAudio(); }, { once: true, passive: true });
+    window.addEventListener('pointerdown', () => { getCraftAudio(); }, { once: true });
+
+    function playLeatherThud() {
+      try {
+        const ctx = getCraftAudio();
+        for (let i = 0; i < 4; i++) {
+          setTimeout(() => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(240 + Math.random() * 120, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.09);
+          }, i * 65);
+        }
+      } catch(e) {}
+    }
+
+    function playChalkScrape(isBig) {
+      try {
+        const ctx = getCraftAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(isBig ? 880 : 550, ctx.currentTime);
+        gain.gain.setValueAtTime(0.16, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.09);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+      } catch(e) {}
+    }
+
+    /* ========================================================
+       ヨット コアロジック
+    ======================================================== */
+    const CRAFT_CATS = [
+      'aces', 'deuces', 'threes', 'fours', 'fives', 'sixes',
+      'choice', 'fourKind', 'fullHouse', 'sStraight', 'bStraight', 'yacht'
+    ];
+
+    let craftDice = [1, 2, 3, 4, 5];
+    let craftKept = [false, false, false, false, false];
+    let craftRolls = 3;
+    let craftRound = 1;
+    let craftScores = {};
+    let craftIsRolling = false;
+
+    // 画面ロード時に自動初期化
+    window.addEventListener('DOMContentLoaded', () => {
+      initCraftYacht();
+    });
+
+    function initCraftYacht() {
+      craftScores = {};
+      CRAFT_CATS.forEach(c => craftScores[c] = null);
+      craftRound = 1;
+      craftDice = [1, 2, 3, 4, 5];
+      craftKept = [false, false, false, false, false];
+      craftRolls = 3;
+      craftIsRolling = false;
+
+      // スレート初期化
+      CRAFT_CATS.forEach(c => {
+        const el = document.getElementById('val-' + c);
+        el.textContent = '-';
+        el.className = 'craft-td-score';
+        document.getElementById('row-' + c).className = 'pickable';
+      });
+      document.getElementById('val-bonus').textContent = '0/63';
+      document.getElementById('val-total').textContent = '0';
+
+      updateCraftUI();
+      renderCraftDice();
+    }
+
+    function updateCraftUI() {
+      document.getElementById('craft-round-lbl').textContent = `ターン ${craftRound} / 12`;
+      document.getElementById('craft-roll-button').disabled = (craftRolls <= 0) || craftIsRolling;
+
+      for (let i = 1; i <= 3; i++) {
+        const b = document.getElementById('bullet-' + i);
+        b.className = 'craft-bullet' + (i > craftRolls ? ' spent' : '');
+      }
+    }
+
+    function craftRollDice() {
+      if (craftRolls <= 0 || craftIsRolling) return;
+      craftIsRolling = true;
+      craftRolls--;
+      playLeatherThud();
+      updateCraftUI();
+
+      const floor = document.getElementById('craft-tray-floor');
+      floor.querySelectorAll('.craft-die').forEach(d => d.classList.add('rolling'));
+
+      setTimeout(() => {
+        for (let i = 0; i < 5; i++) {
+          if (!craftKept[i]) {
+            craftDice[i] = Math.floor(Math.random() * 6) + 1;
+          }
+        }
+        craftIsRolling = false;
+        renderCraftDice();
+        updateCraftUI();
+        previewCraftScores();
+      }, 450);
+    }
+
+    function craftHoldDie(idx) {
+      if (craftRolls === 3 || craftIsRolling) return;
+      craftKept[idx] = true;
+      playChalkScrape(false);
+      renderCraftDice();
+    }
+
+    function craftReleaseSlot(idx) {
+      if (craftRolls === 3 || craftIsRolling) return;
+      if (craftKept[idx]) {
+        craftKept[idx] = false;
+        playChalkScrape(false);
+        renderCraftDice();
+      }
+    }
+
+    function renderCraftDice() {
+      const floor = document.getElementById('craft-tray-floor');
+      floor.innerHTML = '';
+
+      for (let i = 0; i < 5; i++) {
+        const slot = document.getElementById('slot-' + i);
+        slot.innerHTML = `<span class="craft-keep-slot-tag">キープ ${i+1}</span>`;
+      }
+
+      for (let i = 0; i < 5; i++) {
+        const val = craftDice[i];
+        const die = document.createElement('div');
+        die.className = 'craft-die';
+        die.innerHTML = createClassicPips(val);
+
+        if (craftKept[i]) {
+          die.onclick = () => craftReleaseSlot(i);
+          const s = document.getElementById('slot-' + i);
+          s.innerHTML = '';
+          s.appendChild(die);
+        } else {
+          die.onclick = () => craftHoldDie(i);
+          floor.appendChild(die);
+        }
+      }
+    }
+
+    function createClassicPips(val) {
+      let pips = Array(9).fill(false);
+
+      if (val === 1) {
+        pips[4] = true;
+      } else if (val === 2) {
+        pips[2] = true; pips[6] = true;
+      } else if (val === 3) {
+        pips[2] = true; pips[4] = true; pips[6] = true;
+      } else if (val === 4) {
+        pips[0] = true; pips[2] = true; pips[6] = true; pips[8] = true;
+      } else if (val === 5) {
+        pips[0] = true; pips[2] = true; pips[4] = true; pips[6] = true; pips[8] = true;
+      } else if (val === 6) {
+        pips[0] = true; pips[2] = true; pips[3] = true; pips[5] = true; pips[6] = true; pips[8] = true;
+      }
+
+      return pips.map(on => {
+        if (!on) return '<div></div>';
+        return `<div class="craft-pip ${val === 1 ? 'red' : ''}"></div>`;
+      }).join('');
+    }
+
+    function evaluateCraftScore(cat, dice) {
+      const counts = {};
+      dice.forEach(d => counts[d] = (counts[d] || 0) + 1);
+      const sum = dice.reduce((a, b) => a + b, 0);
+
+      switch(cat) {
+        case 'aces': return (counts[1] || 0) * 1;
+        case 'deuces': return (counts[2] || 0) * 2;
+        case 'threes': return (counts[3] || 0) * 3;
+        case 'fours': return (counts[4] || 0) * 4;
+        case 'fives': return (counts[5] || 0) * 5;
+        case 'sixes': return (counts[6] || 0) * 6;
+        case 'choice': return sum;
+        case 'fourKind':
+          return Object.values(counts).some(c => c >= 4) ? sum : 0;
+        case 'fullHouse': {
+          const vals = Object.values(counts);
+          return (vals.includes(3) && vals.includes(2)) || vals.includes(5) ? sum : 0;
+        }
+        case 'sStraight': {
+          const s = [...new Set(dice)].sort().join('');
+          return (s.includes('1234') || s.includes('2345') || s.includes('3456')) ? 15 : 0;
+        }
+        case 'bStraight': {
+          const s = [...new Set(dice)].sort().join('');
+          return (s === '12345' || s === '23456') ? 30 : 0;
+        }
+        case 'yacht':
+          return Object.values(counts).some(c => c === 5) ? 50 : 0;
+        default: return 0;
+      }
+    }
+
+    function previewCraftScores() {
+      if (craftRolls === 3) return;
+
+      CRAFT_CATS.forEach(c => {
+        if (craftScores[c] === null) {
+          const pts = evaluateCraftScore(c, craftDice);
+          const cell = document.getElementById('val-' + c);
+          const row = document.getElementById('row-' + c);
+
+          cell.textContent = pts;
+          cell.className = 'craft-td-score ghost' + (pts === 0 ? ' zero' : '');
+
+          const isJackpot = (c === 'yacht' && pts === 50) ||
+            (c === 'bStraight' && pts === 30) ||
+            (c === 'sStraight' && pts === 15) ||
+            (c === 'fullHouse' && pts > 0);
+
+          row.classList.toggle('golden-glow', isJackpot);
+        }
+      });
+    }
+
+    function craftSelectScore(cat) {
+      if (craftScores[cat] !== null || craftRolls === 3 || craftIsRolling) return;
+
+      const finalVal = evaluateCraftScore(cat, craftDice);
+      craftScores[cat] = finalVal;
+
+      const isBig = (cat === 'yacht' && finalVal === 50) || finalVal >= 25;
+      playChalkScrape(isBig);
+
+      const cell = document.getElementById('val-' + cat);
+      cell.textContent = finalVal;
+      cell.className = 'craft-td-score penciled';
+      document.getElementById('row-' + cat).className = '';
+
+      CRAFT_CATS.forEach(c => {
+        if (craftScores[c] === null) {
+          document.getElementById('val-' + c).textContent = '-';
+          document.getElementById('val-' + c).className = 'craft-td-score';
+          document.getElementById('row-' + c).classList.remove('golden-glow');
+        }
+      });
+
+      recalcSlateTotals();
+
+      craftRound++;
+      if (craftRound > 12) {
+        setTimeout(() => {
+          alert(`🎉 ゲーム終了！\n最終得点: ${document.getElementById('val-total').textContent} 点！`);
+        }, 350);
+        return;
+      }
+
+      craftRolls = 3;
+      craftKept = [false, false, false, false, false];
+      updateCraftUI();
+      renderCraftDice();
+    }
+
+    function recalcSlateTotals() {
+      const uppers = ['aces', 'deuces', 'threes', 'fours', 'fives', 'sixes'];
+      let upperSum = 0;
+      uppers.forEach(c => {
+        if (craftScores[c] !== null) upperSum += craftScores[c];
+      });
+
+      const bonus = upperSum >= 63 ? 35 : 0;
+      document.getElementById('val-bonus').textContent = `${upperSum}/63 (+${bonus})`;
+
+      let grand = bonus;
+      CRAFT_CATS.forEach(c => {
+        if (craftScores[c] !== null) grand += craftScores[c];
+      });
+      document.getElementById('val-total').textContent = grand;
+    }
+
+    function craftPromptRestart() {
+      document.getElementById('craft-restart-modal').classList.add('active');
+    }
+
+    function craftCloseRestartModal() {
+      document.getElementById('craft-restart-modal').classList.remove('active');
+    }
+
+    function craftConfirmRestart() {
+      craftCloseRestartModal();
+      initCraftYacht();
+    }
+  </script>
+</body>
+</html>
