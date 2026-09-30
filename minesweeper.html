@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>マインスイーパー (Minesweeper)</title>
+  <style>
+    :root {
+      --bg-desk: #110c08;
+      --felt-dark: #122c19;
+      --felt-light: #1c4528;
+      --board-rim: #362214;
+      --brass-gold: #d4a359;
+      --brass-glow: rgba(212, 163, 89, 0.45);
+      --cell-size: 34px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-desk);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      color: #fff;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .viewport {
+      width: 100%;
+      min-height: 100%;
+      padding: calc(14px + env(safe-area-inset-top)) 8px calc(60px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: radial-gradient(circle at 50% 20%, #2b1a10 0%, var(--bg-desk) 100%);
+      position: relative;
+    }
+
+    .topbar {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+    .topbar-upper {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .tool-btn {
+      background: linear-gradient(145deg, #2c1c12 0%, #1c1109 100%);
+      border: 1.5px solid #4d3320;
+      color: var(--brass-gold);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.15);
+      transition: transform 0.12s, border-color 0.12s;
+    }
+    .tool-btn:hover { border-color: var(--brass-gold); transform: translateY(-2px); }
+    .tool-btn:active { transform: scale(0.92); }
+
+    .topbar-lower {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .stats-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .stat-badge {
+      background: rgba(0, 0, 0, 0.65);
+      border: 1.5px solid #442d1c;
+      border-radius: 14px;
+      padding: 5px 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #d1c1b2;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+      white-space: nowrap;
+    }
+    .stat-val {
+      color: var(--brass-gold);
+      font-size: 1.15rem;
+      font-weight: 900;
+      font-feature-settings: "tnum";
+    }
+
+    .table-felt {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      background: radial-gradient(circle at 50% 35%, var(--felt-light) 0%, var(--felt-dark) 100%);
+      border: 8px solid var(--board-rim);
+      border-radius: 20px;
+      padding: 16px 10px 24px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.95), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 0 35px rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      touch-action: manipulation;
+    }
+
+    /* ボードラッパー（スクロール可能） */
+    .mine-board-wrapper {
+      width: 100%;
+      overflow: auto;
+      display: flex;
+      justify-content: center;
+      padding: 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .mine-board {
+      display: grid;
+      gap: 2px;
+      background: #25160e;
+      padding: 4px;
+      border-radius: 8px;
+      border: 2px solid #4d3320;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.7), inset 0 0 10px rgba(0,0,0,0.8);
+    }
+
+    /* マス（立体ボタンデザイン） */
+    .cell {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      font-weight: 900;
+      cursor: pointer;
+      font-feature-settings: "tnum";
+      transition: background 0.08s ease, transform 0.05s ease;
+      touch-action: manipulation;
+    }
+
+    /* 未開封タイル（真鍮風立体タイル） */
+    .cell.closed {
+      background: linear-gradient(145deg, #3c2718 0%, #22140b 100%);
+      border-top: 1.5px solid #6b4a30;
+      border-left: 1.5px solid #6b4a30;
+      border-right: 2px solid #140b06;
+      border-bottom: 2.5px solid #140b06;
+      box-shadow: 0 3px 5px rgba(0,0,0,0.45);
+    }
+    .cell.closed:active {
+      transform: scale(0.96);
+    }
+
+    /* 開封済みタイル（掘り込まれたフェルト卓） */
+    .cell.opened {
+      background: rgba(14, 28, 18, 0.7);
+      border: 1px solid rgba(0,0,0,0.5);
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+      cursor: default;
+    }
+
+    /* 地雷踏み爆発 */
+    .cell.exploded {
+      background: radial-gradient(circle, #e74c3c 0%, #8b0000 100%) !important;
+      border: 1px solid #ff7675;
+      box-shadow: 0 0 12px #ff4757;
+    }
+
+    /* 各数字のクラシック配色 */
+    .c-1 { color: #3498db; }
+    .c-2 { color: #2ecc71; }
+    .c-3 { color: #e74c3c; }
+    .c-4 { color: #9b59b6; }
+    .c-5 { color: #e67e22; }
+    .c-6 { color: #1abc9c; }
+    .c-7 { color: #f1c40f; }
+    .c-8 { color: #e84393; }
+
+    /* 下部モード切り替え（掘る/旗） */
+    .mode-switch-wrapper {
+      display: flex;
+      align-items: center;
+      background: rgba(0,0,0,0.4);
+      border: 1.5px solid #4a3424;
+      border-radius: 20px;
+      padding: 3px;
+      gap: 4px;
+    }
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: #b0a194;
+      font-size: 0.85rem;
+      font-weight: 800;
+      padding: 8px 18px;
+      border-radius: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .mode-btn.active {
+      background: linear-gradient(180deg, #d4a359, #aa782e);
+      color: #1a1008;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+
+    .ranking-container {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 20px;
+      background: rgba(22, 14, 9, 0.85);
+      border: 2px solid #3d2919;
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+    }
+    .ranking-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1.5px solid #4a3422;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+    .ranking-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--brass-gold);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ranking-diff-tag {
+      font-size: 0.75rem;
+      background: #342014;
+      color: #dfd2c4;
+      padding: 3px 8px;
+      border-radius: 8px;
+      border: 1px solid #583c27;
+    }
+    .ranking-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 14px;
+    }
+    @media (max-width: 480px) {
+      .ranking-list { grid-template-columns: 1fr; }
+    }
+    .ranking-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0,0,0,0.3);
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-feature-settings: "tnum";
+    }
+    .ranking-rank { font-weight: 800; color: #8c7664; width: 28px; }
+    .ranking-rank.top1 { color: #f1c40f; }
+    .ranking-rank.top2 { color: #bdc3c7; }
+    .ranking-rank.top3 { color: #e67e22; }
+    .ranking-time { font-weight: 800; color: #f5ebe1; }
+    .ranking-date { color: #7d6b5c; font-size: 0.72rem; }
+    .ranking-empty {
+      text-align: center;
+      color: #7d6b5c;
+      font-size: 0.82rem;
+      padding: 12px 0;
+      grid-column: span 2;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.82);
+      backdrop-filter: blur(5px);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-sheet {
+      background: #20140c;
+      border: 3px solid #4d3320;
+      border-radius: 20px;
+      padding: 22px;
+      width: 88%;
+      max-width: 440px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.95);
+      color: #ede2d5;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-title {
+      text-align: center;
+      color: var(--brass-gold);
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    .modal-body {
+      overflow-y: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      color: #c9b9aa;
+      margin-bottom: 16px;
+      padding-right: 6px;
+    }
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #332014;
+    }
+    .theme-select {
+      background: #2c1a10;
+      color: #fff;
+      border: 1.5px solid var(--brass-gold);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      outline: none;
+    }
+    .modal-close-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(180deg, #d4a359, #aa782e);
+      border: none;
+      border-radius: 12px;
+      color: #140c06;
+      font-weight: 900;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="viewport">
+    <div class="topbar">
+      <div class="topbar-upper">
+        <div class="tool-btn" onclick="toggleSettingsModal(true)" title="設定">⚙️️</div>
+        <div class="tool-btn" id="face-btn" onclick="restartGame()" title="最初から">😊</div>
+        <div class="tool-btn" onclick="toggleRulesModal(true)" title="あそびかた">📖</div>
+      </div>
+
+      <div class="topbar-lower">
+        <div class="stats-group">
+          <div class="stat-badge">💣 <span id="stat-mines" class="stat-val">10</span></div>
+        </div>
+        <div class="stats-group">
+          <div class="stat-badge">⏱️ <span id="stat-timer" class="stat-val">00:00</span></div>
+          <div id="stat-diff-badge" class="stat-badge" style="color:var(--brass-gold);">初級</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- フェルト卓 -->
+    <div class="table-felt">
+      <div class="mine-board-wrapper">
+        <div class="mine-board" id="mine-board"></div>
+      </div>
+
+      <!-- 操作モード切り替え -->
+      <div class="mode-switch-wrapper">
+        <button class="mode-btn active" id="btn-mode-dig" onclick="setMode('dig')">⛏️ 掘る</button>
+        <button class="mode-btn" id="btn-mode-flag" onclick="setMode('flag')">🚩 旗を立てる</button>
+      </div>
+    </div>
+
+    <!-- ランキングボード -->
+    <div class="ranking-container">
+      <div class="ranking-header">
+        <div class="ranking-title">🏆 タイムランキング TOP 10</div>
+        <div id="ranking-diff-label" class="ranking-diff-tag">初級</div>
+      </div>
+      <div id="ranking-list" class="ranking-list"></div>
+    </div>
+  </div>
+
+  <!-- ルールモーダル -->
+  <div id="modal-rules" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">📖 マインスイーパーのあそびかた</div>
+      <div class="modal-body">
+        <p>地雷を避けながら、盤面のすべての安全なマスを開ける古典的パズルゲームです。</p>
+        <br>
+        <b style="color:var(--brass-gold);">【基本ルール】</b>
+        <ul style="padding-left:18px; margin:6px 0;">
+          <li>マスを開けたときに出る数字は、<b>周囲8マスにある地雷の数</b>を示しています。</li>
+          <li>地雷があると思うマスには<b>旗（🚩）</b>を立てて目印にします。</li>
+          <li>地雷を踏むと即座にゲームオーバーとなります。初手で地雷を踏むことはありません。</li>
+        </ul>
+        <br>
+        <b style="color:var(--brass-gold);">【操作テクニック】</b>
+        <ul style="padding-left:18px; margin:6px 0;">
+          <li><b>長押し / 右クリック:</b> マスを直接「旗」に設定できます。</li>
+          <li><b>数字タップ（開拓）:</b> 開封済みの数字マスをタップした際、周囲の旗の数がその数字と一致していれば、残りの未開封マスを一発でまとめて開けられます。</li>
+        </ul>
+      </div>
+      <button class="modal-close-btn" onclick="toggleRulesModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <!-- 設定モーダル -->
+  <div id="modal-settings" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">⚙ 設定</div>
+      <div class="modal-body">
+        <div class="setting-item">
+          <span>難易度</span>
+          <select id="diff-selector" class="theme-select" onchange="changeDifficulty(this.value)">
+            <option value="easy" selected>初級 (9×9 / 💣10)</option>
+            <option value="medium">中級 (16×16 / 💣40)</option>
+            <option value="hard">上級 (16×30 / 💣99)</option>
+          </select>
+        </div>
+      </div>
+      <button class="modal-close-btn" onclick="toggleSettingsModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    window.addEventListener('pointerdown', () => getAudio(), { once: true });
+
+    function playClickSound() {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(400, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
+      } catch(e) {}
+    }
+
+    function playFlagSound() {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(740, ctx.currentTime + 0.06);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.07);
+      } catch(e) {}
+    }
+
+    function playExplodeSound() {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.36);
+      } catch(e) {}
+    }
+
+    function playFanfareSound() {
+      try {
+        const ctx = getAudio();
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.08 + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.08);
+          osc.stop(ctx.currentTime + idx * 0.08 + 0.26);
+        });
+      } catch(e) {}
+    }
+
+    const DIFFICULTIES = {
+      easy: { rows: 9, cols: 9, mines: 10, name: '初級' },
+      medium: { rows: 16, cols: 16, mines: 40, name: '中級' },
+      hard: { rows: 16, cols: 30, mines: 99, name: '上級' }
+    };
+
+    let currentDiff = 'easy';
+    let rows = 9, cols = 9, totalMines = 10;
+    let board = [];
+    let isGameOver = false;
+    let isFirstClick = true;
+    let currentMode = 'dig'; // 'dig' | 'flag'
+    let timerInterval = null;
+    let secondsElapsed = 0;
+
+    let longPressTimer = null;
+    let isLongPress = false;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initGame();
+    });
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('btn-mode-dig').classList.toggle('active', mode === 'dig');
+      document.getElementById('btn-mode-flag').classList.toggle('active', mode === 'flag');
+    }
+
+    function startTimer() {
+      stopTimer();
+      secondsElapsed = 0;
+      updateTimerUI();
+      timerInterval = setInterval(() => {
+        secondsElapsed++;
+        updateTimerUI();
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    function updateTimerUI() {
+      const m = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+      const s = String(secondsElapsed % 60).padStart(2, '0');
+      document.getElementById('stat-timer').textContent = `${m}:${s}`;
+    }
+
+    function initGame() {
+      stopTimer();
+      secondsElapsed = 0;
+      updateTimerUI();
+
+      const conf = DIFFICULTIES[currentDiff];
+      rows = conf.rows;
+      cols = conf.cols;
+      totalMines = conf.mines;
+
+      isGameOver = false;
+      isFirstClick = true;
+      document.getElementById('face-btn').textContent = '😊';
+      document.getElementById('stat-diff-badge').textContent = conf.name;
+
+      // セルサイズ調整（上級・中級）
+      const root = document.documentElement;
+      if (currentDiff === 'hard') {
+        root.style.setProperty('--cell-size', '26px');
+      } else if (currentDiff === 'medium') {
+        root.style.setProperty('--cell-size', '28px');
+      } else {
+        root.style.setProperty('--cell-size', '34px');
+      }
+
+      board = [];
+      for (let r = 0; r < rows; r++) {
+        const row = [];
+        for (let c = 0; c < cols; c++) {
+          row.push({
+            r, c,
+            isMine: false,
+            isOpen: false,
+            isFlag: false,
+            count: 0
+          });
+        }
+        board.push(row);
+      }
+
+      updateMineCountUI();
+      renderBoard();
+      renderRanking();
+    }
+
+    function updateMineCountUI() {
+      let flagged = 0;
+      board.forEach(row => row.forEach(cell => { if (cell.isFlag) flagged++; }));
+      document.getElementById('stat-mines').textContent = Math.max(0, totalMines - flagged);
+    }
+
+    function renderBoard() {
+      const boardEl = document.getElementById('mine-board');
+      boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
+      boardEl.innerHTML = '';
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cell = board[r][c];
+          const cellEl = document.createElement('div');
+          cellEl.className = 'cell';
+          cellEl.dataset.r = r;
+          cellEl.dataset.c = c;
+
+          if (cell.isOpen) {
+            cellEl.classList.add('opened');
+            if (cell.isMine) {
+              cellEl.classList.add('exploded');
+              cellEl.textContent = '💣';
+            } else if (cell.count > 0) {
+              cellEl.textContent = cell.count;
+              cellEl.classList.add(`c-${cell.count}`);
+            }
+          } else {
+            cellEl.classList.add('closed');
+            if (cell.isFlag) {
+              cellEl.textContent = '🚩';
+            }
+          }
+
+          // タッチ・クリック制御（長押しで旗）
+          cellEl.addEventListener('pointerdown', (e) => onPointerDown(e, r, c));
+          cellEl.addEventListener('pointerup', (e) => onPointerUp(e, r, c));
+          cellEl.addEventListener('pointercancel', clearLongPress);
+          cellEl.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            toggleFlag(r, c);
+          });
+
+          boardEl.appendChild(cellEl);
+        }
+      }
+    }
+
+    function onPointerDown(e, r, c) {
+      if (isGameOver) return;
+      isLongPress = false;
+      longPressTimer = setTimeout(() => {
+        isLongPress = true;
+        toggleFlag(r, c);
+        if (navigator.vibrate) navigator.vibrate(40);
+      }, 350);
+    }
+
+    function onPointerUp(e, r, c) {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      if (isLongPress) return;
+      handleCellAction(r, c);
+    }
+
+    function clearLongPress() {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    }
+
+    function handleCellAction(r, c) {
+      if (isGameOver) return;
+      const cell = board[r][c];
+
+      if (cell.isOpen) {
+        // 数字セルタップで周囲の一括オープン（開拓）
+        chordOpen(r, c);
+        return;
+      }
+
+      if (currentMode === 'flag') {
+        toggleFlag(r, c);
+      } else {
+        openCell(r, c);
+      }
+    }
+
+    function toggleFlag(r, c) {
+      if (isGameOver) return;
+      const cell = board[r][c];
+      if (cell.isOpen) return;
+
+      cell.isFlag = !cell.isFlag;
+      playFlagSound();
+      updateMineCountUI();
+      renderBoard();
+    }
+
+    function placeMines(firstR, firstC) {
+      let placed = 0;
+      while (placed < totalMines) {
+        const randR = Math.floor(Math.random() * rows);
+        const randC = Math.floor(Math.random() * cols);
+
+        // 初手とその周囲8マスには地雷を置かない
+        if (Math.abs(randR - firstR) <= 1 && Math.abs(randC - firstC) <= 1) continue;
+        if (!board[randR][randC].isMine) {
+          board[randR][randC].isMine = true;
+          placed++;
+        }
+      }
+
+      // 地雷カウント計算
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (board[r][c].isMine) continue;
+          let count = 0;
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              const nr = r + dr, nc = c + dc;
+              if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && board[nr][nc].isMine) {
+                count++;
+              }
+            }
+          }
+          board[r][c].count = count;
+        }
+      }
+    }
+
+    function openCell(r, c) {
+      const cell = board[r][c];
+      if (cell.isOpen || cell.isFlag) return;
+
+      if (isFirstClick) {
+        isFirstClick = false;
+        placeMines(r, c);
+        startTimer();
+      }
+
+      if (cell.isMine) {
+        gameOver(cell);
+        return;
+      }
+
+      cell.isOpen = true;
+      playClickSound();
+
+      // 0の場合は周囲を連鎖展開（フラッドフィル）
+      if (cell.count === 0) {
+        floodFill(r, c);
+      }
+
+      checkWin();
+      renderBoard();
+    }
+
+    function floodFill(startR, startC) {
+      const queue = [[startR, startC]];
+      while (queue.length > 0) {
+        const [cr, cc] = queue.pop();
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const nr = cr + dr, nc = cc + dc;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+              const neighbor = board[nr][nc];
+              if (!neighbor.isOpen && !neighbor.isFlag && !neighbor.isMine) {
+                neighbor.isOpen = true;
+                if (neighbor.count === 0) {
+                  queue.push([nr, nc]);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    function chordOpen(r, c) {
+      const cell = board[r][c];
+      if (cell.count === 0) return;
+
+      let flagCount = 0;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && board[nr][nc].isFlag) {
+            flagCount++;
+          }
+        }
+      }
+
+      if (flagCount === cell.count) {
+        let openedAny = false;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const nr = r + dr, nc = c + dc;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+              const target = board[nr][nc];
+              if (!target.isOpen && !target.isFlag) {
+                if (target.isMine) {
+                  gameOver(target);
+                  return;
+                }
+                target.isOpen = true;
+                if (target.count === 0) floodFill(nr, nc);
+                openedAny = true;
+              }
+            }
+          }
+        }
+        if (openedAny) {
+          playClickSound();
+          checkWin();
+          renderBoard();
+        }
+      }
+    }
+
+    function gameOver(hitCell) {
+      isGameOver = true;
+      stopTimer();
+      playExplodeSound();
+      document.getElementById('face-btn').textContent = '😵';
+
+      board.forEach(row => row.forEach(c => {
+        if (c.isMine) c.isOpen = true;
+      }));
+      renderBoard();
+
+      setTimeout(() => alert('地雷が爆発しました！ゲームオーバー💣'), 250);
+    }
+
+    function checkWin() {
+      let closedSafeCells = 0;
+      board.forEach(row => row.forEach(cell => {
+        if (!cell.isMine && !cell.isOpen) closedSafeCells++;
+      }));
+
+      if (closedSafeCells === 0) {
+        isGameOver = true;
+        stopTimer();
+        playFanfareSound();
+        document.getElementById('face-btn').textContent = '😎';
+
+        board.forEach(row => row.forEach(cell => {
+          if (cell.isMine) cell.isFlag = true;
+        }));
+        updateMineCountUI();
+        saveRankingRecord(secondsElapsed);
+        renderRanking();
+
+        setTimeout(() => {
+          const m = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+          const s = String(secondsElapsed % 60).padStart(2, '0');
+          alert(`🎉 お見事！全地雷の撤去に成功しました！\nタイム: ${m}:${s}`);
+        }, 300);
+      }
+    }
+
+    function getRankingStorageKey() {
+      return `minesweeper_ranking_${currentDiff}`;
+    }
+
+    function saveRankingRecord(timeSec) {
+      const key = getRankingStorageKey();
+      let records = [];
+      try {
+        records = JSON.parse(localStorage.getItem(key)) || [];
+      } catch(e) { records = []; }
+
+      const d = new Date();
+      const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
+      records.push({ time: timeSec, date: dateStr });
+      records.sort((a, b) => a.time - b.time);
+      records = records.slice(0, 10);
+
+      try {
+        localStorage.setItem(key, JSON.stringify(records));
+      } catch(e) {}
+    }
+
+    function renderRanking() {
+      document.getElementById('ranking-diff-label').textContent = DIFFICULTIES[currentDiff].name;
+      const container = document.getElementById('ranking-list');
+      container.innerHTML = '';
+
+      const key = getRankingStorageKey();
+      let records = [];
+      try {
+        records = JSON.parse(localStorage.getItem(key)) || [];
+      } catch(e) { records = []; }
+
+      if (records.length === 0) {
+        container.innerHTML = `<div class="ranking-empty">まだ記録がありません。クリアしてランクインを目指そう！</div>`;
+        return;
+      }
+
+      records.forEach((rec, idx) => {
+        const item = document.createElement('div');
+        item.className = 'ranking-item';
+        const rankClass = idx === 0 ? 'top1' : idx === 1 ? 'top2' : idx === 2 ? 'top3' : '';
+        const m = String(Math.floor(rec.time / 60)).padStart(2, '0');
+        const s = String(rec.time % 60).padStart(2, '0');
+        item.innerHTML = `
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="ranking-rank ${rankClass}">${idx + 1}位</span>
+            <span class="ranking-time">${m}:${s}</span>
+          </div>
+          <span class="ranking-date">${rec.date}</span>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function toggleRulesModal(show) {
+      document.getElementById('modal-rules').classList.toggle('active', show);
+    }
+    function toggleSettingsModal(show) {
+      document.getElementById('modal-settings').classList.toggle('active', show);
+    }
+    function changeDifficulty(val) {
+      currentDiff = val;
+      toggleSettingsModal(false);
+      initGame();
+    }
+    function restartGame() {
+      if (confirm('最初からやり直しますか？')) initGame();
+    }
+  </script>
+</body>
+</html>
