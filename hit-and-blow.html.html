@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ヒット＆ブロー</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <style>
+    :root {
+      --hnb-board-wood: #2c1e14;
+      --hnb-wood-bevel: rgba(255, 255, 255, 0.08);
+    }
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+    body {
+      margin: 0; padding: 50px 16px 40px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #191614; color: #f5efe6;
+      display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+    }
+    .hnb-topbar { width: 100%; max-width: 440px; display: flex; justify-content: flex-end; margin-bottom: 10px; gap: 10px; }
+    .hnb-icon-btn {
+      background: #3a2b20; border: 1.5px solid #5a4535; color: #e5a950;
+      width: 38px; height: 38px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    .hnb-table-board {
+      width: 100%; max-width: 430px;
+      background: radial-gradient(circle at 50% 30%, #3e2b1d 0%, #25170d 100%);
+      border: 6px solid #1a1009; border-radius: 26px; padding: 20px 16px 22px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9), inset 0 2px 4px var(--hnb-wood-bevel);
+    }
+    .hnb-secret-container {
+      background: #170e08; border: 2px solid #0d0704; border-radius: 16px;
+      padding: 10px 14px; display: flex; justify-content: center; gap: 14px;
+      position: relative; overflow: hidden; box-shadow: inset 0 6px 14px rgba(0,0,0,0.9); margin-bottom: 16px;
+    }
+    .hnb-shutter {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(180deg, #533a28 0%, #342216 100%);
+      border-bottom: 3px solid #180f08; display: flex; align-items: center; justify-content: center;
+      gap: 8px; color: #e5a950; font-weight: 800; letter-spacing: 3px; font-size: 0.95rem;
+      z-index: 10; transition: transform 0.65s cubic-bezier(0.77, 0, 0.175, 1);
+    }
+    .hnb-shutter.no-anim { transition: none !important; }
+    .hnb-shutter.open { transform: translateY(-100%); }
+    .hnb-rack { display: flex; flex-direction: column-reverse; gap: 8px; margin-bottom: 16px; }
+    .hnb-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(0, 0, 0, 0.28); border: 1.5px solid transparent; padding: 6px 12px; border-radius: 14px;
+    }
+    .hnb-row.active {
+      background: rgba(229, 169, 80, 0.12); border-color: #e5a950; box-shadow: 0 0 12px rgba(229, 169, 80, 0.2);
+    }
+    .hnb-turn-num { font-size: 0.85rem; font-weight: 700; color: #8c7664; width: 20px; text-align: center; }
+    .hnb-row.active .hnb-turn-num { color: #e5a950; }
+    .hnb-holes { display: flex; gap: 12px; }
+    .hnb-socket {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: radial-gradient(circle at 50% 60%, #110a06 0%, #050302 100%);
+      box-shadow: inset 0 3px 6px rgba(0,0,0,0.9);
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .hnb-sphere {
+      width: 32px; height: 32px; border-radius: 50%;
+      box-shadow: 0 5px 10px rgba(0,0,0,0.6), inset -2px -3px 6px rgba(0,0,0,0.5), inset 2px 2px 5px rgba(255,255,255,0.6);
+      display: none;
+    }
+    .c-red    { background: radial-gradient(circle at 35% 30%, #ff7675 0%, #d63031 70%, #851313 100%); }
+    .c-blue   { background: radial-gradient(circle at 35% 30%, #74b9ff 0%, #0984e3 70%, #0c4c80 100%); }
+    .c-green  { background: radial-gradient(circle at 35% 30%, #55efc4 0%, #00b894 70%, #036854 100%); }
+    .c-yellow { background: radial-gradient(circle at 35% 30%, #ffeaa7 0%, #fdcb6e 70%, #c48b11 100%); }
+    .c-white  { background: radial-gradient(circle at 35% 30%, #ffffff 0%, #dfe6e9 70%, #7d8b94 100%); }
+    .c-purple { background: radial-gradient(circle at 35% 30%, #d980fa 0%, #8854d0 70%, #482180 100%); }
+
+    .hnb-pins-grid {
+      display: grid; grid-template-columns: repeat(2, 12px); grid-template-rows: repeat(2, 12px);
+      gap: 5px; padding: 3px; background: #150d08; border-radius: 8px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+    }
+    .hnb-pin { width: 12px; height: 12px; border-radius: 50%; background: #090503; }
+    .hnb-pin.hit { background: radial-gradient(circle at 35% 35%, #ff4d4d, #b30000); box-shadow: 0 0 7px rgba(255, 60, 60, 0.9); }
+    .hnb-pin.blow { background: radial-gradient(circle at 35% 35%, #ffffff, #a4b0be); box-shadow: 0 0 6px rgba(255, 255, 255, 0.7); }
+
+    .hnb-tray {
+      display: flex; justify-content: space-around; background: #1d130c; border: 2px solid #2f1f13;
+      padding: 12px 14px; border-radius: 36px; box-shadow: inset 0 4px 10px rgba(0,0,0,0.9); margin-top: 12px;
+    }
+    .hnb-tray .hnb-sphere { display: block; width: 38px; height: 38px; cursor: pointer; }
+    .hnb-bottom-ctrl { display: flex; gap: 12px; margin-top: 14px; }
+    .hnb-action-btn {
+      flex: 1; padding: 12px; font-size: 0.95rem; font-weight: 800; border: none; border-radius: 14px; cursor: pointer;
+    }
+    .btn-del { background: #463426; color: #e1d3c7; border: 1px solid #5a4332; }
+    .btn-submit {
+      background: linear-gradient(180deg, #f39c12 0%, #d35400 100%); color: #fff; border: 1px solid #e67e22;
+    }
+    .btn-submit:disabled { background: #382c23; color: #6a5749; border: 1px solid #291f19; cursor: not-allowed; }
+
+    .hnb-modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 99999;
+      align-items: center; justify-content: center;
+    }
+    .hnb-modal-overlay.active { display: flex; }
+    .hnb-modal-window {
+      background: #2b1f16; border: 3px solid #533e2d; border-radius: 20px;
+      padding: 24px; width: 88%; max-width: 360px; text-align: center; color: #f7ede2;
+    }
+    .hnb-setting-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #3d2c20; }
+    .hnb-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+    .hnb-switch input { opacity: 0; width: 0; height: 0; }
+    .hnb-slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #443224; transition: .3s; border-radius: 26px;
+    }
+    .hnb-slider:before {
+      position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
+      background-color: #fff; transition: .3s; border-radius: 50%;
+    }
+    input:checked + .hnb-slider { background-color: #e5a950; }
+    input:checked + .hnb-slider:before { transform: translateX(24px); }
+  </style>
+</head>
+<body>
+
+  <div class="hnb-topbar">
+    <div class="hnb-icon-btn" onclick="hnbGiveUpAndReveal()" title="正解を見る（ギブアップ）">👁️</div>
+    <div class="hnb-icon-btn" onclick="hnbRestartGame()" title="もう一度遊ぶ">🔄</div>
+    <div class="hnb-icon-btn" onclick="hnbToggleModal(true)" title="設定">⚙️</div>
+  </div>
+
+  <div class="hnb-table-board">
+    <div class="hnb-secret-container">
+      <div id="hnb-shutter" class="hnb-shutter"><span>🔒</span><span>SECRET CODE</span></div>
+      <div class="hnb-socket"><div id="hnb-sec-0" class="hnb-sphere"></div></div>
+      <div class="hnb-socket"><div id="hnb-sec-1" class="hnb-sphere"></div></div>
+      <div class="hnb-socket"><div id="hnb-sec-2" class="hnb-sphere"></div></div>
+      <div class="hnb-socket"><div id="hnb-sec-3" class="hnb-sphere"></div></div>
+    </div>
+
+    <div id="hnb-rack" class="hnb-rack"></div>
+
+    <div class="hnb-tray">
+      <div class="hnb-sphere c-red" onclick="hnbInsertPeg(1)"></div>
+      <div class="hnb-sphere c-blue" onclick="hnbInsertPeg(2)"></div>
+      <div class="hnb-sphere c-green" onclick="hnbInsertPeg(3)"></div>
+      <div class="hnb-sphere c-yellow" onclick="hnbInsertPeg(4)"></div>
+      <div class="hnb-sphere c-white" onclick="hnbInsertPeg(5)"></div>
+      <div class="hnb-sphere c-purple" onclick="hnbInsertPeg(6)"></div>
+    </div>
+
+    <div class="hnb-bottom-ctrl">
+      <button class="hnb-action-btn btn-del" onclick="hnbDeleteLastPeg()">取り消し</button>
+      <button id="hnb-btn-check" class="hnb-action-btn btn-submit" onclick="hnbCheckAttempt()" disabled>決定 (CHECK)</button>
+    </div>
+  </div>
+
+  <div id="hnb-settings-modal" class="hnb-modal-overlay">
+    <div class="hnb-modal-window">
+      <h3 style="color:#e5a950; margin-top:0;">⚙️ ゲーム設定</h3>
+      <div class="hnb-setting-row">
+        <span>正解の色の重複を許可</span>
+        <label class="hnb-switch">
+          <input type="checkbox" id="hnb-allow-duplicates-toggle" onchange="hnbToggleDuplicateSetting(this.checked)">
+          <span class="hnb-slider"></span>
+        </label>
+      </div>
+      <button style="margin-top:20px; width:100%; padding:10px; background:#e5a950; border:none; border-radius:12px; font-weight:800; cursor:pointer;" onclick="hnbToggleModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      if (type === 'drop') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(450, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(70, audioCtx.currentTime + 0.06);
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.06);
+      } else if (type === 'hit') {
+        osc.frequency.setValueAtTime(987.77, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.09);
+      } else if (type === 'blow') {
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.09);
+      }
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    const MAX_TURNS = 8;
+    const COLOR_CLASSES = ['', 'c-red', 'c-blue', 'c-green', 'c-yellow', 'c-white', 'c-purple'];
+    let hnbAllowDuplicates = false;
+    let hnbSecretCode = [];
+    let hnbTurn = 0;
+    let hnbCurrentInput = [0, 0, 0, 0];
+    let hnbIsFinished = false;
+
+    window.addEventListener('load', () => hnbInitGame());
+
+    function hnbInitGame() {
+      hnbIsFinished = false; hnbTurn = 0; hnbCurrentInput = [0, 0, 0, 0];
+      const shutter = document.getElementById('hnb-shutter');
+      shutter.classList.add('no-anim');
+      shutter.classList.remove('open');
+      shutter.offsetHeight;
+
+      for (let i = 0; i < 4; i++) {
+        const sec = document.getElementById('hnb-sec-' + i);
+        sec.style.display = 'none'; sec.className = 'hnb-sphere';
+      }
+
+      hnbSecretCode = [];
+      if (hnbAllowDuplicates) {
+        for (let i = 0; i < 4; i++) hnbSecretCode.push(Math.floor(Math.random() * 6) + 1);
+      } else {
+        hnbSecretCode = [1, 2, 3, 4, 5, 6].sort(() => Math.random() - 0.5).slice(0, 4);
+      }
+
+      setTimeout(() => {
+        for (let i = 0; i < 4; i++) {
+          const sec = document.getElementById('hnb-sec-' + i);
+          sec.className = 'hnb-sphere ' + COLOR_CLASSES[hnbSecretCode[i]];
+          sec.style.display = 'block';
+        }
+        shutter.classList.remove('no-anim');
+      }, 50);
+
+      const rack = document.getElementById('hnb-rack');
+      rack.innerHTML = '';
+      for (let r = 0; r < MAX_TURNS; r++) {
+        const row = document.createElement('div');
+        row.className = 'hnb-row' + (r === 0 ? ' active' : '');
+        row.id = `hnb-r-${r}`;
+        row.innerHTML = `
+          <span class="hnb-turn-num">${r + 1}</span>
+          <div class="hnb-holes">
+            ${[0, 1, 2, 3].map(c => `
+              <div class="hnb-socket" onclick="hnbClickSlot(${r},${c})">
+                <div id="hnb-sp-${r}-${c}" class="hnb-sphere"></div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="hnb-pins-grid" id="hnb-pins-${r}">
+            <div class="hnb-pin"></div><div class="hnb-pin"></div>
+            <div class="hnb-pin"></div><div class="hnb-pin"></div>
+          </div>
+        `;
+        rack.appendChild(row);
+      }
+      hnbRefreshCurrentRow();
+    }
+
+    function hnbGiveUpAndReveal() {
+      if (hnbIsFinished) { document.getElementById('hnb-shutter').classList.add('open'); return; }
+      if (!confirm('正解を表示してギブアップしますか？')) return;
+      hnbIsFinished = true;
+      document.getElementById('hnb-shutter').classList.add('open');
+      document.getElementById('hnb-btn-check').disabled = true;
+      const activeRow = document.getElementById(`hnb-r-${hnbTurn}`);
+      if (activeRow) activeRow.classList.remove('active');
+    }
+
+    function hnbInsertPeg(col) {
+      if (hnbIsFinished) return;
+      const idx = hnbCurrentInput.findIndex(v => v === 0);
+      if (idx !== -1) {
+        hnbCurrentInput[idx] = col; playSound('drop'); hnbRefreshCurrentRow();
+      }
+    }
+    function hnbClickSlot(r, c) {
+      if (hnbIsFinished || r !== hnbTurn) return;
+      if (hnbCurrentInput[c] !== 0) {
+        hnbCurrentInput[c] = 0; playSound('drop'); hnbRefreshCurrentRow();
+      }
+    }
+    function hnbDeleteLastPeg() {
+      if (hnbIsFinished) return;
+      for (let i = 3; i >= 0; i--) {
+        if (hnbCurrentInput[i] !== 0) {
+          hnbCurrentInput[i] = 0; playSound('drop'); hnbRefreshCurrentRow(); break;
+        }
+      }
+    }
+    function hnbRefreshCurrentRow() {
+      for (let c = 0; c < 4; c++) {
+        const el = document.getElementById(`hnb-sp-${hnbTurn}-${c}`);
+        const col = hnbCurrentInput[c];
+        if (col > 0) { el.className = 'hnb-sphere ' + COLOR_CLASSES[col]; el.style.display = 'block'; }
+        else { el.style.display = 'none'; }
+      }
+      document.getElementById('hnb-btn-check').disabled = !hnbCurrentInput.every(c => c > 0) || hnbIsFinished;
+    }
+    function hnbCheckAttempt() {
+      if (hnbIsFinished) return;
+      let hits = 0, blows = 0;
+      const sec = [...hnbSecretCode], inp = [...hnbCurrentInput];
+      for (let i = 0; i < 4; i++) {
+        if (inp[i] === sec[i]) { hits++; sec[i] = null; inp[i] = null; }
+      }
+      for (let i = 0; i < 4; i++) {
+        if (inp[i] !== null) {
+          const idx = sec.indexOf(inp[i]);
+          if (idx !== -1) { blows++; sec[idx] = null; }
+        }
+      }
+      const pins = document.getElementById(`hnb-pins-${hnbTurn}`).querySelectorAll('.hnb-pin');
+      let p = 0;
+      for (let i = 0; i < hits; i++) {
+        const el = pins[p++];
+        setTimeout(() => { el.className = 'hnb-pin hit'; playSound('hit'); }, i * 140);
+      }
+      for (let i = 0; i < blows; i++) {
+        const el = pins[p++];
+        setTimeout(() => { el.className = 'hnb-pin blow'; playSound('blow'); }, (hits + i) * 140);
+      }
+      const delay = (hits + blows) * 140 + 200;
+      if (hits === 4) {
+        hnbIsFinished = true;
+        setTimeout(() => document.getElementById('hnb-shutter').classList.add('open'), delay);
+        return;
+      }
+      setTimeout(() => {
+        document.getElementById(`hnb-r-${hnbTurn}`).classList.remove('active');
+        hnbTurn++;
+        if (hnbTurn >= MAX_TURNS) {
+          hnbIsFinished = true;
+          document.getElementById('hnb-shutter').classList.add('open');
+          return;
+        }
+        hnbCurrentInput = [0, 0, 0, 0];
+        document.getElementById(`hnb-r-${hnbTurn}`).classList.add('active');
+        hnbRefreshCurrentRow();
+      }, delay);
+    }
+    function hnbRestartGame() { hnbInitGame(); }
+    function hnbToggleModal(s) { document.getElementById('hnb-settings-modal').classList.toggle('active', s); }
+    function hnbToggleDuplicateSetting(e) { hnbAllowDuplicates = e; }
+  </script>
+</body>
+</html>
