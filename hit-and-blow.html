@@ -242,16 +242,23 @@
       border-radius: 12px;
       cursor: pointer;
       box-shadow: 0 5px 12px rgba(0,0,0,0.5);
+      transition: all 0.15s;
     }
     .btn-del {
       background: #463426;
       color: #e1d3c7;
       border: 1px solid #5a4332;
     }
+    .btn-del:active {
+      background: #5a4332;
+    }
     .btn-submit {
       background: linear-gradient(180deg, #f39c12 0%, #d35400 100%);
       color: #fff;
       border: 1px solid #e67e22;
+    }
+    .btn-submit:active {
+      opacity: 0.9;
     }
     .btn-submit:disabled {
       background: #382c23;
@@ -261,6 +268,7 @@
       box-shadow: none;
     }
 
+    /* モーダル共通スタイル */
     .hnb-modal-overlay {
       display: none;
       position: fixed;
@@ -283,10 +291,12 @@
       max-width: 340px;
       text-align: center;
       color: #f7ede2;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
     }
     .hnb-modal-window h3 {
       margin-top: 0;
       color: #e5a950;
+      font-size: 1.25rem;
     }
     .hnb-setting-row {
       display: flex;
@@ -330,7 +340,7 @@
     .hnb-modal-close {
       margin-top: 18px;
       width: 100%;
-      padding: 10px;
+      padding: 11px;
       background: #e5a950;
       border: none;
       border-radius: 12px;
@@ -344,7 +354,7 @@
 
   <div class="hnb-wrapper">
     <div class="hnb-topbar">
-      <div class="hnb-icon-btn" onclick="hnbGiveUpAndReveal()" title="正解を見る（ギブアップ）">👁️</div>
+      <div class="hnb-icon-btn" onclick="hnbOpenGiveUpModal()" title="正解を見る（ギブアップ）">👁️</div>
       <div class="hnb-icon-btn" onclick="hnbRestartGame()" title="もう一度遊ぶ">🔄</div>
       <div class="hnb-icon-btn" onclick="hnbToggleModal(true)" title="設定">⚙️</div>
     </div>
@@ -378,6 +388,21 @@
     </div>
   </div>
 
+  <!-- ギブアップ確認モーダル (ブラウザのconfirm廃止) -->
+  <div id="hnb-giveup-modal" class="hnb-modal-overlay">
+    <div class="hnb-modal-window">
+      <h3>👁️ ギブアップ</h3>
+      <p style="margin: 16px 0; font-size: 0.95rem; color: #f7ede2;">
+        正解を表示してギブアップしますか？
+      </p>
+      <div style="display: flex; gap: 10px; margin-top: 18px;">
+        <button class="hnb-action-btn btn-del" onclick="hnbToggleGiveUpModal(false)">続ける</button>
+        <button class="hnb-action-btn btn-submit" onclick="hnbExecuteGiveUp()">正解を見る</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 設定モーダル -->
   <div id="hnb-settings-modal" class="hnb-modal-overlay">
     <div class="hnb-modal-window">
       <h3>⚙️ ゲーム設定</h3>
@@ -396,7 +421,12 @@
   </div>
 
   <script>
+    /* =========================================
+       オーディオ管理 & 排他停止エンジン
+    ========================================= */
     let hnbAudioCtx = null;
+    let hnbActiveOscillators = [];
+
     function hnbGetAudioContext() {
       if (!hnbAudioCtx) {
         hnbAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -407,7 +437,25 @@
       return hnbAudioCtx;
     }
 
-    // 初回タップ時にオーディオアンロック
+    // 再生中の音をすべて強制破棄（リスタート時に前の音が残らないようにする）
+    function hnbStopAllSounds() {
+      hnbActiveOscillators.forEach(osc => {
+        try {
+          osc.stop();
+          osc.disconnect();
+        } catch(e) {}
+      });
+      hnbActiveOscillators = [];
+    }
+
+    function hnbTrackOscillator(osc) {
+      hnbActiveOscillators.push(osc);
+      osc.onended = () => {
+        hnbActiveOscillators = hnbActiveOscillators.filter(o => o !== osc);
+      };
+    }
+
+    // 初回タップ時のアンロック
     window.addEventListener('pointerdown', () => {
       hnbGetAudioContext();
     }, { once: true });
@@ -426,6 +474,7 @@
         gain.connect(ctx.destination);
         osc.start();
         osc.stop(ctx.currentTime + 0.07);
+        hnbTrackOscillator(osc);
       } catch (e) {}
     }
 
@@ -443,6 +492,7 @@
         gain.connect(ctx.destination);
         osc.start();
         osc.stop(ctx.currentTime + 0.1);
+        hnbTrackOscillator(osc);
       } catch (e) {}
     }
 
@@ -461,6 +511,7 @@
           gain.connect(ctx.destination);
           osc.start(ctx.currentTime + idx * 0.12);
           osc.stop(ctx.currentTime + idx * 0.12 + 0.36);
+          hnbTrackOscillator(osc);
         });
       } catch (e) {}
     }
@@ -480,10 +531,14 @@
           gain.connect(ctx.destination);
           osc.start(ctx.currentTime + idx * 0.12);
           osc.stop(ctx.currentTime + idx * 0.12 + 0.26);
+          hnbTrackOscillator(osc);
         });
       } catch (e) {}
     }
 
+    /* =========================================
+       ゲーム本体ロジック
+    ========================================= */
     const MAX_TURNS = 8;
     const COLOR_CLASSES = ['', 'c-red', 'c-blue', 'c-green', 'c-yellow', 'c-white', 'c-purple'];
     let hnbAllowDuplicates = false;
@@ -497,8 +552,11 @@
     });
 
     window.addEventListener('keydown', (e) => {
-      const modal = document.getElementById('hnb-settings-modal');
-      if (modal && modal.classList.contains('active')) return;
+      const gModal = document.getElementById('hnb-giveup-modal');
+      const sModal = document.getElementById('hnb-settings-modal');
+      if ((gModal && gModal.classList.contains('active')) || (sModal && sModal.classList.contains('active'))) {
+        return;
+      }
 
       if (e.key >= '1' && e.key <= '6') {
         hnbInsertPeg(parseInt(e.key, 10));
@@ -511,6 +569,9 @@
     });
 
     function hnbInitGame() {
+      // 再生中・保留中の古い音をすべて消去
+      hnbStopAllSounds();
+
       hnbIsFinished = false;
       hnbTurn = 0;
       hnbCurrentInput = [0, 0, 0, 0];
@@ -573,17 +634,24 @@
       hnbRefreshCurrentRow();
     }
 
-    function hnbGiveUpAndReveal() {
+    // ギブアップモーダルを開く
+    function hnbOpenGiveUpModal() {
       if (hnbIsFinished) {
         document.getElementById('hnb-shutter').classList.add('open');
         return;
       }
+      hnbToggleGiveUpModal(true);
+    }
 
-      const ok = confirm('正解を表示してギブアップしますか？');
-      if (!ok) return;
+    function hnbToggleGiveUpModal(show) {
+      document.getElementById('hnb-giveup-modal').classList.toggle('active', show);
+    }
 
+    // ギブアップ確定処理
+    function hnbExecuteGiveUp() {
+      hnbToggleGiveUpModal(false);
       hnbIsFinished = true;
-      hnbPlayGiveUpSound();
+      hnbPlayGiveUpSound(); // その場で即座に再生される
       document.getElementById('hnb-shutter').classList.add('open');
       document.getElementById('hnb-btn-check').disabled = true;
 
