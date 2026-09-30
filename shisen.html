@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>四川省 (Shisen-Sho)</title>
+  <style>
+    :root {
+      --bg-desk: #1a1410;
+      --board-wood: #2c1e14;
+      --board-border: #4a3423;
+      --tile-bg: #f7f3e8;
+      --tile-shadow: #c8beac;
+      --accent-gold: #e5a950;
+      --accent-gold-glow: rgba(229, 169, 80, 0.4);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-desk);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      color: #fff;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .viewport {
+      width: 100%;
+      min-height: 100%;
+      padding: calc(16px + env(safe-area-inset-top)) 10px calc(40px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: radial-gradient(circle at 50% 30%, #2f2117 0%, var(--bg-desk) 100%);
+      position: relative;
+    }
+
+    /* 上部ツールバー */
+    .topbar {
+      width: 100%;
+      max-width: 620px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+    .info-stats {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .stat-pill {
+      background: rgba(0, 0, 0, 0.45);
+      border: 1.5px solid #4a3626;
+      border-radius: 14px;
+      padding: 5px 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #e5d7c8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stat-val {
+      color: var(--accent-gold);
+      font-size: 1rem;
+      font-weight: 800;
+    }
+    .action-group {
+      display: flex;
+      gap: 8px;
+    }
+    .icon-btn {
+      background: #332317;
+      border: 1.5px solid #583e29;
+      color: var(--accent-gold);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.05rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      transition: transform 0.15s, background 0.15s;
+    }
+    .icon-btn:hover {
+      background: #463020;
+      transform: translateY(-2px);
+    }
+    .icon-btn:active {
+      transform: scale(0.92);
+    }
+
+    /* 盤面ボード */
+    .board-container {
+      position: relative;
+      background: radial-gradient(circle at 50% 40%, #3a2618 0%, #20140b 100%);
+      border: 6px solid var(--board-border);
+      border-radius: 20px;
+      padding: 12px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 2px 4px rgba(255,255,255,0.1);
+      display: inline-block;
+      touch-action: manipulation;
+    }
+    #game-grid {
+      display: grid;
+      gap: 4px;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* 牌スタイル（象牙・レジン風） */
+    .tile {
+      width: 44px;
+      height: 56px;
+      background: linear-gradient(180deg, #ffffff 0%, #f5efe2 65%, #dfd4c0 100%);
+      border-radius: 7px;
+      border-top: 1px solid #ffffff;
+      border-left: 1px solid #ffffff;
+      border-right: 2px solid #b7a892;
+      border-bottom: 4px solid #8c7d67;
+      box-shadow: 0 6px 10px rgba(0,0,0,0.45);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      color: #1a1a1a;
+      font-weight: 800;
+    }
+    @media (max-width: 540px) {
+      .tile {
+        width: 34px;
+        height: 46px;
+        font-size: 0.85rem;
+      }
+    }
+    .tile:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 14px rgba(0,0,0,0.6);
+    }
+    .tile.selected {
+      transform: translateY(-4px) scale(1.04);
+      outline: 3px solid var(--accent-gold);
+      box-shadow: 0 10px 18px rgba(0,0,0,0.7), 0 0 12px var(--accent-gold-glow);
+      z-index: 5;
+    }
+    .tile.hinted {
+      animation: hintPulse 1s infinite alternate;
+      outline: 3px solid #2ecc71;
+    }
+    @keyframes hintPulse {
+      from { box-shadow: 0 0 6px #2ecc71; transform: scale(1); }
+      to { box-shadow: 0 0 18px #2ecc71; transform: scale(1.06); }
+    }
+    .tile.empty {
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .tile-symbol {
+      font-size: 1.5rem;
+      line-height: 1;
+      filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2));
+    }
+    .tile-sub {
+      font-size: 0.62rem;
+      color: #7a6a58;
+      margin-top: 2px;
+      font-weight: 700;
+    }
+
+    /* 牌の接続線 Canvas */
+    #line-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* モーダル */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(5px);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.active {
+      display: flex;
+    }
+    .modal-box {
+      background: #231810;
+      border: 3px solid #583d29;
+      border-radius: 20px;
+      padding: 22px;
+      width: 88%;
+      max-width: 440px;
+      box-shadow: 0 20px 45px rgba(0,0,0,0.85);
+      color: #f7ede2;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      text-align: center;
+      color: var(--accent-gold);
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    .modal-scroll {
+      overflow-y: auto;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: #d8c8bc;
+      margin-bottom: 16px;
+      padding-right: 6px;
+    }
+    .modal-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .modal-scroll::-webkit-scrollbar-thumb {
+      background: #583d29;
+      border-radius: 3px;
+    }
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #3c291c;
+    }
+    .theme-select {
+      background: #332317;
+      color: #fff;
+      border: 1.5px solid var(--accent-gold);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      outline: none;
+    }
+    .modal-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent-gold);
+      border: none;
+      border-radius: 12px;
+      color: #231810;
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="viewport">
+    <!-- 上部ツールバー -->
+    <div class="topbar">
+      <div class="info-stats">
+        <div class="stat-pill">残り牌 <span id="stat-left" class="stat-val">0</span></div>
+      </div>
+      <div class="action-group">
+        <div class="icon-btn" onclick="toggleRulesModal(true)" title="あそびかた">📖</div>
+        <div class="icon-btn" onclick="getHint()" title="ヒント">💡</div>
+        <div class="icon-btn" onclick="shuffleCurrentTiles()" title="シャッフル">🔀</div>
+        <div class="icon-btn" onclick="restartGame()" title="やり直す">🔄</div>
+        <div class="icon-btn" onclick="toggleSettingsModal(true)" title="設定">⚙️</div>
+      </div>
+    </div>
+
+    <!-- メイン盤面 -->
+    <div class="board-container">
+      <div id="game-grid"></div>
+      <canvas id="line-canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- 📖 あそびかた説明書モーダル -->
+  <div id="modal-rules" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">📖 四川省（二角取り）のあそびかた</div>
+      <div class="modal-scroll">
+        <p>同じ絵柄の牌を2つ選んで消していくパズルゲームです。すべての牌を消せばクリア！</p>
+        <br>
+        <b style="color:var(--accent-gold);">【消せる条件（二角取りルール）】</b>
+        <p>2つの牌を直線で繋いだとき、<b>曲がる回数が2回以内</b>（折れ曲がり角が2個以下）で繋がる場合のみ消せます。</p>
+        <ul style="padding-left:18px; margin: 6px 0;">
+          <li><b>0回曲がり</b>：隣同士、または一直線上に邪魔な牌がない。</li>
+          <li><b>1回曲がり</b>：L字形に直角に繋がる。</li>
+          <li><b>2回曲がり</b>：コの字形や、盤面の外側（余白）を通って繋がる。</li>
+        </ul>
+        <br>
+        <b style="color:var(--accent-gold);">【便利機能】</b>
+        <p>どうしても見つからないときは「💡（ヒント）」を押すと取れる牌が光ります。手詰まりになった時は自動または「🔀」で牌をシャッフルできます。</p>
+      </div>
+      <button class="modal-btn" onclick="toggleRulesModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <!-- ⚙️ 設定モーダル -->
+  <div id="modal-settings" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">⚙️ ゲーム設定</div>
+      <div class="modal-scroll">
+        <div class="setting-item">
+          <span>札の絵柄デザイン</span>
+          <select id="theme-selector" class="theme-select" onchange="changeTheme(this.value)">
+            <option value="mahjong">クラシック麻雀牌</option>
+            <option value="cats">かわいい猫・肉球牌 🐾</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <span>盤面サイズ</span>
+          <select id="size-selector" class="theme-select" onchange="changeSize(this.value)">
+            <option value="8x6">初級 (8 × 6 = 48牌)</option>
+            <option value="10x6" selected>中級 (10 × 6 = 60牌)</option>
+            <option value="12x6">上級 (12 × 6 = 72牌)</option>
+          </select>
+        </div>
+      </div>
+      <button class="modal-btn" onclick="toggleSettingsModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    /* ========================================================
+       Web Audio API サウンド
+       ======================================================== */
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    window.addEventListener('pointerdown', () => getAudio(), { once: true });
+
+    function playTileClickSound() {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.06);
+      } catch(e) {}
+    }
+
+    function playMatchSound() {
+      try {
+        const ctx = getAudio();
+        [523.25, 783.99].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.07);
+          gain.gain.setValueAtTime(0.18, ctx.currentTime + idx * 0.07);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.07 + 0.15);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.07);
+          osc.stop(ctx.currentTime + idx * 0.07 + 0.16);
+        });
+      } catch(e) {}
+    }
+
+    /* ========================================================
+       絵柄定義（クラシック麻雀 ＆ かわいい猫牌）
+       ======================================================== */
+    const TILE_SETS = {
+      mahjong: [
+        { sym: '🀐', sub: '一索', col: '#1e824c' },
+        { sym: '🀑', sub: '二索', col: '#1e824c' },
+        { sym: '🀒', sub: '三索', col: '#1e824c' },
+        { sym: '🀙', sub: '一筒', col: '#2980b9' },
+        { sym: '🀚', sub: '二筒', col: '#2980b9' },
+        { sym: '🀛', sub: '三筒', col: '#2980b9' },
+        { sym: '🀇', sub: '一萬', col: '#c0392b' },
+        { sym: '🀈', sub: '二萬', col: '#c0392b' },
+        { sym: '🀉', sub: '三萬', col: '#c0392b' },
+        { sym: '🀀', sub: '東', col: '#111' },
+        { sym: '🀁', sub: '南', col: '#111' },
+        { sym: '🀄', sub: '中', col: '#d63031' }
+      ],
+      cats: [
+        { sym: '🐱', sub: '三毛猫', col: '#e67e22' },
+        { sym: '🐈‍⬛', sub: '黒猫', col: '#2c3e50' },
+        { sym: '🐾', sub: 'ピンク肉球', col: '#e84393' },
+        { sym: '🐾', sub: '金肉球', col: '#f39c12' },
+        { sym: '😺', sub: '笑顔にゃん', col: '#d35400' },
+        { sym: '😸', sub: 'ごきげん', col: '#27ae60' },
+        { sym: '😻', sub: 'メロメロ', col: '#e74c3c' },
+        { sym: '🧶', sub: '毛糸玉', col: '#8e44ad' },
+        { sym: '🐟', sub: 'おさかな', col: '#2980b9' },
+        { sym: '🥫', sub: '缶づめ', col: '#16a085' },
+        { sym: '🔔', sub: 'すず', col: '#f1c40f' },
+        { sym: '🎀', sub: 'リボン', col: '#fd79a8' }
+      ]
+    };
+
+    let currentTheme = 'mahjong';
+    let COLS = 10;
+    let ROWS = 6;
+    let board = []; // [ROWS + 2][COLS + 2] 外周に余白1マス
+    let selectedPos = null;
+    let remainingPairs = 0;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initGame();
+      window.addEventListener('resize', resizeCanvas);
+    });
+
+    function initGame() {
+      selectedPos = null;
+      clearCanvas();
+
+      const totalTiles = COLS * ROWS;
+      const totalPairs = totalTiles / 2;
+      remainingPairs = totalPairs;
+      document.getElementById('stat-left').textContent = totalTiles;
+
+      const set = TILE_SETS[currentTheme];
+      let pool = [];
+      for (let i = 0; i < totalPairs; i++) {
+        const tileIdx = i % set.length;
+        pool.push(tileIdx, tileIdx);
+      }
+      pool.sort(() => Math.random() - 0.5);
+
+      // 外周に余白1マス分を持たせたグリッド
+      board = Array(ROWS + 2).fill(null).map(() => Array(COLS + 2).fill(-1));
+      let pIdx = 0;
+      for (let r = 1; r <= ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+          board[r][c] = pool[pIdx++];
+        }
+      }
+
+      renderGrid();
+      resizeCanvas();
+    }
+
+    function renderGrid() {
+      const gridEl = document.getElementById('game-grid');
+      gridEl.style.gridTemplateColumns = `repeat(${COLS}, minmax(0, 1fr))`;
+      gridEl.innerHTML = '';
+
+      const set = TILE_SETS[currentTheme];
+
+      for (let r = 1; r <= ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+          const val = board[r][c];
+          const tile = document.createElement('div');
+          tile.className = 'tile' + (val === -1 ? ' empty' : '');
+          tile.dataset.r = r;
+          tile.dataset.c = c;
+
+          if (val !== -1) {
+            const data = set[val];
+            tile.innerHTML = `
+              <div class="tile-symbol" style="color:${data.col}">${data.sym}</div>
+              <div class="tile-sub">${data.sub}</div>
+            `;
+            tile.onclick = () => onTileClick(r, c);
+          }
+          gridEl.appendChild(tile);
+        }
+      }
+    }
+
+    function onTileClick(r, c) {
+      if (board[r][c] === -1) return;
+      playTileClickSound();
+
+      document.querySelectorAll('.tile.hinted').forEach(t => t.classList.remove('hinted'));
+
+      if (!selectedPos) {
+        selectedPos = { r, c };
+        highlightSelected();
+        return;
+      }
+
+      if (selectedPos.r === r && selectedPos.c === c) {
+        selectedPos = null;
+        highlightSelected();
+        return;
+      }
+
+      // 同じ牌の種類か判定
+      const val1 = board[selectedPos.r][selectedPos.c];
+      const val2 = board[r][c];
+
+      if (val1 === val2) {
+        const path = findPath(selectedPos, { r, c });
+        if (path) {
+          drawConnection(path);
+          playMatchSound();
+
+          board[selectedPos.r][selectedPos.c] = -1;
+          board[r][c] = -1;
+          selectedPos = null;
+          remainingPairs--;
+          document.getElementById('stat-left').textContent = remainingPairs * 2;
+
+          setTimeout(() => {
+            clearCanvas();
+            renderGrid();
+            if (remainingPairs === 0) {
+              setTimeout(() => alert('🎉 すべての牌を消しました！クリア！'), 300);
+            } else if (!hasAvailableMove()) {
+              setTimeout(() => {
+                alert('手詰まりのため自動シャッフルします🔀');
+                shuffleCurrentTiles();
+              }, 400);
+            }
+          }, 240);
+          return;
+        }
+      }
+
+      // つながらない場合は選択先を切り替え
+      selectedPos = { r, c };
+      highlightSelected();
+    }
+
+    function highlightSelected() {
+      document.querySelectorAll('.tile').forEach(el => {
+        const r = parseInt(el.dataset.r, 10);
+        const c = parseInt(el.dataset.c, 10);
+        const isSel = selectedPos && selectedPos.r === r && selectedPos.c === c;
+        el.classList.toggle('selected', isSel);
+      });
+    }
+
+    /* ========================================================
+       2角取り (曲がり2回以内) 探索アルゴリズム (BFS)
+       ======================================================== */
+    const DIRS = [
+      { dr: -1, dc: 0, dir: 0 },
+      { dr: 1, dc: 0, dir: 1 },
+      { dr: 0, dc: -1, dir: 2 },
+      { dr: 0, dc: 1, dir: 3 }
+    ];
+
+    function findPath(start, target) {
+      const visited = Array(ROWS + 2).fill(null).map(() =>
+        Array(COLS + 2).fill(null).map(() => Array(4).fill(999))
+      );
+
+      const queue = [];
+      DIRS.forEach(d => {
+        const nr = start.r + d.dr;
+        const nc = start.c + d.dc;
+        if (nr >= 0 && nr <= ROWS + 1 && nc >= 0 && nc <= COLS + 1) {
+          if (nr === target.r && nc === target.c) {
+            queue.push({ r: nr, c: nc, dir: d.dir, turns: 0, path: [start, { r: nr, c: nc }] });
+          } else if (board[nr][nc] === -1) {
+            visited[nr][nc][d.dir] = 0;
+            queue.push({ r: nr, c: nc, dir: d.dir, turns: 0, path: [start, { r: nr, c: nc }] });
+          }
+        }
+      });
+
+      while (queue.length > 0) {
+        const curr = queue.shift();
+
+        if (curr.r === target.r && curr.c === target.c) {
+          return curr.path;
+        }
+
+        for (const d of DIRS) {
+          const nextTurns = curr.turns + (d.dir !== curr.dir ? 1 : 0);
+          if (nextTurns > 2) continue;
+
+          const nr = curr.r + d.dr;
+          const nc = curr.c + d.dc;
+
+          if (nr >= 0 && nr <= ROWS + 1 && nc >= 0 && nc <= COLS + 1) {
+            const isTarget = (nr === target.r && nc === target.c);
+            if (isTarget || board[nr][nc] === -1) {
+              if (nextTurns < visited[nr][nc][d.dir]) {
+                visited[nr][nc][d.dir] = nextTurns;
+                queue.push({
+                  r: nr,
+                  c: nc,
+                  dir: d.dir,
+                  turns: nextTurns,
+                  path: [...curr.path, { r: nr, c: nc }]
+                });
+              }
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    function hasAvailableMove() {
+      const tiles = [];
+      for (let r = 1; r <= ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+          if (board[r][c] !== -1) tiles.push({ r, c, val: board[r][c] });
+        }
+      }
+      for (let i = 0; i < tiles.length; i++) {
+        for (let j = i + 1; j < tiles.length; j++) {
+          if (tiles[i].val === tiles[j].val) {
+            if (findPath(tiles[i], tiles[j])) return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function getHint() {
+      const tiles = [];
+      for (let r = 1; r <= ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+          if (board[r][c] !== -1) tiles.push({ r, c, val: board[r][c] });
+        }
+      }
+      for (let i = 0; i < tiles.length; i++) {
+        for (let j = i + 1; j < tiles.length; j++) {
+          if (tiles[i].val === tiles[j].val) {
+            if (findPath(tiles[i], tiles[j])) {
+              const el1 = document.querySelector(`.tile[data-r="${tiles[i].r}"][data-c="${tiles[i].c}"]`);
+              const el2 = document.querySelector(`.tile[data-r="${tiles[j].r}"][data-c="${tiles[j].c}"]`);
+              if (el1 && el2) {
+                el1.classList.add('hinted');
+                el2.classList.add('hinted');
+                return;
+              }
+            }
+          }
+        }
+      }
+      alert('現在消せる牌がありません。シャッフルしてください🔀');
+    }
+
+    function shuffleCurrentTiles() {
+      const activeVals = [];
+      for (let r = 1; r <= ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+          if (board[r][c] !== -1) activeVals.push(board[r][c]);
+        }
+      }
+      activeVals.sort(() => Math.random() - 0.5);
+      let idx = 0;
+      for (let r = 1; r <= ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+          if (board[r][c] !== -1) board[r][c] = activeVals[idx++];
+        }
+      }
+      selectedPos = null;
+      renderGrid();
+    }
+
+    /* ========================================================
+       ライン描画 Canvas
+       ======================================================== */
+    function resizeCanvas() {
+      const container = document.querySelector('.board-container');
+      const canvas = document.getElementById('line-canvas');
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    }
+
+    function getTileCenter(r, c) {
+      const grid = document.getElementById('game-grid');
+      const gRect = grid.getBoundingClientRect();
+      const cRect = document.querySelector('.board-container').getBoundingClientRect();
+      const cellW = (gRect.width - (COLS - 1) * 4) / COLS;
+      const cellH = (gRect.height - (ROWS - 1) * 4) / ROWS;
+
+      const ox = gRect.left - cRect.left;
+      const oy = gRect.top - cRect.top;
+
+      let x, y;
+      if (c === 0) x = ox - 14;
+      else if (c === COLS + 1) x = ox + gRect.width + 14;
+      else x = ox + (c - 1) * (cellW + 4) + cellW / 2;
+
+      if (r === 0) y = oy - 14;
+      else if (r === ROWS + 1) y = oy + gRect.height + 14;
+      else y = oy + (r - 1) * (cellH + 4) + cellH / 2;
+
+      return { x, y };
+    }
+
+    function drawConnection(path) {
+      const canvas = document.getElementById('line-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.beginPath();
+      const first = getTileCenter(path[0].r, path[0].c);
+      ctx.moveTo(first.x, first.y);
+
+      for (let i = 1; i < path.length; i++) {
+        const pt = getTileCenter(path[i].r, path[i].c);
+        ctx.lineTo(pt.x, pt.y);
+      }
+
+      ctx.strokeStyle = '#e5a950';
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = 'rgba(229, 169, 80, 0.9)';
+      ctx.shadowBlur = 10;
+      ctx.stroke();
+    }
+
+    function clearCanvas() {
+      const canvas = document.getElementById('line-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    /* ========================================================
+       モーダル & 設定操作
+       ======================================================== */
+    function toggleRulesModal(show) {
+      document.getElementById('modal-rules').classList.toggle('active', show);
+    }
+    function toggleSettingsModal(show) {
+      document.getElementById('modal-settings').classList.toggle('active', show);
+    }
+    function changeTheme(themeKey) {
+      currentTheme = themeKey;
+      renderGrid();
+    }
+    function changeSize(sizeKey) {
+      const [c, r] = sizeKey.split('x').map(Number);
+      COLS = c;
+      ROWS = r;
+      initGame();
+    }
+    function restartGame() {
+      if (confirm('最初からやり直しますか？')) initGame();
+    }
+  </script>
+</body>
+</html>
