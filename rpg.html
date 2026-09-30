@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Oh LOVE QUEST - 8bit Retro JRPG</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    body {
+      background-color: #050508;
+      color: #ffffff;
+      font-family: 'DotGothic16', monospace;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    /* DQ2 Classic Window Style */
+    .dq-box {
+      background-color: #000000;
+      border: 3px solid #ffffff;
+      border-radius: 4px;
+      box-shadow: inset 0 0 0 2px #000000, 0 4px 10px rgba(0,0,0,0.8);
+      position: relative;
+    }
+    .dq-cursor {
+      display: inline-block;
+      width: 0;
+      height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 9px solid #ffffff;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    /* CRT Scanlines */
+    .crt-overlay::after {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%),
+                  radial-gradient(circle, rgba(0,0,0,0) 70%, rgba(0,0,0,0.6) 100%);
+      background-size: 100% 3px, 100% 100%;
+      pointer-events: none;
+      z-index: 50;
+    }
+    /* Virtual Controller D-Pad & Action Buttons */
+    .v-btn {
+      background: #1c1c24;
+      border: 2px solid #555566;
+      border-radius: 8px;
+      box-shadow: 0 4px #0a0a0f;
+      color: #ffffff;
+      active:scale(0.95);
+      touch-action: manipulation;
+    }
+    .v-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px #0a0a0f;
+      background: #2a2a38;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-start min-h-screen p-1 sm:p-3">
+
+  <div id="gameViewport" class="relative w-full max-w-[540px] bg-black border-4 border-[#444455] rounded-lg shadow-2xl flex flex-col overflow-hidden crt-overlay">
+    
+    <!-- Top System Bar -->
+    <header class="w-full bg-[#111119] px-3 py-1.5 flex justify-between items-center border-b-2 border-white text-xs z-30">
+      <div class="flex items-center gap-2">
+        <span class="text-yellow-400 font-bold tracking-wider">⚡ Oh LOVE QUEST</span>
+        <span id="locationBadge" class="text-emerald-400 text-[11px]">[フィールド]</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btnSoundToggle" class="px-2 py-0.5 bg-gray-800 border border-gray-400 text-[10px] rounded hover:bg-gray-700">🔊 BGM: OFF</button>
+        <button id="btnQuickSave" class="px-2 py-0.5 bg-blue-900 border border-blue-400 text-[10px] rounded hover:bg-blue-800">きろく</button>
+      </div>
+    </header>
+
+    <!-- Main Screen Canvas (Resolution: 256x224 scaled dynamically) -->
+    <div class="relative w-full aspect-[256/224] bg-black overflow-hidden flex items-center justify-center">
+      <canvas id="gameCanvas" width="256" height="224" class="w-full h-full block image-rendering-pixelated"></canvas>
+
+      <!-- Combat Overlay UI Window -->
+      <div id="battleHud" class="hidden absolute inset-0 z-40 bg-black/80 flex flex-col justify-between p-2">
+        <!-- Top: Party Status Window (DQ2 classic style) -->
+        <div class="flex justify-between gap-1 w-full">
+          <div id="partyBox0" class="dq-box flex-1 px-1.5 py-1 text-[11px] leading-tight">
+            <div class="text-cyan-300 font-bold truncate">ビリー</div>
+            <div class="flex justify-between"><span>H</span><span id="bHeroHp">0</span></div>
+            <div class="flex justify-between"><span>M</span><span id="bHeroMp">0</span></div>
+            <div class="flex justify-between"><span>L</span><span id="bHeroLv">1</span></div>
+          </div>
+          <div id="partyBox1" class="dq-box flex-1 px-1.5 py-1 text-[11px] leading-tight opacity-50">
+            <div class="text-green-300 font-bold truncate">マイク</div>
+            <div class="flex justify-between"><span>H</span><span id="bMikeHp">-</span></div>
+            <div class="flex justify-between"><span>M</span><span id="bMikeMp">-</span></div>
+            <div class="flex justify-between"><span>L</span><span id="bMikeLv">-</span></div>
+          </div>
+          <div id="partyBox2" class="dq-box flex-1 px-1.5 py-1 text-[11px] leading-tight opacity-50">
+            <div class="text-orange-300 font-bold truncate">トレ</div>
+            <div class="flex justify-between"><span>H</span><span id="bTreHp">-</span></div>
+            <div class="flex justify-between"><span>M</span><span id="bTreMp">-</span></div>
+            <div class="flex justify-between"><span>L</span><span id="bTreLv">-</span></div>
+          </div>
+        </div>
+
+        <!-- Center: Monster Canvas Zone -->
+        <div id="monsterStage" class="relative flex-1 flex items-center justify-center py-1">
+          <canvas id="monsterCanvas" width="160" height="96" class="block"></canvas>
+        </div>
+
+        <!-- Bottom: Combat Commands & Dialogue Log -->
+        <div class="flex gap-1.5 h-24">
+          <!-- Command Select Window -->
+          <div id="battleCmdBox" class="dq-box w-28 p-1.5 flex flex-col justify-between text-xs">
+            <div id="cmdItem0" class="cursor-pointer flex items-center"><span class="dq-cursor invisible"></span>たたかう</div>
+            <div id="cmdItem1" class="cursor-pointer flex items-center"><span class="dq-cursor invisible"></span>じゅもん</div>
+            <div id="cmdItem2" class="cursor-pointer flex items-center"><span class="dq-cursor invisible"></span>どうぐ</div>
+            <div id="cmdItem3" class="cursor-pointer flex items-center"><span class="dq-cursor invisible"></span>にげる</div>
+          </div>
+
+          <!-- Spells / Submenu Window -->
+          <div id="battleSubBox" class="dq-box hidden absolute left-32 bottom-2 w-36 p-1.5 z-50 text-[11px] flex flex-col gap-1 bg-black">
+            <!-- Dynamic spells inserted by JS -->
+          </div>
+
+          <!-- Battle Message Log Box -->
+          <div id="battleMsgBox" class="dq-box flex-1 p-2 text-xs leading-relaxed overflow-hidden flex flex-col justify-start">
+            <div id="battleTextLine1" class="text-white">スライムが あらわれた！</div>
+            <div id="battleTextLine2" class="text-gray-400 mt-1">コマンドを えらんでください。</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dialogue Message Window (Overworld / Field) -->
+      <div id="dialogueBox" class="hidden absolute left-2 right-2 bottom-2 h-24 dq-box p-2 text-xs leading-relaxed z-40">
+        <div id="diagText" class="text-white"></div>
+        <div id="diagPrompt" class="absolute bottom-1 right-2 text-yellow-400 animate-bounce">▼</div>
+      </div>
+    </div>
+
+    <!-- On-screen Virtual Controller for Mobile/Touch -->
+    <div class="w-full bg-[#0c0c14] p-3 border-t-2 border-[#333344] flex items-center justify-between z-30">
+      <!-- D-Pad -->
+      <div class="grid grid-cols-3 gap-1 w-36 h-36">
+        <div></div>
+        <button id="vUp" class="v-btn flex items-center justify-center text-lg font-bold">▲</button>
+        <div></div>
+        <button id="vLeft" class="v-btn flex items-center justify-center text-lg font-bold">◀</button>
+        <div class="flex items-center justify-center text-gray-600 text-xs">十字</div>
+        <button id="vRight" class="v-btn flex items-center justify-center text-lg font-bold">▶</button>
+        <div></div>
+        <button id="vDown" class="v-btn flex items-center justify-center text-lg font-bold">▼</button>
+        <div></div>
+      </div>
+
+      <!-- Action Buttons A (決定) / B (キャンセル) -->
+      <div class="flex gap-4 items-center pr-2">
+        <button id="vBtnB" class="v-btn w-14 h-14 rounded-full bg-red-950 border-red-500 text-red-200 font-bold text-sm flex flex-col items-center justify-center active:bg-red-800">
+          <span>B</span>
+          <span class="text-[9px]">取消</span>
+        </button>
+        <button id="vBtnA" class="v-btn w-16 h-16 rounded-full bg-blue-950 border-blue-400 text-blue-200 font-bold text-base flex flex-col items-center justify-center active:bg-blue-800 shadow-lg">
+          <span>A</span>
+          <span class="text-[10px]">はなす/調べる</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Keyboard Controls Guide Footer -->
+    <footer class="w-full bg-[#08080c] px-3 py-1 text-center text-[10px] text-gray-500 border-t border-gray-800">
+      PC操作: [矢印キー / WASD] 移動 | [Z / Enter / Space] Aボタン(決定/話す) | [X / Esc] Bボタン(閉じる)
+    </footer>
+  </div>
+
+  <script>
+    // Web Audio API Retro Chiptune Sound Synthesizer
+    class RetroAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.bgmNode = null;
+        this.currentTrack = null;
+        this.bgmTimer = null;
+        this.isEnabled = false;
+        this.step = 0;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      toggleAudio() {
+        this.init();
+        this.isEnabled = !this.isEnabled;
+        if (!this.isEnabled) {
+          this.stopBgm();
+          return false;
+        } else {
+          return true;
+        }
+      }
+
+      // Generate 8-bit Pulse/Square wave beep
+      playTone(freq, duration = 0.1, type = 'square', gainVal = 0.08) {
+        if (!this.isEnabled || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      // DQ-like Text Dialogue Blip sound
+      playTextBlip() {
+        this.playTone(420, 0.04, 'square', 0.04);
+      }
+
+      // Menu Cursor Move SE
+      playCursorSE() {
+        this.playTone(330, 0.05, 'square', 0.06);
+      }
+
+      // Confirm / Enter SE
+      playConfirmSE() {
+        this.playTone(660, 0.07, 'square', 0.08);
+      }
+
+      // Player Attack Hit SE
+      playHitSE() {
+        if (!this.isEnabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+
+      // Critical Hit / Fanfare
+      playCriticalSE() {
+        this.playTone(880, 0.08, 'square', 0.12);
+        setTimeout(() => this.playTone(1174, 0.15, 'square', 0.15), 80);
+      }
+
+      // Spell Casting SE
+      playSpellSE() {
+        if (!this.isEnabled || !this.ctx) return;
+        const freqs = [350, 440, 523, 659, 784, 1046];
+        freqs.forEach((f, idx) => {
+          setTimeout(() => this.playTone(f, 0.06, 'sine', 0.1), idx * 40);
+        });
+      }
+
+      // Inn / Church Fanfare
+      playInnJingle() {
+        const jingle = [
+          { f: 523.25, d: 0.18 },
+          { f: 587.33, d: 0.18 },
+          { f: 659.25, d: 0.18 },
+          { f: 698.46, d: 0.18 },
+          { f: 783.99, d: 0.4 },
+          { f: 659.25, d: 0.2 },
+          { f: 783.99, d: 0.6 }
+        ];
+        jingle.forEach((n, idx) => {
+          setTimeout(() => this.playTone(n.f, n.d, 'square', 0.1), idx * 180);
+        });
+      }
+
+      // Victory Fanfare
+      playVictoryFanfare() {
+        this.stopBgm();
+        const notes = [
+          { f: 523, d: 0.1 }, { f: 523, d: 0.1 }, { f: 523, d: 0.1 },
+          { f: 523, d: 0.28 }, { f: 415, d: 0.28 }, { f: 466, d: 0.28 },
+          { f: 523, d: 0.45 }
+        ];
+        notes.forEach((n, idx) => {
+          setTimeout(() => this.playTone(n.f, n.d, 'triangle', 0.12), idx * 140);
+        });
+      }
+
+      // Background Music Loops (Field & Battle)
+      startBgm(type) {
+        if (!this.isEnabled) return;
+        this.stopBgm();
+        this.currentTrack = type;
+        this.step = 0;
+
+        if (type === 'field') {
+          // Classic Dragon Quest Field Melody (Arpeggiated)
+          const fieldMelody = [
+            261.63, 329.63, 392.00, 523.25,
+            392.00, 329.63, 261.63, 196.00,
+            220.00, 261.63, 329.63, 440.00,
+            329.63, 261.63, 220.00, 196.00
+          ];
+          this.bgmTimer = setInterval(() => {
+            if (!this.isEnabled) return;
+            const note = fieldMelody[this.step % fieldMelody.length];
+            this.playTone(note, 0.2, 'square', 0.04);
+            // Bass support note
+            if (this.step % 4 === 0) {
+              this.playTone(note * 0.5, 0.25, 'triangle', 0.07);
+            }
+            this.step++;
+          }, 260);
+
+        } else if (type === 'battle') {
+          // Fast-paced DQ2 Battle Bassline
+          const battleBass = [
+            146.83, 146.83, 293.66, 146.83,
+            164.81, 164.81, 329.63, 164.81,
+            174.61, 174.61, 349.23, 174.61,
+            164.81, 164.81, 329.63, 164.81
+          ];
+          this.bgmTimer = setInterval(() => {
+            if (!this.isEnabled) return;
+            const note = battleBass[this.step % battleBass.length];
+            this.playTone(note, 0.12, 'sawtooth', 0.05);
+            if (this.step % 2 === 0) {
+              this.playTone(note * 2, 0.08, 'square', 0.03);
+            }
+            this.step++;
+          }, 150);
+        }
+      }
+
+      stopBgm() {
+        if (this.bgmTimer) {
+          clearInterval(this.bgmTimer);
+          this.bgmTimer = null;
+        }
+        this.currentTrack = null;
+      }
+    }
+
+    const audio = new RetroAudioEngine();
+
+    // Tile Types: 0: Grass, 1: Forest, 2: Mountain (impassable), 3: Water (impassable), 4: Town, 5: Dungeon, 6: Castle/Throne, 7: Castle Floor, 8: Dungeon Floor, 9: Chest
+    const TILE_GRASS = 0;
+    const TILE_FOREST = 1;
+    const TILE_MOUNTAIN = 2;
+    const TILE_WATER = 3;
+    const TILE_TOWN = 4;
+    const TILE_DUNGEON = 5;
+    const TILE_CASTLE = 6;
+    const TILE_FLOOR = 7;
+    const TILE_CAVE = 8;
+    const TILE_CHEST = 9;
+
+    const MAP_WIDTH = 32;
+    const MAP_HEIGHT = 32;
+
+    // Overworld Map 32x32 Procedural Array
+    const worldMap = [
+      3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+      3,0,0,0,0,1,1,0,0,0,2,2,2,2,0,0,0,0,0,3,3,3,3,0,0,0,0,0,0,0,0,3,
+      3,0,6,0,0,0,1,0,0,2,2,2,2,2,0,0,0,0,0,0,3,3,0,0,0,1,1,0,5,0,0,3,
+      3,0,0,0,0,0,0,0,0,2,2,2,2,0,0,0,0,0,0,0,0,3,0,0,1,1,1,0,0,0,0,3,
+      3,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,3,
+      3,0,1,1,1,1,1,0,0,0,0,4,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,3,
+      3,0,1,1,1,1,0,0,0,0,0,0,0,0,0,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,3,
+      3,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,3,
+      3,3,0,0,0,0,0,0,2,2,2,0,0,0,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,3,3,
+      3,3,3,0,0,0,0,2,2,2,2,2,0,0,0,2,2,2,2,2,0,0,0,0,0,0,0,0,0,3,3,3,
+      3,3,3,3,0,0,0,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,
+      3,3,3,3,3,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,
+      3,0,0,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,
+      3,0,0,0,3,3,3,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,3,3,3,3,3,3,3,
+      3,0,0,0,0,3,3,3,3,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,3,3,3,3,3,3,3,3,
+      3,0,0,0,0,0,3,3,3,3,0,0,0,1,1,1,1,1,0,0,0,0,0,3,3,3,3,3,3,3,3,3,
+      3,0,0,0,0,0,0,3,3,3,3,0,0,0,1,1,1,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,
+      3,0,0,0,0,0,0,0,3,3,3,3,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,
+      3,0,0,0,0,0,0,0,0,3,3,3,3,3,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,
+      3,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+      3,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+      3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,
+      3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,
+      3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,
+      3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,
+      3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,
+      3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,
+      3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,
+      3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,
+      3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,
+      3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,
+      3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3
+    ];
+
+    // Town Map 16x16
+    const townMap = [
+      2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+      2,7,7,7,7,7,7,2,2,7,7,7,7,7,7,2,
+      2,7,7,7,7,7,7,2,2,7,7,7,7,7,7,2,
+      2,7,7,7,7,7,7,7,7,7,7,7,7,7,7,2,
+      2,7,7,2,2,2,7,7,7,7,2,2,2,7,7,2,
+      2,7,7,2,7,2,7,7,7,7,2,7,2,7,7,2,
+      2,7,7,7,7,7,7,7,7,7,7,7,7,7,7,2,
+      2,7,7,7,7,7,7,7,7,7,7,7,7,7,7,2,
+      2,7,7,7,7,7,7,7,7,7,7,7,7,7,7,2,
+      2,7,7,2,2,2,7,7,7,7,2,2,2,7,7,2,
+      2,7,7,2,7,2,7,7,7,7,2,7,2,7,7,2,
+      2,7,7,7,7,7,7,7,7,7,7,7,7,7,7,2,
+      2,7,7,7,7,7,7,7,7,7,7,7,7,7,7,2,
+      2,7,7,7,7,7,7,7,7,7,7,7,7,7,7,2,
+      2,7,7,7,7,7,7,7,7,7,7,7,7,7,7,2,
+      2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2
+    ];
+
+    // Dungeon Map 16x16 (Cave of Love)
+    const dungeonMap = [
+      2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+      2,8,8,8,2,8,8,8,8,8,8,2,8,8,8,2,
+      2,8,2,8,2,8,2,2,2,2,8,2,8,2,8,2,
+      2,8,2,8,8,8,8,8,8,2,8,8,8,2,8,2,
+      2,8,2,2,2,2,2,2,8,2,2,2,2,2,8,2,
+      2,8,8,8,8,8,8,2,8,8,8,8,8,8,8,2,
+      2,2,2,2,8,2,8,2,2,2,8,2,8,2,2,2,
+      2,8,8,2,8,2,8,8,8,2,8,2,8,8,8,2,
+      2,8,8,2,8,2,2,8,2,2,8,2,8,8,8,2,
+      2,8,8,8,8,8,8,8,8,8,8,8,8,8,8,2,
+      2,2,2,8,2,2,2,2,2,2,8,2,2,2,8,2,
+      2,8,8,8,2,8,8,8,8,2,8,8,8,2,8,2,
+      2,8,2,2,2,8,2,2,8,2,2,2,8,2,8,2,
+      2,8,8,8,8,8,2,9,8,8,8,8,8,8,8,2,
+      2,8,8,8,8,8,2,2,2,8,8,8,8,8,8,2,
+      2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2
+    ];
+
+    const party = [
+      {
+        name: "ビリー",
+        job: "勇者 / Gt.",
+        hp: 32, maxHp: 32,
+        mp: 12, maxMp: 12,
+        atk: 14, def: 10,
+        lv: 1, exp: 0,
+        joined: true,
+        spells: [
+          { name: "バラード", mp: 3, type: "heal", power: 22, desc: "HPを22前後回復" },
+          { name: "パワーコード", mp: 4, type: "attack", power: 18, desc: "敵に爆音ダメージ" }
+        ]
+      },
+      {
+        name: "マイク",
+        job: "戦士 / Ba.",
+        hp: 28, maxHp: 28,
+        mp: 8, maxMp: 8,
+        atk: 12, def: 14,
+        lv: 1, exp: 0,
+        joined: false, // Joins in town
+        spells: [
+          { name: "ベースシールド", mp: 4, type: "buff", power: 8, desc: "味方の守備力上昇" },
+          { name: "バラード", mp: 3, type: "heal", power: 22, desc: "HPを22回復" }
+        ]
+      },
+      {
+        name: "トレ",
+        job: "魔法使い / Dr.",
+        hp: 22, maxHp: 22,
+        mp: 20, maxMp: 20,
+        atk: 8, def: 8,
+        lv: 1, exp: 0,
+        joined: false, // Joins in dungeon
+        spells: [
+          { name: "オーバードライブ", mp: 6, type: "attack", power: 36, desc: "極大の音波レーザー" },
+          { name: "ラブソング", mp: 3, type: "sleep", power: 1, desc: "敵を心地よく眠らせる" }
+        ]
+      }
+    ];
+
+    let playerX = 2; // Starting in Castle vicinity
+    let playerY = 3;
+    let playerDir = 2; // 0: Up, 1: Right, 2: Down, 3: Left
+    let currentMapId = "world"; // "world", "town", "dungeon"
+    let gold = 50;
+    let stepCount = 0;
+    let isGamePaused = false;
+    let inBattle = false;
+
+    // NPC Definitions
+    const townNPCs = [
+      { x: 4, y: 3, name: "町長", text: "おお！ロッカーの若者よ！\nベースを弾く『マイク』なら\n酒場で管を巻いておるぞ！" },
+      { x: 11, y: 3, name: "マイク", isCompanion: "mike", text: "ようビリー！待ってたぜ！\n重低音ベースの力、貸してやる！\nマイクが 仲間に くわわった！" },
+      { x: 8, y: 8, name: "宿屋の親父", isInn: true, text: "旅のロッカーさん、いらっしゃい。\nひと晩 10ゴールドで 泊まっていくかい？" }
+    ];
+
+    const dungeonNPCs = [
+      { x: 7, y: 13, name: "トレ", isCompanion: "tre", text: "退屈な牢屋で死ぬかと思ったぜ！\nオレの激速ドラムで魔王を叩き潰そう！\nトレが 仲間に くわわった！" }
+    ];
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    const monsterCanvas = document.getElementById('monsterCanvas');
+    const mCtx = monsterCanvas.getContext('2d');
+    mCtx.imageSmoothingEnabled = false;
+
+    // Procedural 16x16 Tile Drawing Routine
+    function drawTile(tileType, px, py) {
+      switch(tileType) {
+        case TILE_GRASS:
+          ctx.fillStyle = "#388c28";
+          ctx.fillRect(px, py, 16, 16);
+          ctx.fillStyle = "#2c7020";
+          ctx.fillRect(px + 4, py + 2, 2, 4);
+          ctx.fillRect(px + 10, py + 8, 2, 4);
+          break;
+        case TILE_FOREST:
+          ctx.fillStyle = "#1e5218";
+          ctx.fillRect(px, py, 16, 16);
+          ctx.fillStyle = "#12360e";
+          ctx.fillRect(px + 2, py + 2, 12, 12);
+          ctx.fillStyle = "#2e7a24";
+          ctx.fillRect(px + 4, py + 4, 8, 8);
+          break;
+        case TILE_MOUNTAIN:
+          ctx.fillStyle = "#8a663e";
+          ctx.fillRect(px, py, 16, 16);
+          ctx.fillStyle = "#634728";
+          ctx.beginPath();
+          ctx.moveTo(px + 8, py + 2);
+          ctx.lineTo(px + 14, py + 14);
+          ctx.lineTo(px + 2, py + 14);
+          ctx.fill();
+          ctx.fillStyle = "#e0d8c0";
+          ctx.fillRect(px + 7, py + 2, 2, 3);
+          break;
+        case TILE_WATER:
+          ctx.fillStyle = "#184299";
+          ctx.fillRect(px, py, 16, 16);
+          ctx.fillStyle = "#2b67d9";
+          ctx.fillRect(px + 2, py + 4, 6, 2);
+          ctx.fillRect(px + 8, py + 10, 6, 2);
+          break;
+        case TILE_TOWN:
+          ctx.fillStyle = "#388c28";
+          ctx.fillRect(px, py, 16, 16);
+          ctx.fillStyle = "#c24434"; // Red roof
+          ctx.fillRect(px + 2, py + 2, 12, 6);
+          ctx.fillStyle = "#ded6c5"; // Walls
+          ctx.fillRect(px + 3, py + 8, 10, 6);
+          ctx.fillStyle = "#5c331e"; // Door
+          ctx.fillRect(px + 7, py + 10, 3, 4);
+          break;
+        case TILE_DUNGEON:
+          ctx.fillStyle = "#8a663e";
+          ctx.fillRect(px, py, 16, 16);
+          ctx.fillStyle = "#111118";
+          ctx.fillRect(px + 4, py + 4, 8, 10);
+          break;
+        case TILE_CASTLE:
+          ctx.fillStyle = "#388c28";
+          ctx.fillRect(px, py, 16, 16);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(px + 1, py + 3, 14, 11);
+          ctx.fillStyle = "#000000";
+          ctx.fillRect(px + 6, py + 8, 4, 6);
+          ctx.fillStyle = "#00f0ff";
+          ctx.fillRect(px + 3, py + 5, 2, 3);
+          ctx.fillRect(px + 11, py + 5, 2, 3);
+          break;
+        case TILE_FLOOR:
+          ctx.fillStyle = "#8f8b82";
+          ctx.fillRect(px, py, 16, 16);
+          ctx.strokeStyle = "#5e5b55";
+          ctx.strokeRect(px, py, 16, 16);
+          break;
+        case TILE_CAVE:
+          ctx.fillStyle = "#2e2b3b";
+          ctx.fillRect(px, py, 16, 16);
+          ctx.fillStyle = "#1d1a26";
+          ctx.fillRect(px + 3, py + 3, 3, 3);
+          ctx.fillRect(px + 10, py + 9, 3, 3);
+          break;
+        case TILE_CHEST:
+          ctx.fillStyle = "#2e2b3b";
+          ctx.fillRect(px, py, 16, 16);
+          ctx.fillStyle = "#c99628";
+          ctx.fillRect(px + 3, py + 4, 10, 9);
+          ctx.fillStyle = "#000000";
+          ctx.fillRect(px + 3, py + 7, 10, 2);
+          break;
+      }
+    }
+
+    // Draw Character Sprites (Billie Joe, Mike, Tre, and NPCs)
+    function drawHeroSprite(px, py, dir, frame = 0, heroType = 0) {
+      // heroType: 0 = Billie (Red tie, guitar, jet black spikes), 1 = Mike (Bass, blonde hair), 2 = Tre (Drumsticks, wild green hair)
+      ctx.save();
+      // Body Shadow
+      ctx.fillStyle = "rgba(0,0,0,0.3)";
+      ctx.fillRect(px + 3, py + 13, 10, 3);
+
+      if (heroType === 0) {
+        // Billie Joe
+        // Pants
+        ctx.fillStyle = "#111116";
+        ctx.fillRect(px + 5, py + 10, 6, 5);
+        // Black Shirt
+        ctx.fillStyle = "#1e1e24";
+        ctx.fillRect(px + 4, py + 6, 8, 5);
+        // Red Punk Tie
+        ctx.fillStyle = "#e60033";
+        ctx.fillRect(px + 7, py + 6, 2, 5);
+        // Face
+        ctx.fillStyle = "#ffd0b0";
+        ctx.fillRect(px + 5, py + 3, 6, 4);
+        // Eyeliner / Eyes
+        ctx.fillStyle = "#000000";
+        if (dir === 0) {
+          // Looking up (back of head)
+        } else if (dir === 3) {
+          ctx.fillRect(px + 5, py + 4, 2, 2);
+        } else if (dir === 1) {
+          ctx.fillRect(px + 9, py + 4, 2, 2);
+        } else {
+          ctx.fillRect(px + 6, py + 4, 1, 2);
+          ctx.fillRect(px + 9, py + 4, 1, 2);
+        }
+        // Spiky Jet Black Hair
+        ctx.fillStyle = "#0a0a0f";
+        ctx.fillRect(px + 4, py + 1, 8, 3);
+        ctx.fillRect(px + 3, py + 2, 2, 3);
+        ctx.fillRect(px + 11, py + 2, 2, 3);
+        // Light Blue Stratocaster Guitar "Blue" on back or side
+        ctx.fillStyle = "#00d4ff";
+        ctx.fillRect(px + 2, py + 6, 2, 6);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(px + 2, py + 7, 2, 2);
+
+      } else if (heroType === 1) {
+        // Mike Dirnt (Bassist)
+        ctx.fillStyle = "#1a2436";
+        ctx.fillRect(px + 5, py + 10, 6, 5);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(px + 4, py + 6, 8, 5);
+        ctx.fillStyle = "#ffd0b0";
+        ctx.fillRect(px + 5, py + 3, 6, 4);
+        // Short Blonde Hair
+        ctx.fillStyle = "#ffd700";
+        ctx.fillRect(px + 4, py + 1, 8, 3);
+        // Heavy Bass Guitar
+        ctx.fillStyle = "#992222";
+        ctx.fillRect(px + 12, py + 6, 2, 7);
+
+      } else if (heroType === 2) {
+        // Tré Cool (Wild Drummer)
+        ctx.fillStyle = "#2b1836";
+        ctx.fillRect(px + 5, py + 10, 6, 5);
+        ctx.fillStyle = "#22bb66";
+        ctx.fillRect(px + 4, py + 6, 8, 5);
+        ctx.fillStyle = "#ffd0b0";
+        ctx.fillRect(px + 5, py + 3, 6, 4);
+        // Wild Green Punk Hair
+        ctx.fillStyle = "#00ff66";
+        ctx.fillRect(px + 4, py + 0, 8, 4);
+        // Drumsticks
+        ctx.fillStyle = "#e0c080";
+        ctx.fillRect(px + 2, py + 6, 2, 6);
+      } else {
+        // General NPC
+        ctx.fillStyle = "#334466";
+        ctx.fillRect(px + 5, py + 8, 6, 6);
+        ctx.fillStyle = "#ffd0b0";
+        ctx.fillRect(px + 5, py + 3, 6, 4);
+        ctx.fillStyle = "#885522";
+        ctx.fillRect(px + 4, py + 1, 8, 3);
+      }
+
+      ctx.restore();
+    }
+
+    // World & Viewport Camera Rendering
+    function renderWorld() {
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      let currentMap = worldMap;
+      let mapW = MAP_WIDTH;
+      let mapH = MAP_HEIGHT;
+
+      if (currentMapId === "town") {
+        currentMap = townMap;
+        mapW = 16; mapH = 16;
+      } else if (currentMapId === "dungeon") {
+        currentMap = dungeonMap;
+        mapW = 16; mapH = 16;
+      }
+
+      // Camera centered on Billie
+      const viewTilesX = 16; // 256 / 16
+      const viewTilesY = 14; // 224 / 16
+
+      const startCol = Math.max(0, Math.min(mapW - viewTilesX, playerX - Math.floor(viewTilesX / 2)));
+      const startRow = Math.max(0, Math.min(mapH - viewTilesY, playerY - Math.floor(viewTilesY / 2)));
+
+      for (let r = 0; r < viewTilesY; r++) {
+        for (let c = 0; c < viewTilesX; c++) {
+          const mapTileX = startCol + c;
+          const mapTileY = startRow + r;
+          if (mapTileX < mapW && mapTileY < mapH) {
+            const tile = currentMap[mapTileY * mapW + mapTileX];
+            drawTile(tile, c * 16, r * 16);
+          }
+        }
+      }
+
+      // Render NPCs if in town or dungeon
+      const npcs = currentMapId === "town" ? townNPCs : currentMapId === "dungeon" ? dungeonNPCs : [];
+      npcs.forEach(npc => {
+        // If companion already joined, don't show on map
+        if (npc.isCompanion === "mike" && party[1].joined) return;
+        if (npc.isCompanion === "tre" && party[2].joined) return;
+
+        const screenX = (npc.x - startCol) * 16;
+        const screenY = (npc.y - startRow) * 16;
+        if (screenX >= 0 && screenX < canvas.width && screenY >= 0 && screenY < canvas.height) {
+          const type = npc.isCompanion === "mike" ? 1 : npc.isCompanion === "tre" ? 2 : 3;
+          drawHeroSprite(screenX, screenY, 2, 0, type);
+        }
+      });
+
+      // Render Billie and Following Party Members (DQ2 Party Trail)
+      const heroScreenX = (playerX - startCol) * 16;
+      const heroScreenY = (playerY - startRow) * 16;
+      drawHeroSprite(heroScreenX, heroScreenY, playerDir, 0, 0);
+
+      // Follower 1: Mike (if joined)
+      if (party[1].joined) {
+        let offsetX = playerDir === 1 ? -14 : playerDir === 3 ? 14 : 0;
+        let offsetY = playerDir === 2 ? -14 : playerDir === 0 ? 14 : 0;
+        drawHeroSprite(heroScreenX + offsetX, heroScreenY + offsetY, playerDir, 0, 1);
+      }
+
+      // Follower 2: Tre (if joined)
+      if (party[2].joined) {
+        let offsetX = playerDir === 1 ? -26 : playerDir === 3 ? 26 : 0;
+        let offsetY = playerDir === 2 ? -26 : playerDir === 0 ? 26 : 0;
+        drawHeroSprite(heroScreenX + offsetX, heroScreenY + offsetY, playerDir, 0, 2);
+      }
+    }
+
+    // Monster Database (Procedural retro sprites on canvas)
+    const MONSTERS = [
+      {
+        id: "slime",
+        name: "スライム",
+        hp: 14, maxHp: 14,
+        atk: 9, def: 4,
+        exp: 6, gold: 5,
+        draw: (ctx) => {
+          ctx.clearRect(0, 0, 160, 96);
+          // Classic Teardrop Slime (Cyan)
+          ctx.fillStyle = "#00d0ff";
+          ctx.beginPath();
+          ctx.moveTo(80, 20);
+          ctx.bezierCurveTo(45, 45, 40, 80, 80, 80);
+          ctx.bezierCurveTo(120, 80, 115, 45, 80, 20);
+          ctx.fill();
+          // Eyes & Smile
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.arc(70, 52, 6, 0, Math.PI * 2);
+          ctx.arc(90, 52, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#000000";
+          ctx.beginPath();
+          ctx.arc(71, 52, 3, 0, Math.PI * 2);
+          ctx.arc(89, 52, 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "#e60000";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(80, 62, 7, 0, Math.PI);
+          ctx.stroke();
+        }
+      },
+      {
+        id: "goblin",
+        name: "パンクゴブリン",
+        hp: 28, maxHp: 28,
+        atk: 14, def: 8,
+        exp: 15, gold: 14,
+        draw: (ctx) => {
+          ctx.clearRect(0, 0, 160, 96);
+          // Green goblin with Mohawk and studs
+          ctx.fillStyle = "#2ecc71";
+          ctx.fillRect(60, 30, 40, 36);
+          // Red Mohawk
+          ctx.fillStyle = "#e74c3c";
+          ctx.fillRect(74, 10, 12, 22);
+          // Fierce yellow eyes
+          ctx.fillStyle = "#f1c40f";
+          ctx.fillRect(66, 40, 7, 5);
+          ctx.fillRect(87, 40, 7, 5);
+          ctx.fillStyle = "#000";
+          ctx.fillRect(68, 42, 3, 3);
+          ctx.fillRect(89, 42, 3, 3);
+          // Sharp teeth mouth
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(70, 56, 20, 6);
+          ctx.fillStyle = "#000";
+          ctx.fillRect(74, 56, 3, 6);
+          ctx.fillRect(83, 56, 3, 6);
+          // Studded leather belt
+          ctx.fillStyle = "#111";
+          ctx.fillRect(56, 68, 48, 8);
+          ctx.fillStyle = "#ddd";
+          ctx.fillRect(62, 70, 4, 4);
+          ctx.fillRect(74, 70, 4, 4);
+          ctx.fillRect(86, 70, 4, 4);
+        }
+      },
+      {
+        id: "knight",
+        name: "メガデスナイト",
+        hp: 55, maxHp: 55,
+        atk: 22, def: 16,
+        exp: 36, gold: 35,
+        draw: (ctx) => {
+          ctx.clearRect(0, 0, 160, 96);
+          // Heavy Dark Metal Armor with Purple Horns
+          ctx.fillStyle = "#34495e";
+          ctx.fillRect(55, 26, 50, 48);
+          ctx.fillStyle = "#9b59b6";
+          // Horns
+          ctx.beginPath();
+          ctx.moveTo(55, 26); ctx.lineTo(40, 10); ctx.lineTo(62, 20); ctx.fill();
+          ctx.moveTo(105, 26); ctx.lineTo(120, 10); ctx.lineTo(98, 20); ctx.fill();
+          // Visor Glow
+          ctx.fillStyle = "#e74c3c";
+          ctx.fillRect(65, 38, 30, 6);
+          // Heavy Broadsword
+          ctx.fillStyle = "#ecf0f1";
+          ctx.fillRect(118, 14, 8, 64);
+          ctx.fillStyle = "#f39c12";
+          ctx.fillRect(112, 58, 20, 6);
+        }
+      },
+      {
+        id: "overlord",
+        name: "アンチ・LOVE魔王",
+        hp: 135, maxHp: 135,
+        atk: 32, def: 20,
+        exp: 150, gold: 200,
+        draw: (ctx) => {
+          ctx.clearRect(0, 0, 160, 96);
+          // Giant Void Dragon / Demon Lord with broken heart crest
+          ctx.fillStyle = "#1b002c";
+          ctx.beginPath();
+          ctx.arc(80, 50, 38, 0, Math.PI * 2);
+          ctx.fill();
+          // Large wings
+          ctx.fillStyle = "#4a0e4e";
+          ctx.beginPath();
+          ctx.moveTo(80, 40); ctx.lineTo(15, 10); ctx.lineTo(35, 75); ctx.fill();
+          ctx.moveTo(80, 40); ctx.lineTo(145, 10); ctx.lineTo(125, 75); ctx.fill();
+          // Fiery crimson eyes
+          ctx.fillStyle = "#ff0044";
+          ctx.beginPath();
+          ctx.arc(68, 42, 6, 0, Math.PI * 2);
+          ctx.arc(92, 42, 6, 0, Math.PI * 2);
+          ctx.fill();
+          // Broken Heart Mark
+          ctx.fillStyle = "#ff0077";
+          ctx.beginPath();
+          ctx.moveTo(80, 60);
+          ctx.lineTo(88, 50); ctx.arc(85, 46, 4, 0, Math.PI, true);
+          ctx.arc(75, 46, 4, 0, Math.PI, true);
+          ctx.lineTo(80, 60); ctx.fill();
+          ctx.strokeStyle = "#fff";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(76, 44); ctx.lineTo(84, 56);
+          ctx.stroke();
+        }
+      }
+    ];
+
+    let currentEnemy = null;
+    let battleTurnIndex = 0; // 0: Billie, 1: Mike, 2: Tre
+    let selectedCmdIndex = 0; // 0: Fight, 1: Spell, 2: Item, 3: Run
+    let currentEnemySleeping = false;
+
+    const dom = {
+      locationBadge: document.getElementById('locationBadge'),
+      battleHud: document.getElementById('battleHud'),
+      dialogueBox: document.getElementById('dialogueBox'),
+      diagText: document.getElementById('diagText'),
+      diagPrompt: document.getElementById('diagPrompt'),
+      battleCmdBox: document.getElementById('battleCmdBox'),
+      battleSubBox: document.getElementById('battleSubBox'),
+      battleMsgBox: document.getElementById('battleMsgBox'),
+      battleTextLine1: document.getElementById('battleTextLine1'),
+      battleTextLine2: document.getElementById('battleTextLine2'),
+      btnSoundToggle: document.getElementById('btnSoundToggle'),
+      btnQuickSave: document.getElementById('btnQuickSave'),
+
+      bHeroHp: document.getElementById('bHeroHp'),
+      bHeroMp: document.getElementById('bHeroMp'),
+      bHeroLv: document.getElementById('bHeroLv'),
+      bMikeHp: document.getElementById('bMikeHp'),
+      bMikeMp: document.getElementById('bMikeMp'),
+      bMikeLv: document.getElementById('bMikeLv'),
+      bTreHp: document.getElementById('bTreHp'),
+      bTreMp: document.getElementById('bTreMp'),
+      bTreLv: document.getElementById('bTreLv'),
+      partyBox1: document.getElementById('partyBox1'),
+      partyBox2: document.getElementById('partyBox2')
+    };
+
+    function updatePartyStatusUI() {
+      dom.bHeroHp.innerText = party[0].hp;
+      dom.bHeroMp.innerText = party[0].mp;
+      dom.bHeroLv.innerText = party[0].lv;
+
+      if (party[1].joined) {
+        dom.partyBox1.classList.remove('opacity-50');
+        dom.bMikeHp.innerText = party[1].hp;
+        dom.bMikeMp.innerText = party[1].mp;
+        dom.bMikeLv.innerText = party[1].lv;
+      }
+      if (party[2].joined) {
+        dom.partyBox2.classList.remove('opacity-50');
+        dom.bTreHp.innerText = party[2].hp;
+        dom.bTreMp.innerText = party[2].mp;
+        dom.bTreLv.innerText = party[2].lv;
+      }
+    }
+
+    function setBattleMessage(line1, line2 = "") {
+      dom.battleTextLine1.innerText = line1;
+      dom.battleTextLine2.innerText = line2;
+      audio.playTextBlip();
+    }
+
+    // Trigger Random Combat
+    function startBattle(monsterTemplate = null) {
+      if (inBattle) return;
+      inBattle = true;
+      audio.stopBgm();
+      audio.playSpellSE();
+
+      // Screen Flash / Transition Effect
+      let flashCount = 0;
+      const flashInterval = setInterval(() => {
+        canvas.style.filter = flashCount % 2 === 0 ? "invert(1)" : "none";
+        flashCount++;
+        if (flashCount > 5) {
+          clearInterval(flashInterval);
+          canvas.style.filter = "none";
+          initBattleArena(monsterTemplate);
+        }
+      }, 70);
+    }
+
+    function initBattleArena(monsterTemplate) {
+      dom.battleHud.classList.remove('hidden');
+      updatePartyStatusUI();
+      selectedCmdIndex = 0;
+      updateCmdCursor();
+
+      if (!monsterTemplate) {
+        // Pick monster according to area
+        if (currentMapId === "dungeon") {
+          monsterTemplate = MONSTERS[Math.random() < 0.5 ? 1 : 2];
+        } else {
+          monsterTemplate = MONSTERS[Math.random() < 0.7 ? 0 : 1];
+        }
+      }
+
+      currentEnemy = {
+        name: monsterTemplate.name,
+        hp: monsterTemplate.hp,
+        maxHp: monsterTemplate.hp,
+        atk: monsterTemplate.atk,
+        def: monsterTemplate.def,
+        exp: monsterTemplate.exp,
+        gold: monsterTemplate.gold,
+        draw: monsterTemplate.draw
+      };
+
+      currentEnemySleeping = false;
+      currentEnemy.draw(mCtx);
+      setBattleMessage(`${currentEnemy.name}が あらわれた！`, "コマンドを えらんでください。");
+      audio.startBgm('battle');
+    }
+
+    function updateCmdCursor() {
+      for (let i = 0; i < 4; i++) {
+        const item = document.getElementById(`cmdItem${i}`);
+        const cursor = item.querySelector('.dq-cursor');
+        if (i === selectedCmdIndex) {
+          cursor.classList.remove('invisible');
+        } else {
+          cursor.classList.add('invisible');
+        }
+      }
+    }
+
+    // Flash Enemy on Hit
+    function flashEnemy() {
+      let f = 0;
+      const flashTimer = setInterval(() => {
+        monsterCanvas.style.opacity = f % 2 === 0 ? "0" : "1";
+        f++;
+        if (f > 4) {
+          clearInterval(flashTimer);
+          monsterCanvas.style.opacity = "1";
+        }
+      }, 60);
+    }
+
+    // Execute Player Attack
+    function executePlayerAttack(hero) {
+      audio.playHitSE();
+      flashEnemy();
+
+      const isCrit = Math.random() < 0.15;
+      let dmg = Math.max(1, Math.floor(hero.atk * (isCrit ? 2.0 : 1.0) - currentEnemy.def * 0.5 + (Math.random() * 4 - 2)));
+      currentEnemy.hp -= dmg;
+
+      if (isCrit) {
+        audio.playCriticalSE();
+        setBattleMessage(`かいしんの いちげき！`, `${currentEnemy.name}に ${dmg}の ダメージ！`);
+      } else {
+        setBattleMessage(`${hero.name}の こうげき！`, `${currentEnemy.name}に ${dmg}の ダメージ！`);
+      }
+
+      checkBattleState();
+    }
+
+    // Enemy Attack Phase
+    function enemyTurn() {
+      if (currentEnemy.hp <= 0) return;
+
+      setTimeout(() => {
+        if (currentEnemySleeping) {
+          if (Math.random() < 0.4) {
+            currentEnemySleeping = false;
+            setBattleMessage(`${currentEnemy.name}は めをさました！`);
+          } else {
+            setBattleMessage(`${currentEnemy.name}は 心地よく眠っている…`);
+            return;
+          }
+        }
+
+        // Pick living party target
+        const livingParty = party.filter(h => h.joined && h.hp > 0);
+        if (livingParty.length === 0) return;
+        const target = livingParty[Math.floor(Math.random() * livingParty.length)];
+
+        audio.playHitSE();
+        let dmg = Math.max(1, Math.floor(currentEnemy.atk - target.def * 0.5 + (Math.random() * 3 - 1)));
+        target.hp = Math.max(0, target.hp - dmg);
+        updatePartyStatusUI();
+
+        setBattleMessage(`${currentEnemy.name}の こうげき！`, `${target.name}は ${dmg}の ダメージをうけた！`);
+
+        // Check Party wipe
+        if (party[0].hp <= 0) {
+          setTimeout(() => {
+            audio.stopBgm();
+            setBattleMessage(`ビリーたちは ぜんめつした…`, "すべてが めのまえが まっくらに なった…");
+            setTimeout(() => {
+              // Revive at castle
+              alert("ビリーたちは城で目を覚ました。愛の力でやり直そう！");
+              party[0].hp = party[0].maxHp;
+              if (party[1].joined) party[1].hp = party[1].maxHp;
+              if (party[2].joined) party[2].hp = party[2].maxHp;
+              playerX = 2;
+              playerY = 3;
+              currentMapId = "world";
+              endBattle();
+            }, 2000);
+          }, 1200);
+        }
+      }, 1000);
+    }
+
+    function checkBattleState() {
+      if (currentEnemy.hp <= 0) {
+        setTimeout(() => {
+          audio.playVictoryFanfare();
+          gold += currentEnemy.gold;
+          setBattleMessage(`${currentEnemy.name}を たおした！`, `${currentEnemy.exp}の経験値と ${currentEnemy.gold}Gを かくとく！`);
+
+          // Distribute exp
+          party.forEach(hero => {
+            if (hero.joined && hero.hp > 0) {
+              hero.exp += currentEnemy.exp;
+              if (hero.exp >= hero.lv * 20) {
+                hero.lv++;
+                hero.maxHp += 8;
+                hero.hp = hero.maxHp;
+                hero.maxMp += 4;
+                hero.mp = hero.maxMp;
+                hero.atk += 4;
+                hero.def += 3;
+                setTimeout(() => {
+                  setBattleMessage(`${hero.name}は レベルが ${hero.lv}に あがった！`, "ちからと HPが 上昇した！");
+                }, 1200);
+              }
+            }
+          });
+
+          // Check if Boss Overlord Defeated
+          if (currentEnemy.name === "アンチ・LOVE魔王") {
+            setTimeout(() => {
+              alert("🎉【CONGRATULATIONS!!】\nアンチ・LOVE魔王を撃破した！\n世界に愛とロックンロールの光が永遠に取り戻された！\nあなたの冒険は大勝利で幕を閉じた！");
+            }, 2500);
+          }
+
+          setTimeout(() => {
+            endBattle();
+          }, 2600);
+        }, 800);
+      } else {
+        // Next Enemy Attack
+        enemyTurn();
+      }
+    }
+
+    function endBattle() {
+      inBattle = false;
+      dom.battleHud.classList.add('hidden');
+      dom.battleSubBox.classList.add('hidden');
+      audio.startBgm('field');
+      renderWorld();
+    }
+
+    // Open Magic/Skill Submenu
+    function openSpellSubMenu() {
+      const hero = party[0]; // Billy
+      dom.battleSubBox.innerHTML = '';
+      hero.spells.forEach(spell => {
+        const item = document.createElement('div');
+        item.className = "cursor-pointer p-1 hover:bg-gray-800 flex justify-between";
+        item.innerHTML = `<span>${spell.name}</span><span class="text-cyan-300">M${spell.mp}</span>`;
+        item.onclick = () => {
+          if (hero.mp < spell.mp) {
+            setBattleMessage("MPが たりない！");
+            return;
+          }
+          hero.mp -= spell.mp;
+          updatePartyStatusUI();
+          dom.battleSubBox.classList.add('hidden');
+          audio.playSpellSE();
+
+          if (spell.type === "heal") {
+            hero.hp = Math.min(hero.maxHp, hero.hp + spell.power);
+            updatePartyStatusUI();
+            setBattleMessage(`${hero.name}は ${spell.name}を となえた！`, `HPが ${spell.power} かいふくした！`);
+            enemyTurn();
+          } else if (spell.type === "attack") {
+            flashEnemy();
+            currentEnemy.hp -= spell.power;
+            setBattleMessage(`${hero.name}の ${spell.name}！`, `爆音が敵を直撃！ ${spell.power}の ダメージ！`);
+            checkBattleState();
+          } else if (spell.type === "sleep") {
+            currentEnemySleeping = true;
+            setBattleMessage(`${hero.name}は ${spell.name}を 奏でた！`, `${currentEnemy.name}は 眠ってしまった！`);
+            enemyTurn();
+          }
+        };
+        dom.battleSubBox.appendChild(item);
+      });
+      dom.battleSubBox.classList.remove('hidden');
+    }
+
+    // Command Selection Trigger
+    function handleConfirmAction() {
+      audio.playConfirmSE();
+      if (inBattle) {
+        if (!dom.battleSubBox.classList.contains('hidden')) return;
+
+        if (selectedCmdIndex === 0) {
+          // たたかう
+          executePlayerAttack(party[0]);
+        } else if (selectedCmdIndex === 1) {
+          // じゅもん
+          openSpellSubMenu();
+        } else if (selectedCmdIndex === 2) {
+          // どうぐ (Punk Herb / Soda)
+          party[0].hp = Math.min(party[0].maxHp, party[0].hp + 20);
+          updatePartyStatusUI();
+          audio.playSpellSE();
+          setBattleMessage("ビリーは ギターピックソーダを 飲んだ！", "HPが 20 かいふくした！");
+          enemyTurn();
+        } else if (selectedCmdIndex === 3) {
+          // にげる
+          if (Math.random() < 0.6) {
+            setBattleMessage("ビリーたちは にげだした！");
+            setTimeout(endBattle, 800);
+          } else {
+            setBattleMessage("しかし まわりこまれてしまった！");
+            enemyTurn();
+          }
+        }
+      } else {
+        // Field Interact / Talk
+        interactWithWorld();
+      }
+    }
+
+    // World Map Dialogue & Interaction Logic
+    let isDialogueActive = false;
+    function showDialogue(text) {
+      isDialogueActive = true;
+      dom.dialogueBox.classList.remove('hidden');
+      dom.diagText.innerText = text;
+      audio.playTextBlip();
+    }
+    function closeDialogue() {
+      isDialogueActive = false;
+      dom.dialogueBox.classList.add('hidden');
+      renderWorld();
+    }
+
+    function interactWithWorld() {
+      if (isDialogueActive) {
+        closeDialogue();
+        return;
+      }
+
+      // Check facing tile for NPCs
+      let targetX = playerX;
+      let targetY = playerY;
+      if (playerDir === 0) targetY--;
+      if (playerDir === 1) targetX++;
+      if (playerDir === 2) targetY++;
+      if (playerDir === 3) targetX--;
+
+      const npcs = currentMapId === "town" ? townNPCs : currentMapId === "dungeon" ? dungeonNPCs : [];
+      const npc = npcs.find(n => n.x === targetX && n.y === targetY);
+
+      if (npc) {
+        if (npc.isInn) {
+          if (gold >= 10) {
+            gold -= 10;
+            party.forEach(h => { h.hp = h.maxHp; h.mp = h.maxMp; });
+            audio.playInnJingle();
+            showDialogue("「ゆっくり おやすみ…。\n…おはよう！ HPとMPが 全快したぞ！」");
+          } else {
+            showDialogue("「おや、ゴールドが 足りないようだね。」");
+          }
+          return;
+        }
+
+        if (npc.isCompanion === "mike" && !party[1].joined) {
+          party[1].joined = true;
+          audio.playVictoryFanfare();
+          showDialogue(npc.text);
+          updatePartyStatusUI();
+          return;
+        }
+
+        if (npc.isCompanion === "tre" && !party[2].joined) {
+          party[2].joined = true;
+          audio.playVictoryFanfare();
+          showDialogue(npc.text);
+          updatePartyStatusUI();
+          return;
+        }
+
+        showDialogue(`「${npc.text}」`);
+        return;
+      }
+
+      // Chest check in Dungeon
+      if (currentMapId === "dungeon" && targetX === 7 && targetY === 13) {
+        showDialogue("宝箱を あけた！\n『伝説のエレキギター・Blue』を 手に入れた！\nビリーの こうげきりょくが 10 上昇した！");
+        party[0].atk += 10;
+        audio.playCriticalSE();
+        return;
+      }
+
+      showDialogue("しかし なにも みつからなかった。");
+    }
+
+    // Tile Movement and Map Transitions
+    function movePlayer(dx, dy, dir) {
+      if (inBattle || isDialogueActive) return;
+      playerDir = dir;
+
+      let mapW = currentMapId === "world" ? MAP_WIDTH : 16;
+      let mapH = currentMapId === "world" ? MAP_HEIGHT : 16;
+      let mapData = currentMapId === "world" ? worldMap : currentMapId === "town" ? townMap : dungeonMap;
+
+      const nextX = playerX + dx;
+      const nextY = playerY + dy;
+
+      if (nextX < 0 || nextX >= mapW || nextY < 0 || nextY >= mapH) return;
+
+      const tile = mapData[nextY * mapW + nextX];
+
+      // Passable tiles: Grass, Forest, Floor, Cave, Stairs, Town entrance
+      if (tile === TILE_MOUNTAIN || tile === TILE_WATER) {
+        audio.playTone(180, 0.04, 'triangle');
+        return;
+      }
+
+      // NPC collision check
+      const npcs = currentMapId === "town" ? townNPCs : currentMapId === "dungeon" ? dungeonNPCs : [];
+      if (npcs.some(n => n.x === nextX && n.y === nextY && !(n.isCompanion === "mike" && party[1].joined) && !(n.isCompanion === "tre" && party[2].joined))) {
+        audio.playTone(180, 0.04, 'triangle');
+        return;
+      }
+
+      playerX = nextX;
+      playerY = nextY;
+      stepCount++;
+      audio.playTone(280, 0.03, 'square', 0.02);
+
+      // Check Gateways & Map Transitions
+      if (currentMapId === "world") {
+        if (tile === TILE_TOWN) {
+          // Enter Town
+          currentMapId = "town";
+          playerX = 7; playerY = 14; playerDir = 0;
+          dom.locationBadge.innerText = "[ロックン・タウン]";
+          renderWorld();
+          return;
+        } else if (tile === TILE_DUNGEON) {
+          // Enter Cave of Love
+          currentMapId = "dungeon";
+          playerX = 7; playerY = 14; playerDir = 0;
+          dom.locationBadge.innerText = "[愛と虚無の洞窟]";
+          renderWorld();
+          return;
+        }
+      } else if (currentMapId === "town" || currentMapId === "dungeon") {
+        if (tile === TILE_GRASS) {
+          // Exit back to Overworld
+          if (currentMapId === "town") {
+            playerX = 11; playerY = 6;
+          } else {
+            playerX = 28; playerY = 3;
+          }
+          currentMapId = "world";
+          playerDir = 2;
+          dom.locationBadge.innerText = "[フィールド]";
+          renderWorld();
+          return;
+        }
+      }
+
+      // Boss Encounter tile in Dungeon deepest chamber (x: 8, y: 3)
+      if (currentMapId === "dungeon" && playerX === 8 && playerY === 3) {
+        startBattle(MONSTERS[3]); // Anti-Love Overlord
+        return;
+      }
+
+      // Random Combat Encount Check on Overworld & Dungeon
+      if (currentMapId === "world" || currentMapId === "dungeon") {
+        const encounterRate = currentMapId === "dungeon" ? 0.12 : (tile === TILE_FOREST ? 0.09 : 0.05);
+        if (Math.random() < encounterRate && stepCount > 4) {
+          stepCount = 0;
+          startBattle();
+          return;
+        }
+      }
+
+      renderWorld();
+    }
+
+    // Keyboard Handler
+    window.addEventListener('keydown', (e) => {
+      audio.init();
+      switch(e.key) {
+        case "ArrowUp": case "w": case "W":
+          if (inBattle) {
+            selectedCmdIndex = (selectedCmdIndex + 3) % 4;
+            updateCmdCursor();
+            audio.playCursorSE();
+          } else movePlayer(0, -1, 0);
+          break;
+        case "ArrowDown": case "s": case "S":
+          if (inBattle) {
+            selectedCmdIndex = (selectedCmdIndex + 1) % 4;
+            updateCmdCursor();
+            audio.playCursorSE();
+          } else movePlayer(0, 1, 2);
+          break;
+        case "ArrowLeft": case "a": case "A":
+          if (!inBattle) movePlayer(-1, 0, 3);
+          break;
+        case "ArrowRight": case "d": case "D":
+          if (!inBattle) movePlayer(1, 0, 1);
+          break;
+        case "z": case "Z": case "Enter": case " ":
+          handleConfirmAction();
+          break;
+        case "x": case "X": case "Escape":
+          audio.playConfirmSE();
+          if (isDialogueActive) closeDialogue();
+          if (!dom.battleSubBox.classList.contains('hidden')) dom.battleSubBox.classList.add('hidden');
+          break;
+      }
+    });
+
+    // Touch Virtual D-Pad
+    document.getElementById('vUp').addEventListener('touchstart', (e) => { e.preventDefault(); audio.init(); if (inBattle) { selectedCmdIndex = (selectedCmdIndex + 3) % 4; updateCmdCursor(); } else movePlayer(0, -1, 0); });
+    document.getElementById('vDown').addEventListener('touchstart', (e) => { e.preventDefault(); audio.init(); if (inBattle) { selectedCmdIndex = (selectedCmdIndex + 1) % 4; updateCmdCursor(); } else movePlayer(0, 1, 2); });
+    document.getElementById('vLeft').addEventListener('touchstart', (e) => { e.preventDefault(); audio.init(); if (!inBattle) movePlayer(-1, 0, 3); });
+    document.getElementById('vRight').addEventListener('touchstart', (e) => { e.preventDefault(); audio.init(); if (!inBattle) movePlayer(1, 0, 1); });
+
+    document.getElementById('vBtnA').addEventListener('touchstart', (e) => { e.preventDefault(); audio.init(); handleConfirmAction(); });
+    document.getElementById('vBtnB').addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      audio.init();
+      if (isDialogueActive) closeDialogue();
+      if (!dom.battleSubBox.classList.contains('hidden')) dom.battleSubBox.classList.add('hidden');
+    });
+
+    // Audio ON/OFF Button
+    dom.btnSoundToggle.onclick = () => {
+      const on = audio.toggleAudio();
+      dom.btnSoundToggle.innerText = on ? "🔊 BGM: ON" : "🔇 BGM: OFF";
+      dom.btnSoundToggle.classList.toggle('bg-green-800', on);
+      if (on) audio.startBgm(inBattle ? 'battle' : 'field');
+    };
+
+    // Save Game to LocalStorage
+    dom.btnQuickSave.onclick = () => {
+      const saveData = {
+        playerX, playerY, playerDir, currentMapId, gold,
+        party: party.map(p => ({
+          hp: p.hp, maxHp: p.maxHp, mp: p.mp, maxMp: p.maxMp,
+          atk: p.atk, def: p.def, lv: p.lv, exp: p.exp, joined: p.joined
+        }))
+      };
+      localStorage.setItem('OH_LOVE_QUEST_SAVE', JSON.stringify(saveData));
+      audio.playInnJingle();
+      alert("【ぼうけんのしょ】に きろくしました！\n次回アクセス時もここから再開できます。");
+    };
+
+    // Load Game from LocalStorage
+    function loadGame() {
+      const raw = localStorage.getItem('OH_LOVE_QUEST_SAVE');
+      if (raw) {
+        try {
+          const data = JSON.parse(raw);
+          playerX = data.playerX;
+          playerY = data.playerY;
+          playerDir = data.playerDir;
+          currentMapId = data.currentMapId;
+          gold = data.gold;
+          data.party.forEach((saved, idx) => {
+            Object.assign(party[idx], saved);
+          });
+        } catch(e) {}
+      }
+    }
+
+    // Initialize Game Engine on Window Load
+    window.addEventListener('load', () => {
+      loadGame();
+      updatePartyStatusUI();
+      renderWorld();
+      dom.locationBadge.innerText = currentMapId === "town" ? "[ロックン・タウン]" : currentMapId === "dungeon" ? "[愛と虚無の洞窟]" : "[フィールド]";
+    });
+  </script>
+</body>
+</html>
