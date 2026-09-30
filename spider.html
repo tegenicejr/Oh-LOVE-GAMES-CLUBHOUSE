@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>スパイダーソリティア (Spider Solitaire)</title>
+  <style>
+    :root {
+      --bg-desk: #110c08;
+      --felt-dark: #122c19;
+      --felt-light: #1c4528;
+      --board-rim: #362214;
+      --brass-gold: #d4a359;
+      --brass-glow: rgba(212, 163, 89, 0.45);
+      --card-w: 52px;
+      --card-h: 74px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-desk);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      color: #fff;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .viewport {
+      width: 100%;
+      min-height: 100%;
+      padding: calc(14px + env(safe-area-inset-top)) 6px calc(60px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: radial-gradient(circle at 50% 20%, #2b1a10 0%, var(--bg-desk) 100%);
+      position: relative;
+    }
+
+    .topbar {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+    .topbar-upper {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .tool-btn {
+      background: linear-gradient(145deg, #2c1c12 0%, #1c1109 100%);
+      border: 1.5px solid #4d3320;
+      color: var(--brass-gold);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.15);
+      transition: transform 0.12s, border-color 0.12s;
+    }
+    .tool-btn:hover { border-color: var(--brass-gold); transform: translateY(-2px); }
+    .tool-btn:active { transform: scale(0.92); }
+
+    .topbar-lower {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .stats-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .stat-badge {
+      background: rgba(0, 0, 0, 0.65);
+      border: 1.5px solid #442d1c;
+      border-radius: 14px;
+      padding: 5px 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #d1c1b2;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+      white-space: nowrap;
+    }
+    .stat-val {
+      color: var(--brass-gold);
+      font-size: 1.15rem;
+      font-weight: 900;
+      font-feature-settings: "tnum";
+    }
+
+    .table-felt {
+      position: relative;
+      width: 100%;
+      max-width: 680px;
+      background: radial-gradient(circle at 50% 35%, var(--felt-light) 0%, var(--felt-dark) 100%);
+      border: 8px solid var(--board-rim);
+      border-radius: 20px;
+      padding: 12px 6px 36px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.95), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 0 35px rgba(0,0,0,0.85);
+      min-height: 520px;
+      touch-action: manipulation;
+    }
+
+    .top-zones {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding: 0 4px;
+    }
+    .completed-slots {
+      display: flex;
+      gap: 3px;
+      min-height: 48px;
+      align-items: center;
+    }
+    .comp-pile {
+      width: 28px;
+      height: 42px;
+      border: 1px dashed rgba(212, 163, 89, 0.35);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.25);
+    }
+    .comp-pile.filled {
+      border: 1px solid var(--brass-gold);
+      background: #111;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+    }
+
+    .stock-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .stock-deck {
+      width: var(--card-w);
+      height: var(--card-h);
+      position: relative;
+    }
+
+    .tableau {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 3px;
+      position: relative;
+      width: 100%;
+      min-height: 380px;
+    }
+    .column {
+      position: relative;
+      min-height: 380px;
+    }
+    .column-slot-base {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: var(--card-h);
+      border: 1px dashed rgba(255,255,255,0.18);
+      border-radius: 5px;
+      pointer-events: none;
+    }
+
+    .card {
+      width: 100%;
+      max-width: var(--card-w);
+      height: var(--card-h);
+      border-radius: 5px;
+      position: absolute;
+      left: 0;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.45);
+      cursor: pointer;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      transform: translateZ(0);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+      touch-action: none;
+    }
+    @media (max-width: 580px) {
+      :root {
+        --card-w: 35px;
+        --card-h: 50px;
+      }
+    }
+
+    .card.back {
+      background: repeating-linear-gradient(45deg, #1e3799, #1e3799 4px, #0c2461 4px, #0c2461 8px);
+      border: 1.5px solid #fff;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.5), inset 0 0 4px #000;
+    }
+
+    .card.face {
+      background: linear-gradient(180deg, #ffffff 0%, #faf8f5 70%, #f0ebd8 100%);
+      border: 1px solid #b8b2a8;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.55), inset 0 1px 1px #fff;
+      padding: 2px 3px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card.face.red { color: #d63031; }
+    .card.face.black { color: #1e272e; }
+
+    .card-corner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 0.95;
+      font-weight: 900;
+      font-size: 0.76rem;
+      pointer-events: none;
+    }
+    .card-corner svg {
+      width: 8px;
+      height: 8px;
+      margin-top: 1px;
+    }
+    .card-center-suit {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 18px;
+      height: 18px;
+      opacity: 0.9;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card.selected {
+      transform: translateY(-5px) translateZ(0);
+      box-shadow: 
+        0 10px 18px rgba(0,0,0,0.85),
+        0 0 12px var(--brass-glow),
+        inset 0 0 0 2.5px var(--brass-gold);
+      z-index: 500 !important;
+    }
+    .card.hinted {
+      animation: hintP 0.75s infinite alternate ease-in-out;
+      box-shadow: 
+        0 0 14px #2ecc71,
+        inset 0 0 0 2.5px #2ecc71;
+    }
+    @keyframes hintP {
+      from { transform: translateY(0) translateZ(0); }
+      to { transform: translateY(-3px) translateZ(0); }
+    }
+
+    .ranking-container {
+      width: 100%;
+      max-width: 680px;
+      margin-top: 20px;
+      background: rgba(22, 14, 9, 0.85);
+      border: 2px solid #3d2919;
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+    }
+    .ranking-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1.5px solid #4a3422;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+    .ranking-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--brass-gold);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ranking-diff-tag {
+      font-size: 0.75rem;
+      background: #342014;
+      color: #dfd2c4;
+      padding: 3px 8px;
+      border-radius: 8px;
+      border: 1px solid #583c27;
+    }
+    .ranking-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 14px;
+    }
+    @media (max-width: 480px) {
+      .ranking-list {
+        grid-template-columns: 1fr;
+      }
+    }
+    .ranking-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0,0,0,0.3);
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-feature-settings: "tnum";
+    }
+    .ranking-rank {
+      font-weight: 800;
+      color: #8c7664;
+      width: 28px;
+    }
+    .ranking-rank.top1 { color: #f1c40f; }
+    .ranking-rank.top2 { color: #bdc3c7; }
+    .ranking-rank.top3 { color: #e67e22; }
+    .ranking-score {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .ranking-time {
+      font-weight: 800;
+      color: #f5ebe1;
+    }
+    .ranking-moves {
+      font-size: 0.72rem;
+      color: var(--brass-gold);
+    }
+    .ranking-date {
+      color: #7d6b5c;
+      font-size: 0.72rem;
+    }
+    .ranking-empty {
+      text-align: center;
+      color: #7d6b5c;
+      font-size: 0.82rem;
+      padding: 12px 0;
+      grid-column: span 2;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.82);
+      backdrop-filter: blur(5px);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-sheet {
+      background: #20140c;
+      border: 3px solid #4d3320;
+      border-radius: 20px;
+      padding: 22px;
+      width: 88%;
+      max-width: 440px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.95);
+      color: #ede2d5;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-title {
+      text-align: center;
+      color: var(--brass-gold);
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    .modal-body {
+      overflow-y: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      color: #c9b9aa;
+      margin-bottom: 16px;
+      padding-right: 6px;
+    }
+    .modal-body::-webkit-scrollbar { width: 6px; }
+    .modal-body::-webkit-scrollbar-thumb { background: #4d3320; border-radius: 3px; }
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #332014;
+    }
+    .theme-select {
+      background: #2c1a10;
+      color: #fff;
+      border: 1.5px solid var(--brass-gold);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      outline: none;
+    }
+    .modal-close-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(180deg, #d4a359, #aa782e);
+      border: none;
+      border-radius: 12px;
+      color: #140c06;
+      font-weight: 900;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="viewport">
+    <div class="topbar">
+      <!-- 上段操作系 -->
+      <div class="topbar-upper">
+        <div class="tool-btn" onclick="toggleSettingsModal(true)" title="設定">⚙️</div>
+        <div class="tool-btn" onclick="restartGame()" title="最初から">🔄</div>
+        <div class="tool-btn" onclick="undoMove()" title="1手戻す">↩️</div>
+        <div class="tool-btn" onclick="getHint()" title="ヒント">💡</div>
+        <div class="tool-btn" onclick="toggleRulesModal(true)" title="あそびかた">📖</div>
+      </div>
+
+      <!-- 下段ステータス -->
+      <div class="topbar-lower">
+        <div class="stats-group">
+          <div class="stat-badge">手数 <span id="stat-moves" class="stat-num">0</span></div>
+          <div class="stat-badge">完成 <span id="stat-completed" class="stat-num">0/8</span></div>
+        </div>
+        <div class="stats-group">
+          <div class="stat-badge">⏱️ <span id="stat-timer" class="stat-num">00:00</span></div>
+          <div id="stat-diff-badge" class="stat-badge" style="color:var(--brass-gold);">初級</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- フェルト卓 -->
+    <div class="table-felt">
+      <div class="top-zones">
+        <div class="completed-slots" id="completed-slots"></div>
+        <div class="stock-area" onclick="dealStock()">
+          <span style="font-size:0.75rem; font-weight:800; color:var(--brass-gold);">山札配当</span>
+          <div class="stock-deck" id="stock-deck"></div>
+        </div>
+      </div>
+      <div class="tableau" id="tableau"></div>
+    </div>
+
+    <!-- ランキングボード（難易度別TOP10） -->
+    <div class="ranking-container">
+      <div class="ranking-header">
+        <div class="ranking-title">🏆 タイムランキング TOP 10</div>
+        <div id="ranking-diff-label" class="ranking-diff-tag">初級 (♠1種)</div>
+      </div>
+      <div id="ranking-list" class="ranking-list"></div>
+    </div>
+  </div>
+
+  <div id="modal-rules" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">📖 スパイダーのあそびかた</div>
+      <div class="modal-body">
+        <p>104枚のカードを並び替え、<b>KからAまでの13枚の同色階段</b>を8組完成させて消去するゲームです。</p>
+        <br>
+        <b style="color:var(--brass-gold);">【カードの移動ルール】</b>
+        <ul style="padding-left:18px; margin:6px 0;">
+          <li>マークに関係なく、<b>数字が1つ小さいカード</b>の上に重ねられます（例: 8の上に7）。</li>
+          <li><b>同じマークで連続した階段</b>の束は、まとめて一緒に動かせます。</li>
+          <li>空になった列には、どのカード（または同色連番の束）でも置くことができます。</li>
+        </ul>
+        <br>
+        <b style="color:var(--brass-gold);">【消去と山札配当】</b>
+        <ul style="padding-left:18px; margin:6px 0;">
+          <li>同じマークで<b>「K・Q・J・10…2・A」</b>が揃うと自動で完成枠へ消去されます。</li>
+          <li>動かせる手がなくなったら、右上の<b>山札をタップ</b>すると全10列にカードが1枚ずつ配られます（※空列がある時は配れません）。</li>
+        </ul>
+      </div>
+      <button class="modal-close-btn" onclick="toggleRulesModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <div id="modal-settings" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">⚙ 設定</div>
+      <div class="modal-body">
+        <div class="setting-item">
+          <span>難易度</span>
+          <select id="diff-selector" class="theme-select" onchange="changeDifficulty(this.value)">
+            <option value="1" selected>初級 (♠ 1種)</option>
+            <option value="2">中級 (♠ ♥ 2種)</option>
+            <option value="4">上級 (4種すべて)</option>
+          </select>
+        </div>
+      </div>
+      <button class="modal-close-btn" onclick="toggleSettingsModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    window.addEventListener('pointerdown', () => getAudio(), { once: true });
+
+    function playCardSlideSound() {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(380, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
+      } catch(e) {}
+    }
+
+    function playFanfareSound() {
+      try {
+        const ctx = getAudio();
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.08 + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.08);
+          osc.stop(ctx.currentTime + idx * 0.08 + 0.26);
+        });
+      } catch(e) {}
+    }
+
+    const SUIT_SVGS = {
+      spades: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 C8 8 3 10 3 15 C3 18.5 6 20 8.5 20 C10.5 20 11.5 19 12 17.5 C12.5 19 13.5 20 15.5 20 C18 20 21 18.5 21 15 C21 10 16 8 12 2 Z M10.5 19 L9 22 L15 22 L13.5 19 Z"/></svg>`,
+      hearts: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21 C12 21 3 14 3 8.5 C3 5.5 5.5 3 8.5 3 C10.5 3 11.5 4 12 5 C12.5 4 13.5 3 15.5 3 C18.5 3 21 5.5 21 8.5 C21 14 12 21 12 21 Z"/></svg>`,
+      diamonds: `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12,2 21,12 12,22 3,12"/></svg>`,
+      clubs: `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7" r="4.5"/><circle cx="7" cy="14" r="4.5"/><circle cx="17" cy="14" r="4.5"/><polygon points="10.5,14 13.5,14 15,22 9,22"/></svg>`
+    };
+    const RANK_LABELS = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+    let suitCount = 1;
+    let tableau = [[], [], [], [], [], [], [], [], [], []];
+    let stock = [];
+    let completedSets = 0;
+    let moveCount = 0;
+    let selectedCol = null;
+    let selectedIndex = null;
+    let historyStack = [];
+
+    let timerInterval = null;
+    let secondsElapsed = 0;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initGame();
+    });
+
+    function startTimer() {
+      stopTimer();
+      secondsElapsed = 0;
+      updateTimerUI();
+      timerInterval = setInterval(() => {
+        secondsElapsed++;
+        updateTimerUI();
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    function updateTimerUI() {
+      document.getElementById('stat-timer').textContent = formatTime(secondsElapsed);
+    }
+
+    function formatTime(totalSec) {
+      const m = String(Math.floor(totalSec / 60)).padStart(2, '0');
+      const s = String(totalSec % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function initGame() {
+      tableau = [[], [], [], [], [], [], [], [], [], []];
+      stock = [];
+      completedSets = 0;
+      moveCount = 0;
+      selectedCol = null;
+      selectedIndex = null;
+      historyStack = [];
+
+      let deck = [];
+      let suitsToUse = [];
+      if (suitCount === 1) suitsToUse = Array(8).fill('spades');
+      else if (suitCount === 2) suitsToUse = [...Array(4).fill('spades'), ...Array(4).fill('hearts')];
+      else suitsToUse = [...Array(2).fill('spades'), ...Array(2).fill('hearts'), ...Array(2).fill('diamonds'), ...Array(2).fill('clubs')];
+
+      suitsToUse.forEach(suit => {
+        for (let r = 1; r <= 13; r++) {
+          deck.push({ suit, rank: r, faceUp: false });
+        }
+      });
+      deck.sort(() => Math.random() - 0.5);
+
+      for (let c = 0; c < 10; c++) {
+        const count = (c < 4) ? 6 : 5;
+        for (let i = 0; i < count; i++) {
+          const card = deck.pop();
+          if (i === count - 1) card.faceUp = true;
+          tableau[c].push(card);
+        }
+      }
+
+      stock = [];
+      while (deck.length > 0) {
+        stock.push(deck.splice(0, 10));
+      }
+
+      updateUI();
+      renderTableau();
+      renderStock();
+      renderCompleted();
+      renderRanking();
+      startTimer();
+    }
+
+    function saveState() {
+      historyStack.push({
+        tableau: JSON.parse(JSON.stringify(tableau)),
+        stock: JSON.parse(JSON.stringify(stock)),
+        completedSets,
+        moveCount
+      });
+    }
+
+    function undoMove() {
+      if (historyStack.length === 0) return;
+      const last = historyStack.pop();
+      tableau = last.tableau;
+      stock = last.stock;
+      completedSets = last.completedSets;
+      moveCount = last.moveCount;
+      selectedCol = null;
+      selectedIndex = null;
+      playCardSlideSound();
+      updateUI();
+      renderTableau();
+      renderStock();
+      renderCompleted();
+    }
+
+    function updateUI() {
+      document.getElementById('stat-moves').textContent = moveCount;
+      document.getElementById('stat-completed').textContent = `${completedSets}/8`;
+      const diffLabel = suitCount === 1 ? '初級' : suitCount === 2 ? '中級' : '上級';
+      document.getElementById('stat-diff-badge').textContent = diffLabel;
+    }
+
+    function renderCompleted() {
+      const container = document.getElementById('completed-slots');
+      container.innerHTML = '';
+      for (let i = 0; i < 8; i++) {
+        const pile = document.createElement('div');
+        pile.className = 'comp-pile' + (i < completedSets ? ' filled' : '');
+        if (i < completedSets) {
+          pile.innerHTML = `<span style="color:var(--brass-gold); font-size:0.75rem; font-weight:900;">K</span>`;
+        }
+        container.appendChild(pile);
+      }
+    }
+
+    function renderStock() {
+      const deckEl = document.getElementById('stock-deck');
+      deckEl.innerHTML = '';
+      stock.forEach((_, idx) => {
+        const c = document.createElement('div');
+        c.className = 'card back';
+        c.style.position = 'absolute';
+        c.style.left = `${idx * 2}px`;
+        c.style.top = '0';
+        deckEl.appendChild(c);
+      });
+    }
+
+    function renderTableau() {
+      const container = document.getElementById('tableau');
+      container.innerHTML = '';
+
+      for (let c = 0; c < 10; c++) {
+        const colEl = document.createElement('div');
+        colEl.className = 'column';
+        colEl.dataset.col = c;
+        colEl.onclick = (e) => {
+          if (e.target === colEl || e.target.classList.contains('column-slot-base')) {
+            onColumnEmptyClick(c);
+          }
+        };
+
+        const base = document.createElement('div');
+        base.className = 'column-slot-base';
+        colEl.appendChild(base);
+
+        let topOffset = 0;
+        tableau[c].forEach((card, idx) => {
+          const cardEl = document.createElement('div');
+          const isSelected = (selectedCol === c && idx >= selectedIndex);
+
+          if (!card.faceUp) {
+            cardEl.className = 'card back';
+          } else {
+            const isRed = (card.suit === 'hearts' || card.suit === 'diamonds');
+            cardEl.className = `card face ${isRed ? 'red' : 'black'}` + (isSelected ? ' selected' : '');
+            cardEl.innerHTML = `
+              <div class="card-corner">
+                <span>${RANK_LABELS[card.rank]}</span>
+                ${SUIT_SVGS[card.suit]}
+              </div>
+              <div class="card-center-suit">${SUIT_SVGS[card.suit]}</div>
+              <div class="card-corner" style="transform: rotate(180deg);">
+                <span>${RANK_LABELS[card.rank]}</span>
+                ${SUIT_SVGS[card.suit]}
+              </div>
+            `;
+          }
+
+          cardEl.style.top = `${topOffset}px`;
+          cardEl.style.zIndex = idx + 1;
+          topOffset += card.faceUp ? 20 : 10;
+
+          cardEl.onclick = (e) => {
+            e.stopPropagation();
+            onCardClick(c, idx);
+          };
+
+          colEl.appendChild(cardEl);
+        });
+
+        container.appendChild(colEl);
+      }
+    }
+
+    function isValidSequence(colIdx, startIdx) {
+      const col = tableau[colIdx];
+      for (let i = startIdx; i < col.length - 1; i++) {
+        if (!col[i].faceUp || !col[i + 1].faceUp) return false;
+        if (col[i].suit !== col[i + 1].suit) return false;
+        if (col[i].rank !== col[i + 1].rank + 1) return false;
+      }
+      return true;
+    }
+
+    function onCardClick(colIdx, cardIdx) {
+      const col = tableau[colIdx];
+      const card = col[cardIdx];
+
+      if (!card.faceUp) return;
+
+      if (selectedCol !== null) {
+        if (selectedCol === colIdx) {
+          if (selectedIndex === cardIdx) {
+            selectedCol = null;
+            selectedIndex = null;
+          } else if (isValidSequence(colIdx, cardIdx)) {
+            selectedIndex = cardIdx;
+          }
+          renderTableau();
+          return;
+        }
+
+        if (cardIdx === col.length - 1) {
+          const movingCard = tableau[selectedCol][selectedIndex];
+          if (card.rank === movingCard.rank + 1) {
+            executeMove(selectedCol, selectedIndex, colIdx);
+            return;
+          }
+        }
+
+        if (isValidSequence(colIdx, cardIdx)) {
+          selectedCol = colIdx;
+          selectedIndex = cardIdx;
+          renderTableau();
+        }
+        return;
+      }
+
+      if (isValidSequence(colIdx, cardIdx)) {
+        selectedCol = colIdx;
+        selectedIndex = cardIdx;
+
+        const movingCard = col[cardIdx];
+        let targetCol = null;
+
+        for (let c = 0; c < 10; c++) {
+          if (c === colIdx) continue;
+          const targetCard = tableau[c][tableau[c].length - 1];
+          if (targetCard && targetCard.faceUp && targetCard.rank === movingCard.rank + 1 && targetCard.suit === movingCard.suit) {
+            targetCol = c;
+            break;
+          }
+        }
+        if (targetCol === null) {
+          for (let c = 0; c < 10; c++) {
+            if (c === colIdx) continue;
+            const targetCard = tableau[c][tableau[c].length - 1];
+            if (targetCard && targetCard.faceUp && targetCard.rank === movingCard.rank + 1) {
+              targetCol = c;
+              break;
+            }
+          }
+        }
+
+        if (targetCol !== null) {
+          executeMove(selectedCol, selectedIndex, targetCol);
+          return;
+        }
+
+        renderTableau();
+      }
+    }
+
+    function onColumnEmptyClick(colIdx) {
+      if (selectedCol !== null) {
+        if (tableau[colIdx].length === 0) {
+          executeMove(selectedCol, selectedIndex, colIdx);
+        }
+      }
+    }
+
+    function executeMove(fromCol, fromIdx, toCol) {
+      saveState();
+      playCardSlideSound();
+
+      const movingCards = tableau[fromCol].splice(fromIdx);
+      tableau[toCol].push(...movingCards);
+
+      if (tableau[fromCol].length > 0) {
+        const last = tableau[fromCol][tableau[fromCol].length - 1];
+        if (!last.faceUp) last.faceUp = true;
+      }
+
+      selectedCol = null;
+      selectedIndex = null;
+      moveCount++;
+
+      checkCompletedSet(toCol);
+
+      updateUI();
+      renderTableau();
+    }
+
+    function checkCompletedSet(colIdx) {
+      const col = tableau[colIdx];
+      if (col.length < 13) return;
+
+      const last13 = col.slice(col.length - 13);
+      if (!last13[0].faceUp || last13[0].rank !== 13) return;
+
+      const targetSuit = last13[0].suit;
+      for (let i = 0; i < 13; i++) {
+        if (last13[i].suit !== targetSuit || last13[i].rank !== (13 - i)) {
+          return;
+        }
+      }
+
+      col.splice(col.length - 13, 13);
+      completedSets++;
+      playFanfareSound();
+
+      if (col.length > 0) {
+        col[col.length - 1].faceUp = true;
+      }
+
+      renderCompleted();
+
+      if (completedSets === 8) {
+        stopTimer();
+        saveRankingRecord(secondsElapsed, moveCount);
+        renderRanking();
+        setTimeout(() => alert(`🎉 お見事！スパイダーソリティアを完全制覇しました！\n手数: ${moveCount}手 / タイム: ${formatTime(secondsElapsed)}`), 300);
+      }
+    }
+
+    function dealStock() {
+      if (stock.length === 0) return;
+
+      const hasEmpty = tableau.some(col => col.length === 0);
+      if (hasEmpty) {
+        alert('空いている列があると山札を配れません！カードを置いてください。');
+        return;
+      }
+
+      saveState();
+      playCardSlideSound();
+
+      const cards = stock.pop();
+      for (let c = 0; c < 10; c++) {
+        const card = cards[c];
+        card.faceUp = true;
+        tableau[c].push(card);
+        checkCompletedSet(c);
+      }
+
+      renderStock();
+      renderTableau();
+    }
+
+    const DIFF_NAMES = {
+      1: '初級 (♠1種)',
+      2: '中級 (♠♥2種)',
+      4: '上級 (4種)'
+    };
+
+    function getRankingStorageKey() {
+      return `spider_ranking_diff_${suitCount}`;
+    }
+
+    function saveRankingRecord(timeSec, moves) {
+      const key = getRankingStorageKey();
+      let records = [];
+      try {
+        records = JSON.parse(localStorage.getItem(key)) || [];
+      } catch(e) { records = []; }
+
+      const d = new Date();
+      const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
+      records.push({ time: timeSec, moves: moves, date: dateStr });
+      records.sort((a, b) => a.time - b.time || a.moves - b.moves);
+      records = records.slice(0, 10);
+
+      try {
+        localStorage.setItem(key, JSON.stringify(records));
+      } catch(e) {}
+    }
+
+    function renderRanking() {
+      document.getElementById('ranking-diff-label').textContent = DIFF_NAMES[suitCount] || '初級';
+      const container = document.getElementById('ranking-list');
+      container.innerHTML = '';
+
+      const key = getRankingStorageKey();
+      let records = [];
+      try {
+        records = JSON.parse(localStorage.getItem(key)) || [];
+      } catch(e) { records = []; }
+
+      if (records.length === 0) {
+        container.innerHTML = `<div class="ranking-empty">まだ記録がありません。クリアしてランクインを目指そう！</div>`;
+        return;
+      }
+
+      records.forEach((rec, idx) => {
+        const item = document.createElement('div');
+        item.className = 'ranking-item';
+        const rankClass = idx === 0 ? 'top1' : idx === 1 ? 'top2' : idx === 2 ? 'top3' : '';
+        item.innerHTML = `
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="ranking-rank ${rankClass}">${idx + 1}位</span>
+            <div class="ranking-score">
+              <span class="ranking-time">${formatTime(rec.time)}</span>
+              <span class="ranking-moves">(${rec.moves}手)</span>
+            </div>
+          </div>
+          <span class="ranking-date">${rec.date}</span>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function getHint() {
+      document.querySelectorAll('.card.hinted').forEach(c => c.classList.remove('hinted'));
+
+      for (let fromC = 0; fromC < 10; fromC++) {
+        const col = tableau[fromC];
+        for (let i = 0; i < col.length; i++) {
+          if (!col[i].faceUp || !isValidSequence(fromC, i)) continue;
+
+          const moving = col[i];
+          for (let toC = 0; toC < 10; toC++) {
+            if (fromC === toC) continue;
+            const targetCol = tableau[toC];
+
+            if (targetCol.length === 0) {
+              if (i > 0 && !col[i - 1].faceUp) {
+                highlightHint(fromC, i);
+                return;
+              }
+            } else {
+              const targetCard = targetCol[targetCol.length - 1];
+              if (targetCard.faceUp && targetCard.rank === moving.rank + 1) {
+                highlightHint(fromC, i);
+                return;
+              }
+            }
+          }
+        }
+      }
+      alert('動かせる手がありません。山札を配るか1手戻してください🔀');
+    }
+
+    function highlightHint(colIdx, cardIdx) {
+      const colEl = document.querySelector(`.column[data-col="${colIdx}"]`);
+      if (colEl) {
+        const cardEls = colEl.querySelectorAll('.card');
+        if (cardEls[cardIdx]) cardEls[cardIdx].classList.add('hinted');
+      }
+    }
+
+    function toggleRulesModal(show) {
+      document.getElementById('modal-rules').classList.toggle('active', show);
+    }
+    function toggleSettingsModal(show) {
+      document.getElementById('modal-settings').classList.toggle('active', show);
+    }
+    function changeDifficulty(val) {
+      suitCount = parseInt(val, 10);
+      toggleSettingsModal(false);
+      initGame();
+    }
+    function restartGame() {
+      if (confirm('最初から配り直しますか？')) initGame();
+    }
+  </script>
+</body>
+</html>
