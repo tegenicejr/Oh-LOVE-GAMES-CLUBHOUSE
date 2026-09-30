@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>四川省 (Shisen-Sho)</title>
+  <style>
+    :root {
+      --bg-desk: #14100c;
+      --board-wood: #261910;
+      --board-rim: #422d1d;
+      --brass-gold: #e5a950;
+      --brass-glow: rgba(229, 169, 80, 0.55);
+      --tile-w: 46px;
+      --tile-h: 60px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-desk);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      color: #fff;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .viewport {
+      width: 100%;
+      min-height: 100%;
+      padding: calc(14px + env(safe-area-inset-top)) 8px calc(40px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: radial-gradient(circle at 50% 25%, #2a1c12 0%, var(--bg-desk) 100%);
+      position: relative;
+    }
+
+    /* === 2段構成のトップバー === */
+    .topbar {
+      width: 100%;
+      max-width: 660px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding: 0 4px;
+    }
+
+    /* 上段：設定、やり直す、シャッフル、ヒント、遊び方 */
+    .topbar-upper {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .tool-btn {
+      background: #2f2015;
+      border: 1.5px solid #573c27;
+      color: var(--brass-gold);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.1);
+      transition: transform 0.15s, background 0.15s, border-color 0.15s;
+    }
+    .tool-btn:hover {
+      background: #442e1f;
+      border-color: var(--brass-gold);
+      transform: translateY(-2px);
+    }
+    .tool-btn:active {
+      transform: scale(0.92);
+    }
+
+    /* 下段：残り牌・コンボ情報 */
+    .topbar-lower {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2px;
+    }
+    .stats-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .stat-badge {
+      background: rgba(0, 0, 0, 0.55);
+      border: 1.5px solid #4a3424;
+      border-radius: 14px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #dfd2c4;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+    }
+    .stat-num {
+      color: var(--brass-gold);
+      font-size: 1.1rem;
+      font-weight: 900;
+      font-feature-settings: "tnum";
+    }
+    .combo-badge {
+      display: none;
+      background: linear-gradient(135deg, #e67e22, #d35400);
+      color: #fff;
+      padding: 5px 12px;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      font-weight: 900;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+      animation: comboPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes comboPop {
+      0% { transform: scale(0.6); }
+      100% { transform: scale(1); }
+    }
+
+    /* 盤面 */
+    .board-frame {
+      position: relative;
+      background: radial-gradient(circle at 50% 30%, #362316 0%, #1a100a 100%);
+      border: 8px solid var(--board-rim);
+      border-radius: 22px;
+      padding: 12px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.9), inset 0 2px 4px rgba(255,255,255,0.15), inset 0 0 30px rgba(0,0,0,0.7);
+      touch-action: manipulation;
+    }
+    #tile-grid {
+      display: grid;
+      gap: 5px;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* 牌の立体クラフト造形（象牙彫り＋竹目エッジ） */
+    .tile {
+      width: var(--tile-w);
+      height: var(--tile-h);
+      position: relative;
+      cursor: pointer;
+      border-radius: 7px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbf8f0 60%, #e8decb 100%);
+      border-top: 1px solid #ffffff;
+      border-left: 1px solid #ffffff;
+      border-right: 2.5px solid #a6947b;
+      border-bottom: 5px solid #6f5f4b;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.12s cubic-bezier(0.2, 0, 0.1, 1), box-shadow 0.12s;
+      overflow: hidden;
+    }
+    @media (max-width: 580px) {
+      :root {
+        --tile-w: 32px;
+        --tile-h: 44px;
+      }
+    }
+    .tile:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 18px rgba(0,0,0,0.65);
+    }
+    .tile.selected {
+      transform: translateY(-6px) scale(1.06);
+      outline: 3.5px solid var(--brass-gold);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.8), 0 0 16px var(--brass-glow);
+      z-index: 5;
+    }
+    .tile.hinted {
+      animation: pulseHint 0.8s infinite alternate ease-in-out;
+      outline: 3.5px solid #2ecc71;
+    }
+    @keyframes pulseHint {
+      from { box-shadow: 0 0 6px #2ecc71; transform: scale(1); }
+      to { box-shadow: 0 0 20px #2ecc71; transform: translateY(-3px) scale(1.06); }
+    }
+    .tile.clearing {
+      animation: clearVanish 0.26s forwards ease-out;
+      pointer-events: none;
+    }
+    @keyframes clearVanish {
+      0% { transform: scale(1); opacity: 1; filter: brightness(1.6); }
+      100% { transform: scale(0.3) rotate(8deg); opacity: 0; }
+    }
+    .tile.empty {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    /* 牌のグラフィック */
+    .tile-svg {
+      width: 78%;
+      height: 78%;
+      display: block;
+      pointer-events: none;
+      filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
+    }
+
+    /* 麻雀牌専用レイアウト（文字なし・本物彫刻調） */
+    .mj-tile-content {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.05;
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", "MS PMincho", serif;
+      font-weight: 900;
+      pointer-events: none;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.15);
+    }
+    .mj-num {
+      font-size: 1.25rem;
+      letter-spacing: -1px;
+    }
+    .mj-type {
+      font-size: 1.15rem;
+    }
+    .mj-single {
+      font-size: 1.8rem;
+    }
+    @media (max-width: 580px) {
+      .mj-num { font-size: 0.95rem; }
+      .mj-type { font-size: 0.88rem; }
+      .mj-single { font-size: 1.45rem; }
+    }
+
+    /* ライン描画 Canvas */
+    #path-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* モーダル */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(5px);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-sheet {
+      background: #241911;
+      border: 3px solid #583d28;
+      border-radius: 20px;
+      padding: 22px;
+      width: 88%;
+      max-width: 460px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.9);
+      color: #f5ebe1;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-title {
+      text-align: center;
+      color: var(--brass-gold);
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    .modal-body {
+      overflow-y: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      color: #d8c8bb;
+      margin-bottom: 16px;
+      padding-right: 6px;
+    }
+    .modal-body::-webkit-scrollbar { width: 6px; }
+    .modal-body::-webkit-scrollbar-thumb { background: #583d28; border-radius: 3px; }
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #3c291a;
+    }
+    .theme-select {
+      background: #332215;
+      color: #fff;
+      border: 1.5px solid var(--brass-gold);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      outline: none;
+    }
+    .modal-close-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(180deg, #e5a950, #c48b11);
+      border: none;
+      border-radius: 12px;
+      color: #1a1008;
+      font-weight: 900;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="viewport">
+    <!-- === 2段構成トップバー === -->
+    <div class="topbar">
+      <!-- 上段：ツール操作ボタン -->
+      <div class="topbar-upper">
+        <div class="tool-btn" onclick="toggleSettingsModal(true)" title="設定">⚙️</div>
+        <div class="tool-btn" onclick="restartGame()" title="最初から">🔄</div>
+        <div class="tool-btn" onclick="manualShuffle()" title="シャッフル">🔀</div>
+        <div class="tool-btn" onclick="getHint()" title="ヒント">💡</div>
+        <div class="tool-btn" onclick="toggleRulesModal(true)" title="あそびかた">📖</div>
+      </div>
+
+      <!-- 下段：ゲーム状況表示 -->
+      <div class="topbar-lower">
+        <div class="stats-group">
+          <div class="stat-badge">残り牌 <span id="stat-left" class="stat-num">0</span></div>
+          <div id="stat-combo" class="combo-badge">🔥 2 COMBO!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 盤面フレーム -->
+    <div class="board-frame">
+      <div id="tile-grid"></div>
+      <canvas id="path-canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- 📖 あそびかた説明書 -->
+  <div id="modal-rules" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">📖 四川省（二角取り）のあそびかた</div>
+      <div class="modal-body">
+        <p>同じ絵柄の牌を2つ選び、盤面からすべて消せばゲームクリアです。</p>
+        <br>
+        <b style="color:var(--brass-gold);">【消せる二角取りルール】</b>
+        <p>選んだ2つの牌を直線で結んだとき、<b>曲がる回数が2回以内</b>（折れ曲がり角が2個以下）で繋がれば消すことができます。</p>
+        <ul style="padding-left:18px; margin: 6px 0;">
+          <li><b>直線（0回曲がり）</b>：隣接している、または間に邪魔な牌がない。</li>
+          <li><b>L字（1回曲がり）</b>：角を1度だけ曲がって直角に結べる。</li>
+          <li><b>コ字（2回曲がり）</b>：外周の余白スペースを通ったり、2回曲がって結べる。</li>
+        </ul>
+        <br>
+        <b style="color:var(--brass-gold);">【連鎖コンボ ＆ お助け機能】</b>
+        <p>テンポよく連続で消すとコンボが発生します。取れる牌が分からないときは「💡」、手詰まりのときは「🔀」で盤面をシャッフルできます。</p>
+      </div>
+      <button class="modal-close-btn" onclick="toggleRulesModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <!-- ⚙️ 設定モーダル -->
+  <div id="modal-settings" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">⚙️ ゲーム設定</div>
+      <div class="modal-body">
+        <div class="setting-item">
+          <span>牌のテーマ（4系統）</span>
+          <select id="theme-selector" class="theme-select" onchange="changeTheme(this.value)">
+            <option value="mahjong" selected>クラシック本格麻雀 (象牙・竹) 🀄</option>
+            <option value="cats">にゃんこクラブ (ねこ・肉球) 🐾</option>
+            <option value="tarot">星空タロット (ファンタジー) 🌙</option>
+            <option value="cafe">ティータイムスイーツ (カフェ) 🍰</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <span>盤面サイズ</span>
+          <select id="size-selector" class="theme-select" onchange="changeSize(this.value)">
+            <option value="8x6">初級 (8 × 6 = 48牌)</option>
+            <option value="10x6" selected>中級 (10 × 6 = 60牌)</option>
+            <option value="12x6">上級 (12 × 6 = 72牌)</option>
+          </select>
+        </div>
+      </div>
+      <button class="modal-close-btn" onclick="toggleSettingsModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    /* ========================================================
+       Web Audio API 高品質サウンドエンジン
+       ======================================================== */
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    window.addEventListener('pointerdown', () => getAudio(), { once: true });
+
+    function playTileClickSound() {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(750, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.28, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.06);
+      } catch(e) {}
+    }
+
+    function playMatchSound(combo) {
+      try {
+        const ctx = getAudio();
+        const baseFreq = 523.25 * Math.min(1.6, 1 + (combo * 0.08));
+        [baseFreq, baseFreq * 1.5].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.06);
+          gain.gain.setValueAtTime(0.22, ctx.currentTime + idx * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.06 + 0.22);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.06);
+          osc.stop(ctx.currentTime + idx * 0.06 + 0.23);
+        });
+      } catch(e) {}
+    }
+
+    function playVictoryFanfare() {
+      try {
+        const ctx = getAudio();
+        const melody = [523.25, 659.25, 783.99, 1046.50];
+        melody.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.12);
+          gain.gain.setValueAtTime(0.25, ctx.currentTime + idx * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.12 + 0.35);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.12);
+          osc.stop(ctx.currentTime + idx * 0.12 + 0.36);
+        });
+      } catch(e) {}
+    }
+
+    /* ========================================================
+       牌テーマ定義（絵文字ゼロ・完全ベクター/刻印パーツ）
+       ======================================================== */
+    const TILE_SETS = {
+      // 1. クラシック本格麻雀 (デフォルト)
+      mahjong: [
+        { type: 'pair', top: '一', bot: '萬', col: '#c0392b' },
+        { type: 'pair', top: '三', bot: '萬', col: '#c0392b' },
+        { type: 'pair', top: '五', bot: '萬', col: '#c0392b' },
+        { type: 'pair', top: '七', bot: '萬', col: '#c0392b' },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><circle cx="30" cy="18" r="9" fill="none" stroke="#2980b9" stroke-width="4"/><circle cx="30" cy="18" r="3.5" fill="#2980b9"/><circle cx="30" cy="42" r="9" fill="none" stroke="#27ae60" stroke-width="4"/><circle cx="30" cy="42" r="3.5" fill="#27ae60"/></svg>` }, // 二筒
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><circle cx="18" cy="18" r="7.5" fill="#2980b9"/><circle cx="42" cy="18" r="7.5" fill="#27ae60"/><circle cx="18" cy="42" r="7.5" fill="#27ae60"/><circle cx="42" cy="42" r="7.5" fill="#2980b9"/></svg>` }, // 四筒
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><circle cx="30" cy="30" r="16" fill="none" stroke="#c0392b" stroke-width="5"/><circle cx="30" cy="30" r="7" fill="#c0392b"/></svg>` }, // 一筒 (大輪)
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><line x1="20" y1="12" x2="20" y2="48" stroke="#27ae60" stroke-width="6" stroke-linecap="round"/><line x1="40" y1="12" x2="40" y2="48" stroke="#27ae60" stroke-width="6" stroke-linecap="round"/></svg>` }, // 二索
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><line x1="30" y1="10" x2="30" y2="28" stroke="#2980b9" stroke-width="6" stroke-linecap="round"/><line x1="18" y1="34" x2="18" y2="50" stroke="#27ae60" stroke-width="6" stroke-linecap="round"/><line x1="42" y1="34" x2="42" y2="50" stroke="#27ae60" stroke-width="6" stroke-linecap="round"/></svg>` }, // 三索
+        { type: 'single', txt: '東', col: '#111' },
+        { type: 'single', txt: '發', col: '#1e824c' },
+        { type: 'single', txt: '中', col: '#d63031' }
+      ],
+
+      // 2. にゃんこクラブ (ねこ・肉球)
+      cats: [
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><path d="M14 18 L18 34 L10 32 Z" fill="#e67e22"/><path d="M46 18 L42 34 L50 32 Z" fill="#e67e22"/><ellipse cx="30" cy="35" rx="18" ry="15" fill="#f39c12"/><circle cx="23" cy="32" r="3.5" fill="#2c3e50"/><circle cx="37" cy="32" r="3.5" fill="#2c3e50"/><ellipse cx="30" cy="39" rx="3" ry="2" fill="#c0392b"/><path d="M22 39 Q30 43 38 39" fill="none" stroke="#2c3e50" stroke-width="2" stroke-linecap="round"/></svg>` }, // 茶トラ
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><path d="M14 18 L18 34 L10 32 Z" fill="#1e272e"/><path d="M46 18 L42 34 L50 32 Z" fill="#1e272e"/><ellipse cx="30" cy="35" rx="18" ry="15" fill="#2d3436"/><circle cx="23" cy="33" r="4.5" fill="#f1c40f"/><circle cx="37" cy="33" r="4.5" fill="#f1c40f"/><circle cx="23" cy="33" r="2" fill="#000"/><circle cx="37" cy="33" r="2" fill="#000"/></svg>` }, // 黒猫
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><path d="M14 18 L18 34 L10 32 Z" fill="#d2dae2"/><path d="M46 18 L42 34 L50 32 Z" fill="#d2dae2"/><ellipse cx="30" cy="35" rx="18" ry="15" fill="#f5f6fa"/><circle cx="23" cy="33" r="3.5" fill="#3498db"/><circle cx="37" cy="33" r="3.5" fill="#2ecc71"/><ellipse cx="30" cy="39" rx="2.5" ry="1.5" fill="#ff7675"/></svg>` }, // 白猫
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><ellipse cx="30" cy="38" rx="15" ry="12" fill="#ff7675"/><circle cx="17" cy="24" r="5.5" fill="#ff7675"/><circle cx="25" cy="18" r="5.5" fill="#ff7675"/><circle cx="35" cy="18" r="5.5" fill="#ff7675"/><circle cx="43" cy="24" r="5.5" fill="#ff7675"/></svg>` }, // ピンク肉球
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><ellipse cx="30" cy="38" rx="15" ry="12" fill="#e5a950"/><circle cx="17" cy="24" r="5.5" fill="#e5a950"/><circle cx="25" cy="18" r="5.5" fill="#e5a950"/><circle cx="35" cy="18" r="5.5" fill="#e5a950"/><circle cx="43" cy="24" r="5.5" fill="#e5a950"/></svg>` }, // 金肉球
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><ellipse cx="30" cy="30" rx="18" ry="9" fill="#0984e3"/><polygon points="46,30 56,22 56,38" fill="#0984e3"/><circle cx="18" cy="29" r="2.5" fill="#fff"/><circle cx="18" cy="29" r="1.2" fill="#000"/><path d="M26 23 Q30 30 26 37" fill="none" stroke="#74b9ff" stroke-width="2.5" stroke-linecap="round"/></svg>` }, // おさかな
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><circle cx="30" cy="30" r="18" fill="#e84393"/><path d="M18 20 C28 26 32 38 42 40" fill="none" stroke="#fd79a8" stroke-width="3"/><path d="M20 38 C32 30 38 22 40 18" fill="none" stroke="#fd79a8" stroke-width="3"/><path d="M38 42 Q46 52 52 46" fill="none" stroke="#e84393" stroke-width="3" stroke-linecap="round"/></svg>` }, // 毛糸玉
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><circle cx="30" cy="32" r="15" fill="#f1c40f"/><path d="M18 32 L42 32" stroke="#b78a10" stroke-width="2"/><circle cx="30" cy="38" r="3.5" fill="#333"/><rect x="25" y="14" width="10" height="5" rx="2" fill="#e67e22"/></svg>` }, // 首輪の鈴
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><path d="M16 26 C16 18 26 18 30 24 C34 18 44 18 44 26 C44 38 30 46 30 46 C30 46 16 38 16 26 Z" fill="#e74c3c"/></svg>` }, // ハート
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><polygon points="30,12 34,22 45,22 36,29 39,40 30,33 21,40 24,29 15,22 26,22" fill="#f39c12"/></svg>` }, // スター
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><circle cx="20" cy="30" r="10" fill="#fd79a8"/><circle cx="40" cy="30" r="10" fill="#fd79a8"/><circle cx="30" cy="30" r="6" fill="#e84393"/></svg>` }, // リボン
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><rect x="14" y="20" width="32" height="24" rx="4" fill="#a4b0be"/><ellipse cx="30" cy="20" rx="16" ry="5" fill="#dfe4ea"/><path d="M22 28 Q30 34 38 28" fill="none" stroke="#2f3542" stroke-width="2"/></svg>` } // ねこ缶
+      ],
+
+      // 3. 星空タロット (ファンタジー)
+      tarot: [
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><path d="M38 12 A18 18 0 1 1 20 44 A14 14 0 0 0 38 12 Z" fill="#f1c40f"/><polygon points="20,18 22,23 27,23 23,26 25,31 20,28 16,31 18,26 14,23 19,23" fill="#f39c12"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><circle cx="30" cy="30" r="11" fill="#e67e22"/><g stroke="#f39c12" stroke-width="3" stroke-linecap="round"><line x1="30" y1="8" x2="30" y2="14"/><line x1="30" y1="46" x2="30" y2="52"/><line x1="8" y1="30" x2="14" y2="30"/><line x1="46" y1="30" x2="52" y2="30"/><line x1="15" y1="15" x2="20" y2="20"/><line x1="40" y1="40" x2="45" y2="45"/><line x1="45" y1="15" x2="40" y2="20"/><line x1="15" y1="45" x2="20" y2="40"/></g></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><polygon points="30,8 37,23 52,30 37,37 30,52 23,37 8,30 23,23" fill="#9b59b6"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><polygon points="30,12 44,24 38,48 22,48 16,24" fill="#00cec9"/><polygon points="30,12 38,24 30,48 22,24" fill="#81ecec"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><path d="M12 40 Q30 8 48 40 Z" fill="#2d3436"/><circle cx="30" cy="28" r="5" fill="#f1c40f"/><path d="M22 46 L38 46" stroke="#e17055" stroke-width="3"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><ellipse cx="30" cy="32" rx="16" ry="12" fill="#2980b9"/><circle cx="30" cy="32" r="7" fill="#fff"/><circle cx="30" cy="32" r="4" fill="#111"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><path d="M18 48 L18 24 Q30 14 42 24 L42 48 Z" fill="#8e44ad"/><line x1="30" y1="18" x2="30" y2="48" stroke="#fdcb6e" stroke-width="3"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><circle cx="30" cy="30" r="14" fill="#34495e"/><ellipse cx="23" cy="27" rx="4" ry="6" fill="#f1c40f"/><ellipse cx="37" cy="27" rx="4" ry="6" fill="#f1c40f"/><polygon points="30,32 27,37 33,37" fill="#e67e22"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><path d="M14 16 L46 44 M14 44 L46 16" stroke="#d63031" stroke-width="5" stroke-linecap="round"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><circle cx="30" cy="30" r="18" fill="none" stroke="#d4af37" stroke-width="4"/><polygon points="30,18 38,36 22,36" fill="#d4af37"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><path d="M16 44 Q24 24 38 14 Q32 28 44 26 Q30 38 16 44 Z" fill="#27ae60"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><circle cx="30" cy="30" r="16" fill="#6c5ce7"/><circle cx="26" cy="24" r="5" fill="#a29bfe"/></svg>` }
+      ],
+
+      // 4. ティータイムスイーツ (カフェ)
+      cafe: [
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><polygon points="12,42 48,42 30,16" fill="#fab1a0"/><circle cx="30" cy="14" r="5" fill="#d63031"/><rect x="12" y="38" width="36" height="6" fill="#ffeaa7"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><ellipse cx="30" cy="26" rx="16" ry="6" fill="#fd79a8"/><rect x="14" y="26" width="32" height="8" fill="#fff"/><ellipse cx="30" cy="34" rx="16" ry="6" fill="#fd79a8"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><ellipse cx="30" cy="30" rx="17" ry="14" fill="#e17055"/><ellipse cx="30" cy="30" rx="6" ry="5" fill="#fbf8f0"/><ellipse cx="28" cy="26" rx="12" ry="7" fill="#d63031" opacity="0.6"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><rect x="16" y="24" width="22" height="20" rx="4" fill="#6c5ce7"/><path d="M38 28 C45 28 45 40 38 40" fill="none" stroke="#6c5ce7" stroke-width="4"/><path d="M22 18 Q25 12 28 18" fill="none" stroke="#a29bfe" stroke-width="2" stroke-linecap="round"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><polygon points="22,46 38,46 44,24 16,24" fill="#fdcb6e"/><circle cx="24" cy="20" r="7" fill="#ff7675"/><circle cx="36" cy="20" r="7" fill="#55efc4"/><circle cx="30" cy="14" r="5" fill="#d63031"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><circle cx="24" cy="32" r="7" fill="#d63031"/><circle cx="36" cy="32" r="7" fill="#d63031"/><path d="M24 25 Q30 12 36 25" fill="none" stroke="#27ae60" stroke-width="2.5"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><rect x="16" y="16" width="28" height="28" rx="4" fill="#5a3825"/><line x1="30" y1="16" x2="30" y2="44" stroke="#3d2314" stroke-width="2"/><line x1="16" y1="30" x2="44" y2="30" stroke="#3d2314" stroke-width="2"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><polygon points="30,12 40,46 20,46" fill="#e67e22"/><circle cx="30" cy="16" r="4" fill="#fff"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><circle cx="30" cy="30" r="16" fill="#e5a950"/><circle cx="24" cy="24" r="2.5" fill="#5a3825"/><circle cx="36" cy="26" r="2" fill="#5a3825"/><circle cx="28" cy="36" r="2" fill="#5a3825"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><circle cx="30" cy="26" r="12" fill="#00b894"/><rect x="27" y="38" width="6" height="14" fill="#dfe6e9"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><ellipse cx="30" cy="32" rx="16" ry="10" fill="#f8a5c2"/><polygon points="10,32 18,26 18,38" fill="#f8a5c2"/><polygon points="50,32 42,26 42,38" fill="#f8a5c2"/></svg>` },
+        { type: 'svg', html: `<svg class="tile-svg" viewBox="0 0 60 60"><rect x="20" y="24" width="20" height="24" rx="3" fill="#ffeaa7"/><path d="M22 24 L22 14 Q30 18 38 14 L38 24 Z" fill="#ff7675"/></svg>` }
+      ]
+    };
+
+    let currentTheme = 'mahjong'; // デフォルトは本格麻雀
+    let COLS = 10;
+    let ROWS = 6;
+    let board = [];
+    let selectedPos = null;
+    let remainingPairs = 0;
+    let comboCount = 0;
+    let lastMatchTime = 0;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initGame();
+      window.addEventListener('resize', resizeCanvas);
+    });
+
+    function initGame() {
+      selectedPos = null;
+      comboCount = 0;
+      updateComboDisplay();
+      clearCanvas();
+
+      const totalTiles = COLS * ROWS;
+      const totalPairs = totalTiles / 2;
+      remainingPairs = totalPairs;
+      document.getElementById('stat-left').textContent = totalTiles;
+
+      const themeList = TILE_SETS[currentTheme];
+      let pool = [];
+      for (let i = 0; i < totalPairs; i++) {
+        const tIdx = i % themeList.length;
+        pool.push(tIdx, tIdx);
+      }
+      pool.sort(() => Math.random() - 0.5);
+
+      board = Array(ROWS + 2).fill(null).map(() => Array(COLS + 2).fill(-1));
+      let idx = 0;
+      for (let r = 1; r <= ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+          board[r][c] = pool[idx++];
+        }
+      }
+
+      renderGrid();
+      resizeCanvas();
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('tile-grid');
+      grid.style.gridTemplateColumns = `repeat(${COLS}, minmax(0, 1fr))`;
+      grid.innerHTML = '';
+
+      const themeList = TILE_SETS[currentTheme];
+
+      for (let r = 1; r <= ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+          const val = board[r][c];
+          const tile = document.createElement('div');
+          tile.className = 'tile' + (val === -1 ? ' empty' : '');
+          tile.dataset.r = r;
+          tile.dataset.c = c;
+
+          if (val !== -1) {
+            const data = themeList[val];
+            if (data.type === 'svg') {
+              tile.innerHTML = data.html;
+            } else if (data.type === 'single') {
+              tile.innerHTML = `
+                <div class="mj-tile-content">
+                  <div class="mj-single" style="color:${data.col}">${data.txt}</div>
+                </div>
+              `;
+            } else if (data.type === 'pair') {
+              tile.innerHTML = `
+                <div class="mj-tile-content" style="color:${data.col}">
+                  <div class="mj-num">${data.top}</div>
+                  <div class="mj-type">${data.bot}</div>
+                </div>
+              `;
+            }
+            tile.onclick = () => onTileClick(r, c);
+          }
+          grid.appendChild(tile);
+        }
+      }
+    }
+
+    function onTileClick(r, c) {
+      if (board[r][c] === -1) return;
+      playTileClickSound();
+
+      document.querySelectorAll('.tile.hinted').forEach(t => t.classList.remove('hinted'));
+
+      if (!selectedPos) {
+        selectedPos = { r, c };
+        highlightSelected();
+        return;
+      }
+
+      if (selectedPos.r === r && selectedPos.c === c) {
+        selectedPos = null;
+        highlightSelected();
+        return;
+      }
+
+      const val1 = board[selectedPos.r][selectedPos.c];
+      const val2 = board[r][c];
+
+      if (val1 === val2) {
+        const path = findPath(selectedPos, { r, c });
+        if (path) {
+          const now = Date.now();
+          if (now - lastMatchTime < 4000) {
+            comboCount++;
+          } else {
+            comboCount = 1;
+          }
+          lastMatchTime = now;
+          updateComboDisplay();
+
+          drawConnection(path);
+          playMatchSound(comboCount);
+
+          const t1 = document.querySelector(`.tile[data-r="${selectedPos.r}"][data-c="${selectedPos.c}"]`);
+          const t2 = document.querySelector(`.tile[data-r="${r}"][data-c="${c}"]`);
+          if (t1) t1.classList.add('clearing');
+          if (t2) t2.classList.add('clearing');
+
+          board[selectedPos.r][selectedPos.c] = -1;
+          board[r][c] = -1;
+          selectedPos = null;
+          remainingPairs--;
+          document.getElementById('stat-left').textContent = remainingPairs * 2;
+
+          setTimeout(() => {
+            clearCanvas();
+            renderGrid();
+            if (remainingPairs === 0) {
+              playVictoryFanfare();
+              setTimeout(() => alert('🎉 すべての牌を消しました！パーフェクトクリア！'), 300);
+            } else if (!hasAvailableMove()) {
+              setTimeout(() => {
+                alert('手詰まりのため自動シャッフルします🔀');
+                shuffleBoard();
+              }, 300);
+            }
+          }, 240);
+          return;
+        }
+      }
+
+      selectedPos = { r, c };
+      highlightSelected();
+    }
+
+    function highlightSelected() {
+      document.querySelectorAll('.tile').forEach(el => {
+        const r = parseInt(el.dataset.r, 10);
+        const c = parseInt(el.dataset.c, 10);
+        const isSel = selectedPos && selectedPos.r === r && selectedPos.c === c;
+        el.classList.toggle('selected', isSel);
+      });
+    }
+
+    function updateComboDisplay() {
+      const el = document.getElementById('stat-combo');
+      if (comboCount > 1) {
+        el.textContent = `🔥 ${comboCount} COMBO!`;
+        el.style.display = 'block';
+      } else {
+        el.style.display = 'none';
+      }
+    }
+
+    /* ========================================================
+       BFS 最短曲がり探索
+       ======================================================== */
+    const DIRS = [
+      { dr: -1, dc: 0, dir: 0 },
+      { dr: 1, dc: 0, dir: 1 },
+      { dr: 0, dc: -1, dir: 2 },
+      { dr: 0, dc: 1, dir: 3 }
+    ];
+
+    function findPath(start, target) {
+      const visited = Array(ROWS + 2).fill(null).map(() =>
+        Array(COLS + 2).fill(null).map(() => Array(4).fill(999))
+      );
+
+      const queue = [];
+      DIRS.forEach(d => {
+        const nr = start.r + d.dr;
+        const nc = start.c + d.dc;
+        if (nr >= 0 && nr <= ROWS + 1 && nc >= 0 && nc <= COLS + 1) {
+          if (nr === target.r && nc === target.c) {
+            queue.push({ r: nr, c: nc, dir: d.dir, turns: 0, path: [start, { r: nr, c: nc }] });
+          } else if (board[nr][nc] === -1) {
+            visited[nr][nc][d.dir] = 0;
+            queue.push({ r: nr, c: nc, dir: d.dir, turns: 0, path: [start, { r: nr, c: nc }] });
+          }
+        }
+      });
+
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        if (curr.r === target.r && curr.c === target.c) {
+          return curr.path;
+        }
+
+        for (const d of DIRS) {
+          const nextTurns = curr.turns + (d.dir !== curr.dir ? 1 : 0);
+          if (nextTurns > 2) continue;
+
+          const nr = curr.r + d.dr;
+          const nc = curr.c + d.dc;
+
+          if (nr >= 0 && nr <= ROWS + 1 && nc >= 0 && nc <= COLS + 1) {
+            const isTarget = (nr === target.r && nc === target.c);
+            if (isTarget || board[nr][nc] === -1) {
+              if (nextTurns < visited[nr][nc][d.dir]) {
+                visited[nr][nc][d.dir] = nextTurns;
+                queue.push({
+                  r: nr,
+                  c: nc,
+                  dir: d.dir,
+                  turns: nextTurns,
+                  path: [...curr.path, { r: nr, c: nc }]
+                });
+              }
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    function hasAvailableMove() {
+      const tiles = [];
+      for (let r = 1; r <= ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+          if (board[r][c] !== -1) tiles.push({ r, c, val: board[r][c] });
+        }
+      }
+      for (let i = 0; i < tiles.length; i++) {
+        for (let j = i + 1; j < tiles.length; j++) {
+          if (tiles[i].val === tiles[j].val && findPath(tiles[i], tiles[j])) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function getHint() {
+      const tiles = [];
+      for (let r = 1; r <= ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+          if (board[r][c] !== -1) tiles.push({ r, c, val: board[r][c] });
+        }
+      }
+      for (let i = 0; i < tiles.length; i++) {
+        for (let j = i + 1; j < tiles.length; j++) {
+          if (tiles[i].val === tiles[j].val && findPath(tiles[i], tiles[j])) {
+            const t1 = document.querySelector(`.tile[data-r="${tiles[i].r}"][data-c="${tiles[i].c}"]`);
+            const t2 = document.querySelector(`.tile[data-r="${tiles[j].r}"][data-c="${tiles[j].c}"]`);
+            if (t1 && t2) {
+              t1.classList.add('hinted');
+              t2.classList.add('hinted');
+              return;
+            }
+          }
+        }
+      }
+      alert('現在取れる牌がありません。シャッフルしてください🔀');
+    }
+
+    function shuffleBoard() {
+      const active = [];
+      for (let r = 1; r <= ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+          if (board[r][c] !== -1) active.push(board[r][c]);
+        }
+      }
+      active.sort(() => Math.random() - 0.5);
+      let idx = 0;
+      for (let r = 1; r <= ROWS; r++) {
+        for (let c = 1; c <= COLS; c++) {
+          if (board[r][c] !== -1) board[r][c] = active[idx++];
+        }
+      }
+      selectedPos = null;
+      renderGrid();
+    }
+
+    function manualShuffle() {
+      if (confirm('牌をシャッフルしますか？')) shuffleBoard();
+    }
+
+    /* ========================================================
+       黄金光条 Canvas
+       ======================================================== */
+    function resizeCanvas() {
+      const frame = document.querySelector('.board-frame');
+      const canvas = document.getElementById('path-canvas');
+      canvas.width = frame.clientWidth;
+      canvas.height = frame.clientHeight;
+    }
+
+    function getCellCenter(r, c) {
+      const grid = document.getElementById('tile-grid');
+      const gRect = grid.getBoundingClientRect();
+      const fRect = document.querySelector('.board-frame').getBoundingClientRect();
+      const gap = 5;
+      const cellW = (gRect.width - (COLS - 1) * gap) / COLS;
+      const cellH = (gRect.height - (ROWS - 1) * gap) / ROWS;
+
+      const ox = gRect.left - fRect.left;
+      const oy = gRect.top - fRect.top;
+
+      let x = (c === 0) ? ox - 14 : (c === COLS + 1) ? ox + gRect.width + 14 : ox + (c - 1) * (cellW + gap) + cellW / 2;
+      let y = (r === 0) ? oy - 14 : (r === ROWS + 1) ? oy + gRect.height + 14 : oy + (r - 1) * (cellH + gap) + cellH / 2;
+      return { x, y };
+    }
+
+    function drawConnection(path) {
+      const canvas = document.getElementById('path-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.beginPath();
+      const start = getCellCenter(path[0].r, path[0].c);
+      ctx.moveTo(start.x, start.y);
+
+      for (let i = 1; i < path.length; i++) {
+        const pt = getCellCenter(path[i].r, path[i].c);
+        ctx.lineTo(pt.x, pt.y);
+      }
+
+      ctx.strokeStyle = '#e5a950';
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = 'rgba(229, 169, 80, 0.95)';
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+    }
+
+    function clearCanvas() {
+      const canvas = document.getElementById('path-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    /* ========================================================
+       モーダル & 設定操作
+       ======================================================== */
+    function toggleRulesModal(show) {
+      document.getElementById('modal-rules').classList.toggle('active', show);
+    }
+    function toggleSettingsModal(show) {
+      document.getElementById('modal-settings').classList.toggle('active', show);
+    }
+    function changeTheme(themeKey) {
+      currentTheme = themeKey;
+      renderGrid();
+    }
+    function changeSize(sizeKey) {
+      const [c, r] = sizeKey.split('x').map(Number);
+      COLS = c;
+      ROWS = r;
+      initGame();
+    }
+    function restartGame() {
+      if (confirm('盤面をリセットして最初から始めますか？')) initGame();
+    }
+  </script>
+</body>
+</html>
