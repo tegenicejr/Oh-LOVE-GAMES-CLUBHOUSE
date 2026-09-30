@@ -2,37 +2,36 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ヒット＆ブロー (Hit & Blow)</title>
   <style>
-    /* =========================================
-       ベースリセット・フォント設定
-    ========================================= */
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
-    body {
+
+    html, body {
+      width: 100%;
+      height: 100%;
       background-color: #120b07;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       color: #fff;
+      overflow-x: hidden;
+      overflow-y: auto; /* ゲーム盤面が縦に長くても下までスクロール可能 */
+      -webkit-overflow-scrolling: touch;
     }
 
-    /* =========================================
-       ヒット＆ブロー 8ターン版
-    ========================================= */
     :root {
-      --hnb-board-wood: #2c1e14;
-      --hnb-board-edge: #180f09;
-      --hnb-slot-bg: #140d08;
       --hnb-wood-bevel: rgba(255, 255, 255, 0.08);
     }
 
     .hnb-wrapper {
       width: 100%;
-      min-height: 100vh;
-      padding: 40px 16px 60px;
+      min-height: 100%;
+      /* 上部：親画面の「戻る」ボタンと重ならない余白 */
+      /* 下部：スマホ下部バー・セーフエリアに決定ボタンが被らない特大余白 */
+      padding: calc(60px + env(safe-area-inset-top)) 14px calc(120px + env(safe-area-inset-bottom));
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -41,13 +40,13 @@
       -webkit-user-select: none;
     }
 
-    /* 上部ヘッダー・設定 */
+    /* 上部ヘッダー（正解表示/リスタート/設定） */
     .hnb-topbar {
       width: 100%;
-      max-width: 440px;
+      max-width: 420px;
       display: flex;
       justify-content: flex-end;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       gap: 10px;
     }
     .hnb-icon-btn {
@@ -65,40 +64,38 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.5);
       transition: transform 0.15s, background 0.15s;
     }
-    .hnb-icon-btn:hover {
-      transform: scale(1.1);
-      background: #4a382a;
-      color: #fff;
+    .hnb-icon-btn:active {
+      transform: scale(0.95);
     }
 
     /* メインウッドボード */
     .hnb-table-board {
       width: 100%;
-      max-width: 430px;
+      max-width: 420px;
       background: radial-gradient(circle at 50% 30%, #3e2b1d 0%, #25170d 100%);
-      border: 6px solid #1a1009;
-      border-radius: 26px;
-      padding: 20px 16px 22px;
+      border: 5px solid #1a1009;
+      border-radius: 24px;
+      padding: 16px 14px 20px;
       box-shadow:
-        0 25px 50px rgba(0, 0, 0, 0.9),
+        0 20px 40px rgba(0, 0, 0, 0.9),
         inset 0 2px 4px var(--hnb-wood-bevel),
         inset 0 -3px 8px rgba(0, 0, 0, 0.8);
       position: relative;
     }
 
-    /* 上部：隠し正解エリア & スライド木製バイザー */
+    /* 正解エリア */
     .hnb-secret-container {
       background: #170e08;
       border: 2px solid #0d0704;
       border-radius: 16px;
-      padding: 10px 14px;
+      padding: 10px 12px;
       display: flex;
       justify-content: center;
-      gap: 14px;
+      gap: 12px;
       position: relative;
       overflow: hidden;
       box-shadow: inset 0 6px 14px rgba(0,0,0,0.9);
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .hnb-shutter {
       position: absolute;
@@ -114,8 +111,8 @@
       gap: 8px;
       color: #e5a950;
       font-weight: 800;
-      letter-spacing: 3px;
-      font-size: 0.95rem;
+      letter-spacing: 2px;
+      font-size: 0.9rem;
       text-shadow: 0 2px 4px rgba(0,0,0,0.8);
       box-shadow: 0 4px 10px rgba(0,0,0,0.7);
       z-index: 10;
@@ -128,12 +125,12 @@
       transform: translateY(-100%);
     }
 
-    /* 8ターン分の履歴ラック (下から上へ進行) */
+    /* 8ターン分のラック */
     .hnb-rack {
       display: flex;
       flex-direction: column-reverse;
-      gap: 8px;
-      margin-bottom: 16px;
+      gap: 7px;
+      margin-bottom: 14px;
     }
     .hnb-row {
       display: flex;
@@ -141,64 +138,53 @@
       justify-content: space-between;
       background: rgba(0, 0, 0, 0.28);
       border: 1.5px solid transparent;
-      padding: 6px 12px;
-      border-radius: 14px;
-      transition: background 0.2s, border-color 0.2s, transform 0.2s;
+      padding: 5px 10px;
+      border-radius: 12px;
+      transition: background 0.2s, border-color 0.2s;
     }
     .hnb-row.active {
       background: rgba(229, 169, 80, 0.12);
       border-color: #e5a950;
-      box-shadow: 0 0 12px rgba(229, 169, 80, 0.2);
-      transform: scale(1.02);
+      box-shadow: 0 0 10px rgba(229, 169, 80, 0.2);
     }
     .hnb-turn-num {
       font-size: 0.85rem;
       font-weight: 700;
       color: #8c7664;
-      width: 20px;
+      width: 18px;
       text-align: center;
     }
     .hnb-row.active .hnb-turn-num {
       color: #e5a950;
     }
 
-    /* ペグソケット穴 */
+    /* ペグソケット */
     .hnb-holes {
       display: flex;
-      gap: 12px;
+      gap: 10px;
     }
     .hnb-socket {
-      width: 38px;
-      height: 38px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       background: radial-gradient(circle at 50% 60%, #110a06 0%, #050302 100%);
-      box-shadow:
-        inset 0 3px 6px rgba(0,0,0,0.9),
-        0 1px 1px rgba(255,255,255,0.08);
+      box-shadow: inset 0 3px 5px rgba(0,0,0,0.9), 0 1px 1px rgba(255,255,255,0.08);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      position: relative;
     }
 
-    /* 球体マーブルペグ */
+    /* カラー球体ペグ */
     .hnb-sphere {
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
-      box-shadow:
-        0 5px 10px rgba(0,0,0,0.6),
-        inset -2px -3px 6px rgba(0,0,0,0.5),
-        inset 2px 2px 5px rgba(255,255,255,0.6);
-      transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(0,0,0,0.5), inset 2px 2px 4px rgba(255,255,255,0.6);
       display: none;
     }
-    .hnb-socket:hover .hnb-sphere {
-      transform: scale(1.08);
-    }
 
-    /* 6色パレット */
+    /* 6色 */
     .c-red { background: radial-gradient(circle at 35% 30%, #ff7675 0%, #d63031 70%, #851313 100%); }
     .c-blue { background: radial-gradient(circle at 35% 30%, #74b9ff 0%, #0984e3 70%, #0c4c80 100%); }
     .c-green { background: radial-gradient(circle at 35% 30%, #55efc4 0%, #00b894 70%, #036854 100%); }
@@ -206,91 +192,77 @@
     .c-white { background: radial-gradient(circle at 35% 30%, #ffffff 0%, #dfe6e9 70%, #7d8b94 100%); }
     .c-purple { background: radial-gradient(circle at 35% 30%, #d980fa 0%, #8854d0 70%, #482180 100%); }
 
-    /* 判定ピンエリア (Hit & Blow) */
+    /* 判定ピン */
     .hnb-pins-grid {
       display: grid;
-      grid-template-columns: repeat(2, 12px);
-      grid-template-rows: repeat(2, 12px);
-      gap: 5px;
+      grid-template-columns: repeat(2, 11px);
+      grid-template-rows: repeat(2, 11px);
+      gap: 4px;
       padding: 3px;
       background: #150d08;
-      border-radius: 8px;
+      border-radius: 6px;
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
     }
     .hnb-pin {
-      width: 12px;
-      height: 12px;
+      width: 11px;
+      height: 11px;
       border-radius: 50%;
       background: #090503;
-      box-shadow: inset 0 1px 2px rgba(0,0,0,0.9);
     }
     .hnb-pin.hit {
       background: radial-gradient(circle at 35% 35%, #ff4d4d, #b30000);
-      box-shadow: 0 0 7px rgba(255, 60, 60, 0.9), inset 1px 1px 2px rgba(255,255,255,0.6);
+      box-shadow: 0 0 6px rgba(255, 60, 60, 0.9);
     }
     .hnb-pin.blow {
       background: radial-gradient(circle at 35% 35%, #ffffff, #a4b0be);
-      box-shadow: 0 0 6px rgba(255, 255, 255, 0.7), inset 1px 1px 2px #fff;
+      box-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
     }
 
-    /* 下部ペグ選択トレイ */
+    /* 下部トレイ */
     .hnb-tray {
       display: flex;
       justify-content: space-around;
       background: #1d130c;
       border: 2px solid #2f1f13;
-      padding: 12px 14px;
-      border-radius: 36px;
-      box-shadow:
-        inset 0 4px 10px rgba(0,0,0,0.9),
-        0 2px 4px rgba(255,255,255,0.06);
-      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 30px;
+      box-shadow: inset 0 4px 8px rgba(0,0,0,0.9);
+      margin-top: 10px;
     }
     .hnb-tray .hnb-sphere {
       display: block;
-      width: 38px;
-      height: 38px;
+      width: 36px;
+      height: 36px;
       cursor: pointer;
-      transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .hnb-tray .hnb-sphere:hover {
-      transform: translateY(-6px) scale(1.18);
     }
     .hnb-tray .hnb-sphere:active {
-      transform: scale(0.92);
+      transform: scale(0.9);
     }
 
-    /* 操作アクションボタン */
+    /* 操作ボタン */
     .hnb-bottom-ctrl {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       margin-top: 14px;
     }
     .hnb-action-btn {
       flex: 1;
-      padding: 12px;
+      padding: 13px;
       font-size: 0.95rem;
       font-weight: 800;
       border: none;
-      border-radius: 14px;
+      border-radius: 12px;
       cursor: pointer;
-      font-family: inherit;
-      box-shadow: 0 6px 14px rgba(0,0,0,0.5);
-      transition: all 0.15s;
+      box-shadow: 0 5px 12px rgba(0,0,0,0.5);
     }
     .btn-del {
       background: #463426;
       color: #e1d3c7;
       border: 1px solid #5a4332;
     }
-    .btn-del:hover {
-      background: #574130;
-      color: #fff;
-    }
     .btn-submit {
       background: linear-gradient(180deg, #f39c12 0%, #d35400 100%);
       color: #fff;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
       border: 1px solid #e67e22;
     }
     .btn-submit:disabled {
@@ -299,7 +271,6 @@
       border: 1px solid #291f19;
       cursor: not-allowed;
       box-shadow: none;
-      text-shadow: none;
     }
 
     /* 設定モーダル */
@@ -322,28 +293,25 @@
       border-radius: 20px;
       padding: 24px;
       width: 88%;
-      max-width: 360px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+      max-width: 340px;
       text-align: center;
       color: #f7ede2;
     }
     .hnb-modal-window h3 {
       margin-top: 0;
-      font-size: 1.3rem;
       color: #e5a950;
     }
     .hnb-setting-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid #3d2c20;
+      padding: 14px 0;
       font-size: 0.95rem;
     }
     .hnb-switch {
       position: relative;
       display: inline-block;
-      width: 50px;
+      width: 48px;
       height: 26px;
     }
     .hnb-switch input { opacity: 0; width: 0; height: 0; }
@@ -370,10 +338,10 @@
       background-color: #e5a950;
     }
     input:checked + .hnb-slider:before {
-      transform: translateX(24px);
+      transform: translateX(22px);
     }
     .hnb-modal-close {
-      margin-top: 20px;
+      margin-top: 18px;
       width: 100%;
       padding: 10px;
       background: #e5a950;
@@ -381,7 +349,6 @@
       border-radius: 12px;
       color: #2b1f16;
       font-weight: 800;
-      font-size: 1rem;
       cursor: pointer;
     }
   </style>
@@ -389,16 +356,13 @@
 <body>
 
   <div class="hnb-wrapper">
-    <!-- 右上ツールバー -->
     <div class="hnb-topbar">
       <div class="hnb-icon-btn" onclick="hnbGiveUpAndReveal()" title="正解を見る（ギブアップ）">👁️</div>
       <div class="hnb-icon-btn" onclick="hnbRestartGame()" title="もう一度遊ぶ">🔄</div>
-      <div class="hnb-icon-btn" onclick="hnbToggleModal(true)" title="ゲーム設定">⚙️</div>
+      <div class="hnb-icon-btn" onclick="hnbToggleModal(true)" title="設定">⚙️</div>
     </div>
 
-    <!-- 木製ゲーム盤面 -->
     <div class="hnb-table-board">
-      <!-- 正解エリア（木製シャッター） -->
       <div class="hnb-secret-container">
         <div id="hnb-shutter" class="hnb-shutter">
           <span>🔒</span><span>SECRET CODE</span>
@@ -409,10 +373,8 @@
         <div class="hnb-socket"><div id="hnb-sec-3" class="hnb-sphere"></div></div>
       </div>
 
-      <!-- 8ターン分のラック -->
       <div id="hnb-rack" class="hnb-rack"></div>
 
-      <!-- ペグ選択トレイ (1:赤, 2:青, 3:緑, 4:黄, 5:白, 6:紫) -->
       <div class="hnb-tray">
         <div class="hnb-sphere c-red" onclick="hnbInsertPeg(1)"></div>
         <div class="hnb-sphere c-blue" onclick="hnbInsertPeg(2)"></div>
@@ -422,7 +384,6 @@
         <div class="hnb-sphere c-purple" onclick="hnbInsertPeg(6)"></div>
       </div>
 
-      <!-- 操作ボタン -->
       <div class="hnb-bottom-ctrl">
         <button class="hnb-action-btn btn-del" onclick="hnbDeleteLastPeg()">取り消し</button>
         <button id="hnb-btn-check" class="hnb-action-btn btn-submit" onclick="hnbCheckAttempt()" disabled>決定 (CHECK)</button>
@@ -430,7 +391,6 @@
     </div>
   </div>
 
-  <!-- 設定モーダル -->
   <div id="hnb-settings-modal" class="hnb-modal-overlay">
     <div class="hnb-modal-window">
       <h3>⚙️ ゲーム設定</h3>
@@ -441,19 +401,15 @@
           <span class="hnb-slider"></span>
         </label>
       </div>
-      <p style="font-size:0.75rem; color:#bfa693; margin-top:8px; text-align:left;">
-        ※ONにすると「赤・赤・青・緑」のように同じ色が複数入る上級者ルールになります。
+      <p style="font-size:0.75rem; color:#bfa693; margin-top:6px; text-align:left;">
+        ※ONにすると同じ色が複数入る上級者ルールになります。
       </p>
       <button class="hnb-modal-close" onclick="hnbToggleModal(false)">閉じる</button>
     </div>
   </div>
 
   <script>
-    /* =========================================
-       サウンド合成エンジン (Web Audio API)
-    ========================================= */
     let hnbAudioCtx = null;
-
     function hnbGetAudioContext() {
       if (!hnbAudioCtx) {
         hnbAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -536,9 +492,6 @@
       } catch (e) {}
     }
 
-    /* =========================================
-       ゲームロジック (MAX_TURNS = 8)
-    ========================================= */
     const MAX_TURNS = 8;
     const COLOR_CLASSES = ['', 'c-red', 'c-blue', 'c-green', 'c-yellow', 'c-white', 'c-purple'];
     let hnbAllowDuplicates = false;
@@ -547,14 +500,11 @@
     let hnbCurrentInput = [0, 0, 0, 0];
     let hnbIsFinished = false;
 
-    // ページ読み込み時にゲーム初期化
     window.addEventListener('DOMContentLoaded', () => {
       hnbInitGame();
     });
 
-    // キーボードショートカット (1~6: ペグ配置, Backspace: 1つ削除, Enter: 判定)
     window.addEventListener('keydown', (e) => {
-      // モーダル表示中はキー無効
       const modal = document.getElementById('hnb-settings-modal');
       if (modal && modal.classList.contains('active')) return;
 
@@ -573,20 +523,17 @@
       hnbTurn = 0;
       hnbCurrentInput = [0, 0, 0, 0];
 
-      // 【チラ見え防止対策 1】シャッターを即座に閉じる
       const shutter = document.getElementById('hnb-shutter');
       shutter.classList.add('no-anim');
       shutter.classList.remove('open');
-      shutter.offsetHeight; // リフロー強制
+      shutter.offsetHeight;
 
-      // 【チラ見え防止対策 2】正解ペグを即座に非表示
       for (let i = 0; i < 4; i++) {
         const secSphere = document.getElementById('hnb-sec-' + i);
         secSphere.style.display = 'none';
         secSphere.className = 'hnb-sphere';
       }
 
-      // 正解コード生成
       hnbSecretCode = [];
       if (hnbAllowDuplicates) {
         for (let i = 0; i < 4; i++) {
@@ -597,7 +544,6 @@
         hnbSecretCode = candidates.slice(0, 4);
       }
 
-      // シャッターが完全に覆われた後に正解ペグを裏側でセット
       setTimeout(() => {
         for (let i = 0; i < 4; i++) {
           const secSphere = document.getElementById('hnb-sec-' + i);
@@ -607,7 +553,6 @@
         shutter.classList.remove('no-anim');
       }, 50);
 
-      // 8行分ラック構築
       const rackEl = document.getElementById('hnb-rack');
       rackEl.innerHTML = '';
       for (let r = 0; r < MAX_TURNS; r++) {
@@ -708,7 +653,6 @@
       const secretCopy = [...hnbSecretCode];
       const inputCopy = [...hnbCurrentInput];
 
-      // 1. 完全一致 (Hit)
       for (let i = 0; i < 4; i++) {
         if (inputCopy[i] === secretCopy[i]) {
           hits++;
@@ -717,7 +661,6 @@
         }
       }
 
-      // 2. 色のみ一致 (Blow)
       for (let i = 0; i < 4; i++) {
         if (inputCopy[i] !== null) {
           const foundIdx = secretCopy.indexOf(inputCopy[i]);
@@ -749,7 +692,6 @@
 
       const totalDelay = (hits + blows) * 140 + 200;
 
-      // 勝利判定
       if (hits === 4) {
         hnbIsFinished = true;
         setTimeout(() => {
@@ -759,7 +701,6 @@
         return;
       }
 
-      // 次のターンへ
       setTimeout(() => {
         document.getElementById(`hnb-r-${hnbTurn}`).classList.remove('active');
         hnbTurn++;
