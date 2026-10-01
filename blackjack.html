@@ -180,6 +180,26 @@
     }
     .start-btn:active { transform: scale(0.95); }
 
+    /* 端末受け渡し待機オーバーレイ (PASS SCREEN) */
+    .pass-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(12, 8, 5, 0.96);
+      backdrop-filter: blur(6px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px; z-index: 55; padding: 20px;
+    }
+    .pass-overlay.hidden { display: none; }
+    .pass-icon { font-size: 3rem; }
+    .pass-target-name {
+      font-size: 1.4rem; font-weight: 900;
+      color: var(--brass-gold); text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+    .pass-msg {
+      font-size: 0.88rem; color: #d5c3b1; text-align: center; line-height: 1.6;
+    }
+
     /* シャッフルカットイン演出 */
     .shuffle-overlay {
       position: absolute;
@@ -457,7 +477,7 @@
             <select id="table-mode-sel" class="theme-select" onchange="handleTableModeChange(this.value)">
               <option value="solo" selected>1人プレイ (vs ディーラー)</option>
               <option value="solo_cpu">同卓CPUあり (自分 + CPU 1〜2名)</option>
-              <option value="multi">マルチ席 (2人〜3人対戦)</option>
+              <option value="multi">マルチ席 (2人〜3人パスプレイ)</option>
             </select>
           </div>
           <div class="config-row" id="seat-count-row" style="display:none;">
@@ -469,6 +489,17 @@
           </div>
         </div>
         <button class="start-btn" onclick="startNewSession()">TABLE IN</button>
+      </div>
+
+      <!-- 端末受け渡し待機オーバーレイ (PASS SCREEN) -->
+      <div id="pass-overlay" class="pass-overlay hidden">
+        <div class="pass-icon">📱🤝</div>
+        <div class="pass-target-name" id="pass-target-name">2Pの番です</div>
+        <div class="pass-msg">
+          画面を次のプレイヤーに渡してください。<br>
+          準備ができたらボタンを押して手札を確認します。
+        </div>
+        <button class="start-btn" onclick="dismissPassScreen()">自分の手札を見る</button>
       </div>
 
       <!-- シャッフルカットイン演出 -->
@@ -528,13 +559,11 @@
           <li><b>A（エース）:</b> 状況に応じて「1」または「11」として有利に計算。</li>
         </ul>
         <br>
-        <b style="color:var(--brass-gold);">【基本手順】</b>
+        <b style="color:var(--brass-gold);">【手札の秘匿とマナー】</b>
         <ul style="padding-left:18px; margin:4px 0;">
-          <li>ベット決定後、各席とディーラーに2枚ずつカードが配られます。</li>
-          <li><b>ヒット:</b> もう1枚引く（21を超えるとバースト負け）。</li>
-          <li><b>スタンド:</b> これ以上引かず勝負。</li>
-          <li><b>ダブル:</b> 賭け金を2倍にして1枚だけ引く。</li>
-          <li>プレイヤー全員の終了後、ディーラーは17以上になるまで必ずカードを引き続けます。</li>
+          <li><b>CPUの手札:</b> アップカード（1枚目）のみ公開され、2枚目以降は勝負まで伏せられます。</li>
+          <li><b>マルチプレイ:</b> 次のプレイヤーに端末を渡すパス画面を挟むため、相手の手札は見えません。</li>
+          <li>全員のターン終了後、ディーラーが17以上になるまで引き、全員の手札を開いて精算します。</li>
         </ul>
       </div>
       <button class="modal-close-btn" onclick="toggleRulesModal(false)">閉じる</button>
@@ -615,6 +644,8 @@
     let dealerHand = [];
     let phase = 'TITLE';
 
+    let pendingPassCallback = null;
+
     window.addEventListener('DOMContentLoaded', () => {
       openStartModal();
     });
@@ -629,6 +660,7 @@
       phase = 'TITLE';
       document.getElementById('start-overlay').classList.remove('hidden');
       document.getElementById('shuffle-overlay').classList.add('hidden');
+      document.getElementById('pass-overlay').classList.add('hidden');
     }
 
     function startNewSession() {
@@ -650,7 +682,6 @@
         });
       }
 
-      // シューのシャッフル演出
       triggerShuffleIntro();
     }
 
@@ -681,7 +712,6 @@
         p.bet = 0;
         p.hand = [];
         p.status = 'betting';
-        // CPUは自動でベット（50 or 100）
         if (p.isCpu) {
           const autoBet = Math.min(p.money, (Math.random() < 0.5 ? 50 : 100));
           p.money -= autoBet;
@@ -694,16 +724,18 @@
     }
 
     function advanceBettingIfNeeded() {
-      // 人間プレイヤーのベット番を探す
       while (currentBettingIdx < totalSeats && players[currentBettingIdx].isCpu) {
         currentBettingIdx++;
       }
 
       if (currentBettingIdx >= totalSeats) {
-        // 全員ベット完了 -> 配布
         executeDeal();
       } else {
-        updateBettingUI();
+        if (tableMode === 'multi' && currentBettingIdx > 0) {
+          showPassScreen(players[currentBettingIdx].name, updateBettingUI);
+        } else {
+          updateBettingUI();
+        }
       }
     }
 
@@ -727,6 +759,8 @@
       document.getElementById('btn-hit').style.display = 'none';
       document.getElementById('btn-stand').style.display = 'none';
       document.getElementById('btn-double').style.display = 'none';
+
+      renderTable();
     }
 
     function addBet(amount) {
@@ -739,7 +773,6 @@
         p.bet += amount;
         playChipSound();
         updateBettingUI();
-        renderTable();
       }
     }
 
@@ -751,7 +784,6 @@
       p.money += p.bet;
       p.bet = 0;
       updateBettingUI();
-      renderTable();
     }
 
     function handleDealBtn() {
@@ -778,12 +810,10 @@
       createDeck();
       playCardSound();
 
-      // 各席に2枚ずつ
       players.forEach(p => {
         p.hand = [deck.pop(), deck.pop()];
         p.status = 'playing';
       });
-      // ディーラーに2枚
       dealerHand = [deck.pop(), deck.pop()];
 
       document.getElementById('chip-controls').style.opacity = '0.35';
@@ -792,31 +822,39 @@
       document.getElementById('btn-clear').style.display = 'none';
 
       currentActiveIdx = 0;
-      renderTable();
-      startPlayerTurn();
+      startPlayerTurnWithPassCheck();
     }
 
-    function startPlayerTurn() {
+    function startPlayerTurnWithPassCheck() {
       if (currentActiveIdx >= totalSeats) {
         executeDealerTurn();
         return;
       }
 
       const p = players[currentActiveIdx];
-      renderTable();
+      if (tableMode === 'multi') {
+        showPassScreen(p.name, () => {
+          renderTable();
+          startPlayerTurn();
+        });
+      } else {
+        renderTable();
+        startPlayerTurn();
+      }
+    }
 
+    function startPlayerTurn() {
+      const p = players[currentActiveIdx];
       document.getElementById('status-msg').textContent = `${p.name} の手番です`;
       document.getElementById('active-player-badge').innerHTML = `${p.name} 所持金: <span id="stat-money" class="stat-val">$${p.money.toLocaleString()}</span>`;
       document.getElementById('stat-bet').textContent = `$${p.bet.toLocaleString()}`;
 
       if (p.isCpu) {
-        // CPUの思考ターン
         document.getElementById('btn-hit').style.display = 'none';
         document.getElementById('btn-stand').style.display = 'none';
         document.getElementById('btn-double').style.display = 'none';
         setTimeout(executeCpuPlayerTurn, 750);
       } else {
-        // 人間のターン
         document.getElementById('btn-hit').style.display = 'inline-block';
         document.getElementById('btn-stand').style.display = 'inline-block';
         document.getElementById('btn-double').style.display = (p.money >= p.bet && p.hand.length === 2) ? 'inline-block' : 'none';
@@ -827,12 +865,10 @@
       }
     }
 
-    /* CPUプレイヤーの自然な行動ルーチン */
     function executeCpuPlayerTurn() {
       const p = players[currentActiveIdx];
       const score = calculateScore(p.hand);
 
-      // ベーシックストラテジー準拠: 16以下はヒット、17以上はスタンド
       if (score < 17) {
         document.getElementById('status-msg').textContent = `${p.name}: ヒットを選択...`;
         setTimeout(() => {
@@ -842,7 +878,7 @@
           const newScore = calculateScore(p.hand);
           if (newScore > 21) {
             p.status = 'busted';
-            document.getElementById('status-msg').textContent = `${p.name}: バースト！(21超過)`;
+            document.getElementById('status-msg').textContent = `${p.name}: バースト！`;
             setTimeout(nextPlayerTurn, 750);
           } else {
             setTimeout(executeCpuPlayerTurn, 750);
@@ -902,18 +938,17 @@
 
     function nextPlayerTurn() {
       currentActiveIdx++;
-      startPlayerTurn();
+      startPlayerTurnWithPassCheck();
     }
 
-    /* ディーラーの逐次カード引き（目で追えるテンポ） */
     function executeDealerTurn() {
       phase = 'DEALER';
       document.getElementById('btn-hit').style.display = 'none';
       document.getElementById('btn-stand').style.display = 'none';
       document.getElementById('btn-double').style.display = 'none';
-
       document.getElementById('status-msg').textContent = 'ディーラーの裏カードを公開...';
-      renderTable(false);
+
+      renderTable();
 
       const dTurnStep = () => {
         let dScore = calculateScore(dealerHand);
@@ -924,7 +959,7 @@
           setTimeout(() => {
             dealerHand.push(deck.pop());
             playCardSound();
-            renderTable(false);
+            renderTable();
             setTimeout(dTurnStep, 700);
           }, 600);
         } else {
@@ -937,7 +972,7 @@
 
     function settleRound() {
       phase = 'ROUND_OVER';
-      renderTable(false);
+      renderTable();
 
       const dScore = calculateScore(dealerHand);
       const dBJ = (dealerHand.length === 2 && dScore === 21);
@@ -976,7 +1011,6 @@
       if (anyWin) playWinSound();
       document.getElementById('status-msg').textContent = summaryMsgs.join(' / ');
 
-      // 次のラウンドへ進むボタン
       document.getElementById('btn-deal').style.display = 'inline-block';
       document.getElementById('btn-deal').disabled = false;
       document.getElementById('btn-deal').textContent = '次のラウンドへ';
@@ -1028,16 +1062,18 @@
       return el;
     }
 
-    function renderTable(hideDealerHole = true) {
+    function renderTable() {
+      // ディーラー手札描画
       const dContainer = document.getElementById('dealer-cards');
       dContainer.innerHTML = '';
+      const hideDealerHole = (phase !== 'DEALER' && phase !== 'ROUND_OVER');
       dealerHand.forEach((c, idx) => {
-        const isHole = (hideDealerHole && idx === 1 && phase !== 'DEALER' && phase !== 'ROUND_OVER');
+        const isHole = (hideDealerHole && idx === 1);
         dContainer.appendChild(renderCard(c, isHole));
       });
 
       if (dealerHand.length > 0) {
-        if (hideDealerHole && phase !== 'DEALER' && phase !== 'ROUND_OVER') {
+        if (hideDealerHole) {
           const upRank = dealerHand[0].rank;
           document.getElementById('dealer-score').textContent = upRank === 1 ? 11 : (upRank >= 10 ? 10 : upRank);
         } else {
@@ -1047,6 +1083,7 @@
         document.getElementById('dealer-score').textContent = '-';
       }
 
+      // プレイヤー席描画（秘匿ロジック）
       const pContainer = document.getElementById('players-container');
       pContainer.innerHTML = '';
 
@@ -1056,11 +1093,41 @@
         if (phase === 'BETTING' && idx === currentBettingIdx) seat.classList.add('active');
         if (phase === 'PLAYING' && idx === currentActiveIdx) seat.classList.add('active');
 
+        const isCurrentActive = (idx === currentActiveIdx);
+        const isSettling = (phase === 'ROUND_OVER');
+
+        // 手札の可視判定:
+        // 1. 精算時 (ROUND_OVER) は全員公開
+        // 2. CPUの手札: アップカード(1枚目)のみ公開、2枚目以降は精算まで裏向き
+        // 3. 人間プレイヤー: 操作中(isCurrentActive)の本人だけ全公開。他プレイヤーの番のときは全伏せ
         const cardsRow = document.createElement('div');
         cardsRow.className = 'cards-row';
-        p.hand.forEach(c => cardsRow.appendChild(renderCard(c, false)));
 
-        const scoreVal = p.hand.length > 0 ? calculateScore(p.hand) : '-';
+        p.hand.forEach((c, cIdx) => {
+          let hideThisCard = false;
+          if (!isSettling) {
+            if (p.isCpu) {
+              hideThisCard = (cIdx >= 1);
+            } else if (tableMode === 'multi') {
+              hideThisCard = !isCurrentActive;
+            }
+          }
+          cardsRow.appendChild(renderCard(c, hideThisCard));
+        });
+
+        // スコアバッジ表示判定
+        let scoreVal = '-';
+        if (p.hand.length > 0) {
+          if (isSettling || isCurrentActive) {
+            scoreVal = calculateScore(p.hand);
+          } else if (p.isCpu) {
+            // CPUはアップカードの点数のみ表示
+            const upRank = p.hand[0].rank;
+            scoreVal = upRank === 1 ? 11 : (upRank >= 10 ? 10 : upRank);
+          } else {
+            scoreVal = '？';
+          }
+        }
 
         seat.innerHTML = `
           <div class="hand-header">
@@ -1077,6 +1144,23 @@
 
         pContainer.appendChild(seat);
       });
+    }
+
+    /* 端末受け渡し待機画面 (PASS SCREEN) */
+    function showPassScreen(targetPlayerName, callback) {
+      pendingPassCallback = callback;
+      const overlay = document.getElementById('pass-overlay');
+      document.getElementById('pass-target-name').textContent = `${targetPlayerName} の番です`;
+      overlay.classList.remove('hidden');
+    }
+
+    function dismissPassScreen() {
+      document.getElementById('pass-overlay').classList.add('hidden');
+      if (pendingPassCallback) {
+        const cb = pendingPassCallback;
+        pendingPassCallback = null;
+        cb();
+      }
     }
 
     function resetChips() {
