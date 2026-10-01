@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>バックギャモン (Backgammon)</title>
+  <style>
+    :root {
+      --bg-desk: #110c08;
+      --felt-dark: #122c19;
+      --felt-light: #1c4528;
+      --board-rim: #362214;
+      --brass-gold: #d4a359;
+      --brass-glow: rgba(212, 163, 89, 0.45);
+    }
+    * {
+      box-sizing: border-box; margin: 0; padding: 0;
+      user-select: none; -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg-desk);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      color: #fff;
+      overflow-x: hidden; overflow-y: auto;
+    }
+    .viewport {
+      width: 100%; min-height: 100%;
+      padding: calc(10px + env(safe-area-inset-top)) 6px calc(60px + env(safe-area-inset-bottom));
+      display: flex; flex-direction: column; align-items: center;
+      background: radial-gradient(circle at 50% 20%, #2b1a10 0%, var(--bg-desk) 100%);
+    }
+    .topbar {
+      width: 100%; max-width: 460px;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px; padding: 0 4px;
+    }
+    .badge-bar { display: flex; gap: 8px; align-items: center; }
+    .bg-badge {
+      background: rgba(0,0,0,0.7);
+      border: 1.5px solid #442d1c;
+      border-radius: 12px;
+      padding: 5px 12px;
+      font-size: 0.82rem; font-weight: 800; color: #ede2d5;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .bg-badge.turn-active {
+      border-color: var(--brass-gold);
+      box-shadow: 0 0 10px var(--brass-glow);
+    }
+    .checker-icon { width: 14px; height: 14px; border-radius: 50%; }
+    .checker-icon.white { background: radial-gradient(circle at 35% 30%, #fff, #bbb); border: 1px solid #fff; }
+    .checker-icon.red { background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b); border: 1px solid #ff9f43; }
+    .tool-btn {
+      background: linear-gradient(145deg, #2c1c12 0%, #1c1109 100%);
+      border: 1.5px solid #4d3320; color: var(--brass-gold);
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; cursor: pointer;
+    }
+    .table-felt {
+      position: relative;
+      width: 100%; max-width: 460px;
+      background: radial-gradient(circle at 50% 35%, var(--felt-light) 0%, var(--felt-dark) 100%);
+      border: 6px solid var(--board-rim);
+      border-radius: 20px;
+      padding: 12px 6px 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.95);
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .turn-announcer {
+      font-size: 0.92rem; font-weight: 800; color: #ede2d5; min-height: 22px;
+    }
+    /* バックギャモンボード */
+    .bg-board-frame {
+      width: 100%; max-width: 440px; aspect-ratio: 1.35;
+      background: #190f09;
+      border: 3.5px solid #583920;
+      border-radius: 14px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.85);
+      position: relative;
+    }
+    #bg-svg { width: 100%; height: 100%; display: block; }
+    .pt-tri-dark { fill: #4a2810; }
+    .pt-tri-light { fill: #cba36b; }
+    .pt-tri.highlight { fill: rgba(46, 204, 113, 0.65) !important; }
+    .pt-hit { fill: transparent; cursor: pointer; }
+    .bar-line { stroke: #583920; stroke-width: 14; }
+    /* ダイス＆コントロール */
+    .controls-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      width: 100%; max-width: 440px; padding: 0 4px;
+    }
+    .dice-container { display: flex; gap: 8px; align-items: center; }
+    .bg-die {
+      width: 36px; height: 36px;
+      background: linear-gradient(145deg, #fff 0%, #eee 70%, #ccc 100%);
+      border-radius: 8px; border: 1.5px solid #999;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.15rem; font-weight: 900; color: #222;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+    }
+    .bg-die.used { opacity: 0.35; border-color: #555; }
+    .roll-btn {
+      background: linear-gradient(180deg, #d4a359, #aa782e);
+      border: none; border-radius: 12px;
+      color: #140c06; font-weight: 900; font-size: 0.95rem;
+      padding: 10px 18px; cursor: pointer;
+    }
+    .roll-btn:disabled { background: #3a2e26; color: #635245; cursor: not-allowed; }
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.82); z-index: 99999;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-sheet {
+      background: #20140c; border: 3px solid #4d3320;
+      border-radius: 20px; padding: 22px; width: 88%; max-width: 440px; color: #ede2d5;
+    }
+  </style>
+</head>
+<body>
+  <div class="viewport">
+    <div class="topbar">
+      <div class="badge-bar">
+        <div class="bg-badge turn-active" id="badge-w">
+          <div class="checker-icon white"></div>
+          <span id="name-w">白 (あなた)</span>
+        </div>
+        <div class="bg-badge" id="badge-r">
+          <div class="checker-icon red"></div>
+          <span id="name-r">赤 (COM)</span>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <div class="tool-btn" onclick="initGame()">🔄</div>
+        <div class="tool-btn" onclick="toggleRules(true)">📖</div>
+      </div>
+    </div>
+
+    <div class="table-felt">
+      <div class="turn-announcer" id="announcer">サイコロを振ってください</div>
+
+      <div class="bg-board-frame">
+        <svg id="bg-svg" viewBox="0 0 440 320">
+          <defs>
+            <radialGradient id="chkWhite" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="70%" stop-color="#e0e0e0"/>
+              <stop offset="100%" stop-color="#b0b0b0"/>
+            </radialGradient>
+            <radialGradient id="chkRed" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#ff7675"/>
+              <stop offset="70%" stop-color="#d63031"/>
+              <stop offset="100%" stop-color="#7e1212"/>
+            </radialGradient>
+          </defs>
+          <g id="board-bg-layer"></g>
+          <g id="triangles-layer"></g>
+          <g id="checkers-layer"></g>
+          <g id="hits-layer"></g>
+        </svg>
+      </div>
+
+      <div class="controls-bar">
+        <div class="dice-container" id="dice-box">
+          <div class="bg-die" id="die-1">-</div>
+          <div class="bg-die" id="die-2">-</div>
+        </div>
+        <button class="roll-btn" id="btn-roll" onclick="rollDice()">サイコロを振る</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-rules" class="modal-overlay">
+    <div class="modal-sheet">
+      <h3 style="color:var(--brass-gold); text-align:center; margin-bottom:12px;">📖 バックギャモンのあそびかた</h3>
+      <div style="font-size:0.84rem; line-height:1.6; color:#c9b9aa;">
+        <p>2個のサイコロを振り、自分のすべての駒（チェッカー）をゴール（ベアオフ）へ運び出す世界最古のボードゲームです。</p>
+        <br>
+        <ul style="padding-left:18px;">
+          <li><b>白は反時計回り</b>、<b>赤は時計回り</b>に進みます。</li>
+          <li>相手の駒が1枚だけのマスに止まると、その駒を<b>ヒット（中央バーへ送還）</b>できます。</li>
+          <li>すべての駒を自分のインナーボードに集めたら、ゴールから外へ脱出（ベアオフ）開始できます。</li>
+          <li>先に15枚すべての駒を脱出させたプレイヤーの勝利です！</li>
+        </ul>
+      </div>
+      <button class="roll-btn" style="width:100%; margin-top:14px;" onclick="toggleRules(false)">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    window.addEventListener('pointerdown', () => getAudio(), { once: true });
+
+    function playSound(f1, f2) {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.setValueAtTime(f1, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(f2, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.06);
+      } catch(e) {}
+    }
+
+    /* ボードポイント: 0〜23 (24点)
+       白(W): 0 -> 23 方向に進む (23側がインナー)
+       赤(R): 23 -> 0 方向に進む (0側がインナー)
+    */
+    let points = Array(24).fill(null).map(() => ({ player: null, count: 0 }));
+    let bar = { W: 0, R: 0 };
+    let off = { W: 0, R: 0 };
+    let currentTurn = 'W'; // 'W' or 'R'
+    let dice = [];
+    let movesLeft = [];
+    let selectedPoint = null;
+    let isRolling = false;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      buildSvgBoard();
+      initGame();
+    });
+
+    function initGame() {
+      // 初期配置 (各15枚)
+      points = Array(24).fill(null).map(() => ({ player: null, count: 0 }));
+      bar = { W: 0, R: 0 };
+      off = { W: 0, R: 0 };
+      currentTurn = 'W';
+      dice = [];
+      movesLeft = [];
+      selectedPoint = null;
+
+      // 公式初期配置
+      setPt(0, 'W', 2); setPt(11, 'W', 5); setPt(16, 'W', 3); setPt(18, 'W', 5);
+      setPt(23, 'R', 2); setPt(12, 'R', 5); setPt(7, 'R', 3); setPt(5, 'R', 5);
+
+      updateUI();
+      renderCheckers();
+    }
+
+    function setPt(idx, p, c) { points[idx] = { player: p, count: c }; }
+
+    function buildSvgBoard() {
+      const bg = document.getElementById('board-bg-layer');
+      const tri = document.getElementById('triangles-layer');
+      const hits = document.getElementById('hits-layer');
+      bg.innerHTML = ''; tri.innerHTML = ''; hits.innerHTML = '';
+
+      // 中央バー
+      const barLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      barLine.setAttribute('x1', 220); barLine.setAttribute('y1', 0);
+      barLine.setAttribute('x2', 220); barLine.setAttribute('y2', 320);
+      barLine.setAttribute('class', 'bar-line');
+      bg.appendChild(barLine);
+
+      // 24本の三角形
+      for (let i = 0; i < 24; i++) {
+        const coords = getTriangleCoords(i);
+        const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        poly.setAttribute('points', coords);
+        poly.setAttribute('class', `pt-tri ${i % 2 === 0 ? 'pt-tri-dark' : 'pt-tri-light'}`);
+        poly.setAttribute('id', `tri-${i}`);
+        tri.appendChild(poly);
+
+        // タップ判定
+        const hit = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        hit.setAttribute('points', coords);
+        hit.setAttribute('class', 'pt-hit');
+        hit.onclick = () => handlePointClick(i);
+        hits.appendChild(hit);
+      }
+    }
+
+    function getTriangleCoords(i) {
+      // 0〜11: 上段 (左->右: 11->6, バー, 5->0)
+      // 12〜23: 下段 (左->右: 12->17, バー, 18->23)
+      let col = 0;
+      let isTop = i < 12;
+      if (isTop) col = (i < 6) ? (11 - i) : (12 - i);
+      else col = (i < 18) ? (i - 12) : (i - 11);
+
+      let x = col * 32 + (col >= 6 ? 48 : 20);
+      let yBase = isTop ? 0 : 320;
+      let yTip = isTop ? 130 : 190;
+      return `${x},${yBase} ${x+30},${yBase} ${x+15},${yTip}`;
+    }
+
+    function rollDice() {
+      if (movesLeft.length > 0) return;
+      playSound(340, 100);
+      const d1 = Math.floor(Math.random() * 6) + 1;
+      const d2 = Math.floor(Math.random() * 6) + 1;
+
+      dice = [d1, d2];
+      if (d1 === d2) movesLeft = [d1, d1, d1, d1];
+      else movesLeft = [d1, d2];
+
+      document.getElementById('die-1').textContent = d1;
+      document.getElementById('die-2').textContent = d2;
+      document.getElementById('btn-roll').disabled = true;
+
+      document.getElementById('announcer').textContent =
+        `${currentTurn === 'W' ? '白' : '赤'}の移動（出目: ${movesLeft.join(', ')}）`;
+    }
+
+    function handlePointClick(ptIdx) {
+      if (movesLeft.length === 0) return;
+      const pt = points[ptIdx];
+
+      if (selectedPoint === null) {
+        if (pt.player === currentTurn && pt.count > 0) {
+          selectedPoint = ptIdx;
+          highlightPoint(ptIdx, true);
+        }
+      } else {
+        if (selectedPoint === ptIdx) {
+          selectedPoint = null;
+          highlightPoint(ptIdx, false);
+        } else {
+          // 移動試行
+          tryMove(selectedPoint, ptIdx);
+        }
+      }
+    }
+
+    function tryMove(from, to) {
+      const dist = (currentTurn === 'W') ? (to - from) : (from - to);
+      const moveIdx = movesLeft.indexOf(dist);
+
+      if (moveIdx !== -1) {
+        const dest = points[to];
+        // 相手が2枚以上いるマスには入れない
+        const opp = currentTurn === 'W' ? 'R' : 'W';
+        if (dest.player === opp && dest.count >= 2) return;
+
+        // ヒット判定
+        if (dest.player === opp && dest.count === 1) {
+          bar[opp]++;
+          dest.player = currentTurn;
+          dest.count = 1;
+        } else {
+          dest.player = currentTurn;
+          dest.count++;
+        }
+
+        points[from].count--;
+        if (points[from].count === 0) points[from].player = null;
+
+        movesLeft.splice(moveIdx, 1);
+        playSound(450, 200);
+
+        highlightPoint(from, false);
+        selectedPoint = null;
+        renderCheckers();
+
+        if (movesLeft.length === 0) {
+          endTurn();
+        }
+      }
+    }
+
+    function endTurn() {
+      currentTurn = (currentTurn === 'W') ? 'R' : 'W';
+      document.getElementById('btn-roll').disabled = false;
+      document.getElementById('die-1').textContent = '-';
+      document.getElementById('die-2').textContent = '-';
+      updateUI();
+    }
+
+    function highlightPoint(idx, on) {
+      const tri = document.getElementById(`tri-${idx}`);
+      if (tri) tri.classList.toggle('highlight', on);
+    }
+
+    function renderCheckers() {
+      const layer = document.getElementById('checkers-layer');
+      layer.innerHTML = '';
+
+      for (let i = 0; i < 24; i++) {
+        const pt = points[i];
+        if (pt.count > 0) {
+          const isTop = i < 12;
+          let col = (isTop) ? ((i < 6) ? (11 - i) : (12 - i)) : ((i < 18) ? (i - 12) : (i - 11));
+          let x = col * 32 + (col >= 6 ? 48 : 20) + 15;
+
+          for (let c = 0; c < Math.min(pt.count, 5); c++) {
+            let y = isTop ? (14 + c * 22) : (306 - c * 22);
+            const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circ.setAttribute('cx', x); circ.setAttribute('cy', y);
+            circ.setAttribute('r', 10);
+            circ.setAttribute('fill', pt.player === 'W' ? 'url(#chkWhite)' : 'url(#chkRed)');
+            circ.setAttribute('stroke', pt.player === 'W' ? '#fff' : '#ff9f43');
+            layer.appendChild(circ);
+          }
+        }
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('badge-w').classList.toggle('turn-active', currentTurn === 'W');
+      document.getElementById('badge-r').classList.toggle('turn-active', currentTurn === 'R');
+      document.getElementById('announcer').textContent =
+        `${currentTurn === 'W' ? '白' : '赤'}の手番です（サイコロを振ってください）`;
+    }
+
+    function toggleRules(show) { document.getElementById('modal-rules').classList.toggle('active', show); }
+  </script>
+</body>
+</html>
