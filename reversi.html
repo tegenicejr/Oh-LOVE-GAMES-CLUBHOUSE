@@ -430,10 +430,15 @@
         <br>
         <b style="color:var(--brass-gold);">【基本ルール】</b>
         <ul style="padding-left:18px; margin:6px 0;">
-          <li>あなたは<b>先手（黒）</b>、COMが<b>後手（白）</b>です。</li>
+          <li><b>黒が先手</b>、<b>白が後手</b>です。</li>
           <li>相手の石をタテ・ヨコ・ナナメのいずれかで自分の石と挟めるマスにのみ打つことができます。</li>
           <li>打てる場所がない場合は自動でパスとなります。</li>
           <li>両者ともに打てる場所がなくなったらゲーム終了です。</li>
+        </ul>
+        <br>
+        <b style="color:var(--brass-gold);">【プレイモード】</b>
+        <ul style="padding-left:18px; margin:6px 0;">
+          <li>右上の⚙️設定から<b>「1人プレイ (vs COM)」</b>または<b>「2人プレイ (1台で対戦)」</b>を自由に選べます。</li>
         </ul>
       </div>
       <button class="modal-close-btn" onclick="toggleRulesModal(false)">閉じる</button>
@@ -446,6 +451,13 @@
       <div class="modal-title">⚙ 設定</div>
       <div class="modal-body">
         <div class="setting-item">
+          <span>対戦モード</span>
+          <select id="mode-selector" class="theme-select" onchange="changeGameMode(this.value)">
+            <option value="pve" selected>1人プレイ (vs COM)</option>
+            <option value="pvp">2人プレイ (1台で対戦)</option>
+          </select>
+        </div>
+        <div class="setting-item" id="setting-com-diff">
           <span>COMの強さ</span>
           <select id="diff-selector" class="theme-select" onchange="changeDifficulty(this.value)">
             <option value="easy">初級 (手加減)</option>
@@ -502,9 +514,10 @@
       } catch(e) {}
     }
 
-    // 盤面定義: 0: 空, 1: 黒(Player), 2: 白(COM)
+    // 盤面定義: 0: 空, 1: 黒, 2: 白
     let board = [];
     let currentTurn = 1; // 1: 黒, 2: 白
+    let gameMode = 'pve'; // 'pve' (vs COM) | 'pvp' (2人対戦)
     let isComThinking = false;
     let difficulty = 'medium';
     let historyStack = [];
@@ -548,12 +561,23 @@
     }
 
     function undoMove() {
-      if (isComThinking || historyStack.length < 2) return;
-      // プレイヤーの手番に戻すため2手戻す
-      historyStack.pop();
-      const last = historyStack.pop();
-      board = last.board;
-      currentTurn = 1;
+      if (isComThinking) return;
+
+      if (gameMode === 'pve') {
+        // vs COM の場合は自分の手番に戻すため2手戻す
+        if (historyStack.length < 2) return;
+        historyStack.pop();
+        const last = historyStack.pop();
+        board = last.board;
+        currentTurn = 1;
+      } else {
+        // 2人プレイ時は1手戻す
+        if (historyStack.length === 0) return;
+        const last = historyStack.pop();
+        board = last.board;
+        currentTurn = last.turn;
+      }
+
       updateUI();
       renderBoard();
       playPlaceSound();
@@ -600,7 +624,9 @@
     function renderBoard() {
       const boardEl = document.getElementById('reversi-board');
       boardEl.innerHTML = '';
-      const validMoves = (currentTurn === 1 && !isComThinking) ? getValidMoves(board, 1) : [];
+      
+      const isPlayerActionAllowed = (gameMode === 'pvp') || (gameMode === 'pve' && currentTurn === 1 && !isComThinking);
+      const validMoves = isPlayerActionAllowed ? getValidMoves(board, currentTurn) : [];
 
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
@@ -625,7 +651,7 @@
             const isValid = validMoves.some(m => m.r === r && m.c === c);
             if (isValid) {
               cellEl.classList.add('valid');
-              cellEl.onclick = () => onPlayerMove(r, c);
+              cellEl.onclick = () => onCellClicked(r, c);
             }
           }
           boardEl.appendChild(cellEl);
@@ -633,20 +659,44 @@
       }
     }
 
-    function onPlayerMove(r, c) {
-      if (currentTurn !== 1 || isComThinking) return;
-      const flippable = getFlippable(board, r, c, 1);
+    function onCellClicked(r, c) {
+      if (isComThinking) return;
+
+      const flippable = getFlippable(board, r, c, currentTurn);
       if (flippable.length === 0) return;
 
       saveState();
-      executeMove(r, c, flippable, 1);
+      executeMove(r, c, flippable, currentTurn);
 
-      currentTurn = 2;
-      updateUI();
-      renderBoard();
+      if (gameMode === 'pvp') {
+        // 2人プレイモード
+        const nextTurn = currentTurn === 1 ? 2 : 1;
+        const nextMoves = getValidMoves(board, nextTurn);
 
-      // COMのターン
-      setTimeout(handleComTurn, 600);
+        if (nextMoves.length > 0) {
+          currentTurn = nextTurn;
+          updateUI();
+          renderBoard();
+        } else {
+          // パス判定
+          const currentAgainMoves = getValidMoves(board, currentTurn);
+          if (currentAgainMoves.length > 0) {
+            alert(`${nextTurn === 1 ? '1P (黒)' : '2P (白)'} に打てる場所がありません。パスします。`);
+            updateUI();
+            renderBoard();
+          } else {
+            checkGameOver();
+            updateUI();
+            renderBoard();
+          }
+        }
+      } else {
+        // 1人プレイ (vs COM)
+        currentTurn = 2;
+        updateUI();
+        renderBoard();
+        setTimeout(handleComTurn, 600);
+      }
     }
 
     function executeMove(r, c, flippable, player) {
@@ -658,7 +708,7 @@
     }
 
     function handleComTurn() {
-      if (currentTurn !== 2) return;
+      if (currentTurn !== 2 || gameMode !== 'pve') return;
       isComThinking = true;
       document.getElementById('turn-announcer').textContent = 'COMが思考中...';
 
@@ -677,14 +727,11 @@
       // COMの着手選択
       let chosen = null;
       if (difficulty === 'easy') {
-        // ランダム
         chosen = validMoves[Math.floor(Math.random() * validMoves.length)];
       } else if (difficulty === 'medium') {
-        // 最大枚数獲得
         validMoves.sort((a, b) => b.flippable.length - a.flippable.length);
         chosen = validMoves[0];
       } else {
-        // 重みテーブル評価
         validMoves.sort((a, b) => {
           const scoreA = WEIGHTS[a.r][a.c] + a.flippable.length * 2;
           const scoreB = WEIGHTS[b.r][b.c] + b.flippable.length * 2;
@@ -700,7 +747,6 @@
       // プレイヤーが打てるか判定
       const playerMoves = getValidMoves(board, 1);
       if (playerMoves.length === 0) {
-        // プレイヤーパス
         renderBoard();
         updateUI();
         if (getValidMoves(board, 2).length === 0) {
@@ -729,14 +775,26 @@
       document.getElementById('badge-black').classList.toggle('turn-active', currentTurn === 1);
       document.getElementById('badge-white').classList.toggle('turn-active', currentTurn === 2);
 
+      const diffBadge = document.getElementById('stat-diff-badge');
+      if (gameMode === 'pvp') {
+        diffBadge.textContent = '2人プレイ (対戦)';
+      } else {
+        const names = { easy: '初級', medium: '中級', hard: '上級' };
+        diffBadge.textContent = `COM: ${names[difficulty]}`;
+      }
+
       if (!isComThinking) {
-        document.getElementById('turn-announcer').textContent = currentTurn === 1 ? 'あなたの番です (黒)' : 'COMの番です (白)';
+        if (gameMode === 'pvp') {
+          document.getElementById('turn-announcer').textContent = currentTurn === 1 ? '1Pの番です (黒)' : '2Pの番です (白)';
+        } else {
+          document.getElementById('turn-announcer').textContent = currentTurn === 1 ? 'あなたの番です (黒)' : 'COMの番です (白)';
+        }
       }
     }
 
     function checkGameOver() {
-      const pMoves = getValidMoves(board, 1);
-      const cMoves = getValidMoves(board, 2);
+      const p1Moves = getValidMoves(board, 1);
+      const p2Moves = getValidMoves(board, 2);
 
       let bCount = 0, wCount = 0, empty = 0;
       board.forEach(row => row.forEach(v => {
@@ -745,17 +803,29 @@
         else empty++;
       }));
 
-      if (empty === 0 || (pMoves.length === 0 && cMoves.length === 0)) {
+      if (empty === 0 || (p1Moves.length === 0 && p2Moves.length === 0)) {
         let msg = '';
-        if (bCount > wCount) {
-          msg = `🎉 あなたの勝利！ (${bCount}対${wCount})`;
-          recordMatch(true);
-          playFanfareSound();
-        } else if (bCount < wCount) {
-          msg = `💀 COMの勝利... (${bCount}対${wCount})`;
-          recordMatch(false);
+        if (gameMode === 'pvp') {
+          if (bCount > wCount) {
+            msg = `🎉 1P (黒) の勝利！ (${bCount}対${wCount})`;
+            playFanfareSound();
+          } else if (bCount < wCount) {
+            msg = `🎉 2P (白) の勝利！ (${wCount}対${bCount})`;
+            playFanfareSound();
+          } else {
+            msg = `🤝 引き分けです！ (${bCount}対${wCount})`;
+          }
         } else {
-          msg = `🤝 引き分けです！ (${bCount}対${wCount})`;
+          if (bCount > wCount) {
+            msg = `🎉 あなたの勝利！ (${bCount}対${wCount})`;
+            recordMatch(true);
+            playFanfareSound();
+          } else if (bCount < wCount) {
+            msg = `💀 COMの勝利... (${bCount}対${wCount})`;
+            recordMatch(false);
+          } else {
+            msg = `🤝 引き分けです！ (${bCount}対${wCount})`;
+          }
         }
         document.getElementById('turn-announcer').textContent = msg;
         setTimeout(() => alert(msg), 300);
@@ -763,6 +833,7 @@
     }
 
     function recordMatch(isWin) {
+      if (gameMode !== 'pve') return;
       let stats = { wins: 0, losses: 0 };
       try {
         stats = JSON.parse(localStorage.getItem('reversi_stats')) || stats;
@@ -796,13 +867,20 @@
     function toggleSettingsModal(show) {
       document.getElementById('modal-settings').classList.toggle('active', show);
     }
-    function changeDifficulty(val) {
-      difficulty = val;
-      const names = { easy: '初級', medium: '中級', hard: '上級' };
-      document.getElementById('stat-diff-badge').textContent = `COM: ${names[val]}`;
+
+    function changeGameMode(val) {
+      gameMode = val;
+      document.getElementById('setting-com-diff').style.display = (val === 'pve') ? 'flex' : 'none';
       toggleSettingsModal(false);
       restartGame();
     }
+
+    function changeDifficulty(val) {
+      difficulty = val;
+      toggleSettingsModal(false);
+      restartGame();
+    }
+
     function restartGame() {
       if (confirm('盤面をリセットして新しく始めますか？')) initGame();
     }
