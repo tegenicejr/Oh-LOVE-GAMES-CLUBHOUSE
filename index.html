@@ -429,28 +429,61 @@
       border: 1px solid #ddd;
     }
 
-    /* === 6. マンカラ（木製トレイ & ビーズ） === */
-    .mancala-icon-board {
-      width: 48px;
-      height: 26px;
-      background: linear-gradient(180deg, #3a2213, #22140b);
-      border: 1.5px solid #5d3b23;
-      border-radius: 13px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.15);
+    /* === 6. マンカラ（彫り込み木製ボード＆両端ゴール ミニチュア） === */
+    .mancala-mini-board {
+      width: 60px;
+      height: 32px;
+      background: linear-gradient(180deg, #3d2414 0%, #1f1108 100%);
+      border: 1.5px solid #5d381f;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.2);
       display: flex;
       align-items: center;
-      justify-content: space-around;
-      padding: 0 5px;
+      justify-content: space-between;
+      padding: 3px 4px;
+      gap: 3px;
     }
-    .mancala-icon-gem {
-      width: 8px;
-      height: 8px;
+    .m-mini-store {
+      width: 9px;
+      height: 24px;
+      background: #0d0704;
+      border-radius: 6px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+    .m-mini-pits-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 2.5px 3px;
+      align-items: center;
+      justify-items: center;
+    }
+    .m-mini-pit {
+      width: 9.5px;
+      height: 9.5px;
+      background: #0d0704;
       border-radius: 50%;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.7), inset 0.8px 0.8px 1px #fff;
+      box-shadow: inset 0 1.5px 3px rgba(0,0,0,0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .m-mini-gem {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      box-shadow: inset 0.8px 0.8px 1px rgba(255,255,255,0.8), 0 1px 1.5px rgba(0,0,0,0.6);
     }
     .m-gem-cyan { background: radial-gradient(circle at 35% 30%, #55efc4, #00b894); }
-    .m-gem-gold { background: radial-gradient(circle at 35% 30%, #ffeaa7, #fdcb6e); }
     .m-gem-coral { background: radial-gradient(circle at 35% 30%, #ff7675, #d63031); }
+    .m-gem-gold { background: radial-gradient(circle at 35% 30%, #ffeaa7, #fdcb6e); }
+    .m-gem-purple { background: radial-gradient(circle at 35% 30%, #d980fa, #8854d0); }
 
     /* === 7. コネクトフォー === */
     .connect-icon-pair {
@@ -466,11 +499,11 @@
     }
     .mini-connect-coin.red {
       background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b 65%, #7f1d1d 100%);
-      border: 1px solid #ff9f43;
+      border: 1.5px solid #ff9f43;
     }
     .mini-connect-coin.yellow {
       background: radial-gradient(circle at 35% 30%, #fff2ac, #f39c12 65%, #d35400 100%);
-      border: 1px solid #f1c40f;
+      border: 1.5px solid #f1c40f;
     }
 
     /* === 8. マインスイーパー === */
@@ -555,26 +588,60 @@
       opacity: 0.8;
     }
 
-    /* === 11. ヒット＆ブロー === */
-    .hnb-pegs {
+    /* === 11. ヒット＆ブロー（暗号ペグ ＆ 判定ピンプレート） === */
+    .hnb-icon-unit {
       display: flex;
-      gap: 5px;
       align-items: center;
-      padding: 5px 8px;
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid #4a3424;
-      border-radius: 16px;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.7);
+      gap: 5px;
+      background: #1b120c;
+      border: 1.5px solid #4a3424;
+      border-radius: 12px;
+      padding: 5px 7px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.1);
     }
-    .hnb-peg {
-      width: 13px;
-      height: 13px;
+    .hnb-icon-pegs-row {
+      display: flex;
+      gap: 3.5px;
+      align-items: center;
+    }
+    .hnb-icon-peg {
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
-      box-shadow: inset 0 -1.5px 2px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.5);
+      box-shadow: inset -1px -1px 2px rgba(0,0,0,0.6), inset 1px 1px 1.5px rgba(255,255,255,0.7), 0 1.5px 2px rgba(0,0,0,0.5);
     }
     .peg-red { background: radial-gradient(circle at 35% 30%, #ff6b6b, #c0392b); }
     .peg-yellow { background: radial-gradient(circle at 35% 30%, #feca57, #e67e22); }
     .peg-blue { background: radial-gradient(circle at 35% 30%, #54a0ff, #2980b9); }
+    
+    .hnb-icon-divider {
+      width: 1px;
+      height: 18px;
+      background: rgba(229, 169, 80, 0.25);
+    }
+    .hnb-icon-pins-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 6.5px);
+      grid-template-rows: repeat(2, 6.5px);
+      gap: 2px;
+      padding: 2px;
+      background: #0d0704;
+      border-radius: 4px;
+      box-shadow: inset 0 1.5px 2px rgba(0,0,0,0.9);
+    }
+    .hnb-icon-pin {
+      width: 6.5px;
+      height: 6.5px;
+      border-radius: 50%;
+    }
+    .hnb-pin-hit {
+      background: radial-gradient(circle at 35% 35%, #ff4d4d, #b30000);
+      box-shadow: 0 0 3px rgba(255, 60, 60, 0.9);
+    }
+    .hnb-pin-blow {
+      background: radial-gradient(circle at 35% 35%, #ffffff, #a4b0be);
+      box-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
+    }
 
     .card-title {
       font-weight: 700;
@@ -671,7 +738,7 @@
 
     <!-- RPG・クエストへのリンク -->
     <div class="drawer-item" onclick="launchFromDrawer('rpg')">
-      <div class="drawer-item-icon">⚔</div>
+      <div class="drawer-item-icon">⚔️</div>
       <div>
         <div class="drawer-item-title">Oh LOVE QUEST</div>
         <div class="drawer-item-sub">冒険RPG / 特別編</div>
@@ -776,13 +843,24 @@
         <div class="card-genre">対COM / 2人対戦</div>
       </div>
 
-      <!-- 3位：マンカラ (新規追加) -->
+      <!-- 3位：マンカラ (リアル盤面ミニチュア) -->
       <div class="game-card" onclick="launchGame('mancala')">
         <div class="card-icon">
-          <div class="mancala-icon-board">
-            <div class="mancala-icon-gem m-gem-cyan"></div>
-            <div class="mancala-icon-gem m-gem-gold"></div>
-            <div class="mancala-icon-gem m-gem-coral"></div>
+          <div class="mancala-mini-board">
+            <div class="m-mini-store">
+              <div class="m-mini-gem m-gem-coral"></div>
+            </div>
+            <div class="m-mini-pits-grid">
+              <div class="m-mini-pit"><div class="m-mini-gem m-gem-cyan"></div></div>
+              <div class="m-mini-pit"><div class="m-mini-gem m-gem-gold"></div></div>
+              <div class="m-mini-pit"><div class="m-mini-gem m-gem-purple"></div></div>
+              <div class="m-mini-pit"><div class="m-mini-gem m-gem-coral"></div></div>
+              <div class="m-mini-pit"><div class="m-mini-gem m-gem-cyan"></div></div>
+              <div class="m-mini-pit"><div class="m-mini-gem m-gem-gold"></div></div>
+            </div>
+            <div class="m-mini-store">
+              <div class="m-mini-gem m-gem-cyan"></div>
+            </div>
           </div>
         </div>
         <div class="card-title">マンカラ</div>
@@ -837,13 +915,22 @@
         <div class="card-genre">電灯パズル</div>
       </div>
 
-      <!-- 8位：ヒット＆ブロー -->
+      <!-- 8位：ヒット＆ブロー (暗号ペグ＆判定ピンプレート) -->
       <div class="game-card" onclick="launchGame('hit-and-blow')">
         <div class="card-icon">
-          <div class="hnb-pegs">
-            <div class="hnb-peg peg-red"></div>
-            <div class="hnb-peg peg-yellow"></div>
-            <div class="hnb-peg peg-blue"></div>
+          <div class="hnb-icon-unit">
+            <div class="hnb-icon-pegs-row">
+              <div class="hnb-icon-peg peg-red"></div>
+              <div class="hnb-icon-peg peg-yellow"></div>
+              <div class="hnb-icon-peg peg-blue"></div>
+            </div>
+            <div class="hnb-icon-divider"></div>
+            <div class="hnb-icon-pins-grid">
+              <div class="hnb-icon-pin hnb-pin-hit"></div>
+              <div class="hnb-icon-pin hnb-pin-blow"></div>
+              <div class="hnb-icon-pin"></div>
+              <div class="hnb-icon-pin hnb-pin-hit"></div>
+            </div>
           </div>
         </div>
         <div class="card-title">ヒット＆ブロー</div>
@@ -877,7 +964,7 @@
         <div class="card-genre">思考ソリティア</div>
       </div>
       <div class="game-card" onclick="launchGame('spider')">
-        <div class="card-icon" style="font-size: 38px;">🕷️♠️️</div>
+        <div class="card-icon" style="font-size: 38px;">🕷️♠</div>
         <div class="card-title">スパイダー</div>
         <div class="card-genre">連鎖ソリティア</div>
       </div>
