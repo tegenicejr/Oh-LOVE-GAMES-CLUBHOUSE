@@ -10,7 +10,6 @@
       --felt-dark: #122c19;
       --felt-light: #1c4528;
       --board-rim: #362214;
-      --board-wood: #26160d;
       --brass-gold: #d4a359;
       --brass-glow: rgba(212, 163, 89, 0.45);
     }
@@ -35,7 +34,7 @@
     .viewport {
       width: 100%;
       min-height: 100%;
-      padding: calc(12px + env(safe-area-inset-top)) 6px calc(60px + env(safe-area-inset-bottom));
+      padding: calc(12px + env(safe-area-inset-top)) 8px calc(60px + env(safe-area-inset-bottom));
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -45,7 +44,7 @@
 
     .topbar {
       width: 100%;
-      max-width: 480px;
+      max-width: 440px;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -139,11 +138,11 @@
     .table-felt {
       position: relative;
       width: 100%;
-      max-width: 480px;
+      max-width: 440px;
       background: radial-gradient(circle at 50% 35%, var(--felt-light) 0%, var(--felt-dark) 100%);
       border: 6px solid var(--board-rim);
       border-radius: 20px;
-      padding: 12px 6px 16px;
+      padding: 14px 6px 18px;
       box-shadow: 0 20px 50px rgba(0,0,0,0.95), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 0 35px rgba(0,0,0,0.85);
       display: flex;
       flex-direction: column;
@@ -167,22 +166,23 @@
     /* マンカラ木製ボード本体 */
     .mancala-board {
       width: 100%;
-      background: linear-gradient(180deg, #382214 0%, #22130a 100%);
+      background: linear-gradient(180deg, #382214 0%, #20120a 100%);
       border: 3.5px solid #583920;
-      border-radius: 22px;
-      padding: 8px 5px;
+      border-radius: 20px;
+      padding: 10px 6px;
       box-shadow: 0 14px 30px rgba(0,0,0,0.85), inset 0 2px 4px rgba(255,255,255,0.15);
       display: flex;
-      align-items: stretch;
+      align-items: center;
       justify-content: space-between;
-      gap: 5px;
+      gap: 6px;
     }
 
     /* 左右のゴール（ストア） */
     .mancala-store {
-      width: 48px;
+      width: 46px;
+      height: 180px;
       background: radial-gradient(ellipse at 50% 50%, #0d0704 0%, #190e07 100%);
-      border-radius: 20px;
+      border-radius: 18px;
       box-shadow: inset 0 5px 12px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.1);
       display: flex;
       flex-direction: column;
@@ -190,6 +190,7 @@
       justify-content: space-between;
       padding: 8px 2px;
       border: 1px solid #3c2415;
+      flex-shrink: 0;
     }
     .store-label {
       font-size: 0.65rem;
@@ -202,7 +203,7 @@
       background: #20130a;
       border: 1.5px solid var(--brass-gold);
       color: var(--brass-gold);
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       font-weight: 900;
       border-radius: 10px;
       padding: 2px 6px;
@@ -215,114 +216,116 @@
       width: 100%;
       display: flex;
       flex-wrap: wrap;
-      align-content: center;
+      align-content: flex-end;
       justify-content: center;
-      gap: 2.5px;
-      padding: 4px 2px;
+      gap: 3px;
+      padding: 6px 3px;
       overflow: hidden;
     }
 
-    /* 中央の6×2ポケット群 */
+    /* 中央のポケット群 */
     .mancala-center {
       flex: 1;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      gap: 8px;
+      justify-content: center;
+      gap: 12px;
+      min-width: 0;
     }
 
     .pit-row {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
       gap: 4px;
     }
 
-    /* ポケット＋数字バッジの縦コンテナ（重なり防止） */
+    /* ポケット＋数字の縦コンテナ */
     .pit-col {
-      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
-      position: relative;
+      gap: 5px;
+      min-width: 0;
     }
 
-    /* 独立した数字バッジ（重ならない） */
+    /* 独立した数字バッジ */
     .pit-count-badge {
       background: #180f08;
       border: 1px solid #4a3220;
       color: #ede2d5;
-      font-size: 0.82rem;
+      font-size: 0.85rem;
       font-weight: 900;
       border-radius: 8px;
-      padding: 1px 6px;
+      padding: 1px 4px;
       min-width: 24px;
       text-align: center;
       font-feature-settings: "tnum";
       transition: all 0.15s ease;
+      line-height: 1.2;
     }
     .pit-col.active-col .pit-count-badge {
       border-color: var(--brass-gold);
       color: var(--brass-gold);
       box-shadow: 0 0 6px var(--brass-glow);
-      font-weight: 900;
     }
 
-    /* 各ピット（ポケット本体） */
+    /* ポケット（穴）本体 - 絶対にはみ出さない */
     .pit {
       width: 100%;
       aspect-ratio: 1;
-      max-width: 48px;
-      max-height: 48px;
-      background: radial-gradient(circle at 50% 50%, #0d0704 0%, #1a0f08 100%);
+      max-width: 44px;
+      max-height: 44px;
+      background: radial-gradient(circle at 50% 50%, #0a0503 0%, #170d07 100%);
       border-radius: 50%;
-      box-shadow: inset 0 4px 8px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.1);
+      box-shadow: inset 0 4px 8px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.08);
       border: 1px solid #331f13;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       position: relative;
+      overflow: hidden; /* はみ出しを完全にカット */
       transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
     }
     .pit.selectable {
       border: 1.5px solid var(--brass-gold);
       box-shadow: inset 0 4px 8px rgba(0,0,0,0.95), 0 0 8px var(--brass-glow);
+      cursor: pointer;
     }
     .pit.selectable:active {
       transform: scale(0.92);
     }
 
-    /* おはじきコンテナ（中央配置） */
+    /* ポケット内部のおはじきプール */
     .pit-gems {
-      width: 100%;
-      height: 100%;
+      width: 86%;
+      height: 86%;
       display: flex;
       flex-wrap: wrap;
       align-content: center;
       justify-content: center;
-      gap: 2.5px;
-      padding: 4px;
+      gap: 2px;
       pointer-events: none;
+      overflow: hidden;
     }
 
     /* リアルガラス石（おはじき） */
     .gem {
-      width: 9.5px;
-      height: 9.5px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      box-shadow: 0 1.5px 2px rgba(0,0,0,0.8), inset 1.5px 1.5px 1.5px rgba(255,255,255,0.85);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.8), inset 1px 1px 1.5px rgba(255,255,255,0.85);
       flex-shrink: 0;
     }
-    .gem-c0 { background: radial-gradient(circle at 35% 30%, #55efc4, #00b894); } /* ターコイズ */
-    .gem-c1 { background: radial-gradient(circle at 35% 30%, #74b9ff, #0984e3); } /* サファイア */
-    .gem-c2 { background: radial-gradient(circle at 35% 30%, #ffeaa7, #f39c12); } /* アンバー */
-    .gem-c3 { background: radial-gradient(circle at 35% 30%, #ff7675, #d63031); } /* ルビー */
-    .gem-c4 { background: radial-gradient(circle at 35% 30%, #d980fa, #8854d0); } /* アメジスト */
+    .gem-c0 { background: radial-gradient(circle at 35% 30%, #55efc4, #00b894); }
+    .gem-c1 { background: radial-gradient(circle at 35% 30%, #74b9ff, #0984e3); }
+    .gem-c2 { background: radial-gradient(circle at 35% 30%, #ffeaa7, #f39c12); }
+    .gem-c3 { background: radial-gradient(circle at 35% 30%, #ff7675, #d63031); }
+    .gem-c4 { background: radial-gradient(circle at 35% 30%, #d980fa, #8854d0); }
 
     .ranking-container {
       width: 100%;
-      max-width: 480px;
+      max-width: 440px;
       margin-top: 14px;
       background: rgba(22, 14, 9, 0.85);
       border: 2px solid #3d2919;
@@ -452,7 +455,7 @@
         <div class="score-banner">
           <div class="player-badge turn-active" id="badge-p1">
             <div class="mini-gem p1"></div>
-            <span id="label-player-1">1P</span>
+            <span id="label-player-1">あなた</span>
             <span class="score-val" id="score-p1">0</span>
           </div>
           <div class="player-badge" id="badge-p2">
@@ -473,7 +476,7 @@
       <div class="mancala-board">
         <!-- 相手ストア (左端: インデックス 13) -->
         <div class="mancala-store" id="store-p2">
-          <span class="store-label" id="store-label-p2">2P GOAL</span>
+          <span class="store-label" id="store-label-p2">COM<br>STORE</span>
           <div class="store-gems" id="gems-13"></div>
           <div class="store-count-badge" id="count-13">0</div>
         </div>
@@ -482,7 +485,6 @@
         <div class="mancala-center">
           <!-- 相手陣地 (インデックス 12 -> 7: 上段) -->
           <div class="pit-row" id="row-p2">
-            <!-- 数字バッジを上に配置 -->
             <div class="pit-col" id="col-12"><div class="pit-count-badge" id="count-12">4</div><div class="pit" id="pit-12" onclick="handlePitClick(12)"><div class="pit-gems"></div></div></div>
             <div class="pit-col" id="col-11"><div class="pit-count-badge" id="count-11">4</div><div class="pit" id="pit-11" onclick="handlePitClick(11)"><div class="pit-gems"></div></div></div>
             <div class="pit-col" id="col-10"><div class="pit-count-badge" id="count-10">4</div><div class="pit" id="pit-10" onclick="handlePitClick(10)"><div class="pit-gems"></div></div></div>
@@ -493,7 +495,6 @@
 
           <!-- 自分陣地 (インデックス 0 -> 5: 下段) -->
           <div class="pit-row" id="row-p1">
-            <!-- 数字バッジを下に配置 -->
             <div class="pit-col" id="col-0"><div class="pit" id="pit-0" onclick="handlePitClick(0)"><div class="pit-gems"></div></div><div class="pit-count-badge" id="count-0">4</div></div>
             <div class="pit-col" id="col-1"><div class="pit" id="pit-1" onclick="handlePitClick(1)"><div class="pit-gems"></div></div><div class="pit-count-badge" id="count-1">4</div></div>
             <div class="pit-col" id="col-2"><div class="pit" id="pit-2" onclick="handlePitClick(2)"><div class="pit-gems"></div></div><div class="pit-count-badge" id="count-2">4</div></div>
@@ -505,7 +506,7 @@
 
         <!-- 自分ストア (右端: インデックス 6) -->
         <div class="mancala-store" id="store-p1">
-          <span class="store-label">1P GOAL</span>
+          <span class="store-label">1P<br>STORE</span>
           <div class="store-gems" id="gems-6"></div>
           <div class="store-count-badge" id="count-6">0</div>
         </div>
@@ -539,7 +540,7 @@
     <div class="modal-sheet">
       <div class="modal-title">📖 マンカラのあそびかた</div>
       <div class="modal-body">
-        <p>石を反時計回りに1個ずつ撒いていき、自分の右側のゴール（ストア）により多くの石を集めた方が勝利します。</p>
+        <p>石を反時計回りに1個ずつ撒いていき、自分の右側のゴール（STORE）により多くの石を集めた方が勝利します。</p>
         <br>
         <b style="color:var(--brass-gold);">【基本ルール（カラハ）】</b>
         <ul style="padding-left:18px; margin:6px 0;">
@@ -640,15 +641,9 @@
       } catch(e) {}
     }
 
-    /* ボード定義:
-       0〜5: 1Pピット
-       6: 1Pストア (右)
-       7〜12: 2Pピット
-       13: 2Pストア (左)
-    */
     let board = [];
     let currentTurn = 1; // 1: 1P, 2: 2P
-    let gameMode = 'pve'; // 'pve' | 'pvp'
+    let gameMode = 'pve';
     let isComThinking = false;
     let isSowing = false;
     let isGameOver = false;
@@ -703,14 +698,13 @@
         const count = board[i];
         if (i === 6 || i === 13) {
           document.getElementById(`count-${i}`).textContent = count;
-          renderGems(document.getElementById(`gems-${i}`), count, 20);
+          renderGems(document.getElementById(`gems-${i}`), count, 18);
         } else {
-          // 独立バッジに数字を反映
           document.getElementById(`count-${i}`).textContent = count;
           const pitEl = document.getElementById(`pit-${i}`);
           const colEl = document.getElementById(`col-${i}`);
 
-          renderGems(pitEl.querySelector('.pit-gems'), count, 8);
+          renderGems(pitEl.querySelector('.pit-gems'), count, 7);
 
           const isP1Pit = (i >= 0 && i <= 5);
           const isP2Pit = (i >= 7 && i <= 12);
@@ -764,7 +758,7 @@
         await new Promise(r => setTimeout(r, 160));
       }
 
-      // 横取り（キャプチャー）判定
+      // 横取り判定
       const isMySide = player === 1 ? (curr >= 0 && curr <= 5) : (curr >= 7 && curr <= 12);
       if (isMySide && board[curr] === 1 && curr !== myStore) {
         const oppositePit = 12 - curr;
@@ -779,7 +773,6 @@
         }
       }
 
-      // 終了判定
       if (checkGameEnd()) {
         isSowing = false;
         resolveGameEnd();
@@ -864,7 +857,6 @@
       setTimeout(() => alert(msg), 300);
     }
 
-    /* COM思考ルーチン */
     async function handleComTurn() {
       if (isGameOver || currentTurn !== 2 || gameMode !== 'pve') return;
       isComThinking = true;
@@ -927,12 +919,12 @@
       if (gameMode === 'pvp') {
         label1.textContent = '1P';
         label2.textContent = '2P';
-        storeLabelP2.textContent = '2P GOAL';
+        storeLabelP2.innerHTML = '2P<br>STORE';
         diffBadge.textContent = '2人プレイ (対戦)';
       } else {
         label1.textContent = 'あなた';
         label2.textContent = 'COM';
-        storeLabelP2.textContent = 'COM GOAL';
+        storeLabelP2.innerHTML = 'COM<br>STORE';
         const names = { easy: '初級', medium: '中級', hard: '上級' };
         diffBadge.textContent = `COM: ${names[difficulty]}`;
       }
