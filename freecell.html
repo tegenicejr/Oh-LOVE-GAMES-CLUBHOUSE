@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>フリーセル (FreeCell)</title>
+<style>
+:root {
+--bg-desk: #110c08;
+--board-wood: #20140c;
+--board-rim: #362214;
+--felt-dark: #122c19;
+--felt-light: #1c4528;
+--brass-gold: #d4a359;
+--brass-glow: rgba(212, 163, 89, 0.45);
+}
+* {
+box-sizing: border-box;
+margin: 0;
+padding: 0;
+user-select: none;
+-webkit-user-select: none;
+-webkit-tap-highlight-color: transparent;
+}
+html, body {
+width: 100%;
+height: 100%;
+background: var(--bg-desk);
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+color: #fff;
+overflow-x: hidden;
+overflow-y: auto;
+-webkit-overflow-scrolling: touch;
+}
+.viewport {
+width: 100%;
+min-height: 100%;
+padding: calc(14px + env(safe-area-inset-top)) 6px calc(60px + env(safe-area-inset-bottom));
+display: flex;
+flex-direction: column;
+align-items: center;
+background: radial-gradient(circle at 50% 20%, #2b1a10 0%, var(--bg-desk) 100%);
+position: relative;
+}
+/* --- スタート画面オーバーレイ --- */
+.start-screen-overlay {
+position: fixed;
+inset: 0;
+z-index: 100000;
+background: radial-gradient(circle at 50% 35%, #2a1b12 0%, #0d0704 100%);
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 16px;
+transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+.start-screen-overlay.hidden {
+opacity: 0;
+visibility: hidden;
+pointer-events: none;
+}
+.start-card {
+width: 100%;
+max-width: 400px;
+background: linear-gradient(180deg, #25170e 0%, #170d07 100%);
+border: 3px solid #5a3d25;
+border-radius: 24px;
+padding: 36px 24px 28px;
+box-shadow: 0 28px 70px rgba(0,0,0,0.95), inset 0 1px 2px rgba(255,255,255,0.12);
+display: flex;
+flex-direction: column;
+align-items: center;
+text-align: center;
+position: relative;
+}
+.start-badge-tag {
+font-size: 0.72rem;
+letter-spacing: 2.5px;
+font-weight: 800;
+color: var(--brass-gold);
+text-transform: uppercase;
+background: rgba(0,0,0,0.45);
+border: 1px solid #4a3320;
+border-radius: 20px;
+padding: 4px 14px;
+margin-bottom: 12px;
+}
+.start-title {
+font-size: 2.1rem;
+font-weight: 900;
+letter-spacing: 2px;
+color: #f7ede2;
+text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+margin-bottom: 6px;
+}
+.start-subtitle {
+font-size: 0.85rem;
+color: #ab9582;
+margin-bottom: 24px;
+}
+.start-suits-banner {
+display: flex;
+gap: 22px;
+font-size: 1.8rem;
+margin-bottom: 30px;
+filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6));
+}
+.start-action-btn {
+width: 100%;
+padding: 15px;
+border-radius: 14px;
+border: none;
+background: linear-gradient(180deg, #e3b26c 0%, #b88338 100%);
+color: #170d06;
+font-size: 1.1rem;
+font-weight: 900;
+letter-spacing: 1.5px;
+cursor: pointer;
+box-shadow: 0 8px 20px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.4);
+transition: transform 0.1s, filter 0.15s;
+}
+.start-action-btn:hover {
+filter: brightness(1.08);
+transform: translateY(-2px);
+}
+.start-action-btn:active {
+transform: scale(0.98);
+}
+.start-tips {
+margin-top: 18px;
+font-size: 0.74rem;
+color: #7d6b5c;
+line-height: 1.5;
+}
+/* ゲーム画面 */
+.topbar {
+width: 100%;
+max-width: 660px;
+display: flex;
+flex-direction: column;
+gap: 10px;
+margin-bottom: 12px;
+padding: 0 4px;
+}
+.topbar-upper {
+display: flex;
+justify-content: flex-end;
+gap: 10px;
+}
+.tool-btn {
+background: linear-gradient(145deg, #2c1c12 0%, #1c1109 100%);
+border: 1.5px solid #4d3320;
+color: var(--brass-gold);
+width: 38px;
+height: 38px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 1.1rem;
+cursor: pointer;
+box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.15);
+transition: transform 0.12s, border-color 0.12s;
+}
+.tool-btn:hover {
+border-color: var(--brass-gold);
+transform: translateY(-2px);
+}
+.tool-btn:active {
+transform: scale(0.92);
+}
+.topbar-lower {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 8px;
+padding: 0 2px;
+flex-wrap: wrap;
+}
+.stats-group {
+display: flex;
+gap: 8px;
+align-items: center;
+}
+.stat-badge {
+background: rgba(0, 0, 0, 0.65);
+border: 1.5px solid #442d1c;
+border-radius: 14px;
+padding: 5px 12px;
+font-size: 0.85rem;
+font-weight: 700;
+color: #d1c1b2;
+display: flex;
+align-items: center;
+gap: 5px;
+box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+white-space: nowrap;
+}
+.stat-num {
+color: var(--brass-gold);
+font-size: 1.15rem;
+font-weight: 900;
+font-feature-settings: "tnum";
+}
+.board-frame {
+position: relative;
+width: 100%;
+max-width: 660px;
+background: radial-gradient(circle at 50% 30%, var(--felt-light) 0%, var(--felt-dark) 100%);
+border: 8px solid var(--board-rim);
+border-radius: 20px;
+padding: 12px 8px 34px;
+box-shadow: 0 24px 60px rgba(0,0,0,0.95), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 0 35px rgba(0,0,0,0.85);
+touch-action: manipulation;
+}
+.top-cells {
+display: grid;
+grid-template-columns: repeat(8, 1fr);
+gap: 5px;
+margin-bottom: 18px;
+padding: 0 2px;
+}
+.cell-slot {
+width: 100%;
+aspect-ratio: 44 / 62;
+border-radius: 6px;
+background: rgba(0, 0, 0, 0.35);
+border: 1.5px dashed rgba(212, 163, 89, 0.35);
+position: relative;
+display: flex;
+align-items: center;
+justify-content: center;
+box-shadow: inset 0 3px 6px rgba(0,0,0,0.6);
+transition: border-color 0.15s, background 0.15s;
+}
+.cell-slot.foundation {
+border: 1.5px solid rgba(212, 163, 89, 0.5);
+}
+.cell-watermark {
+font-size: 1.25rem;
+opacity: 0.3;
+pointer-events: none;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.tableau {
+display: grid;
+grid-template-columns: repeat(8, 1fr);
+gap: 5px;
+padding: 0 2px;
+min-height: 380px;
+}
+.cascade-col {
+position: relative;
+width: 100%;
+min-height: 360px;
+border-radius: 6px;
+}
+.cascade-base {
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+aspect-ratio: 44 / 62;
+border-radius: 6px;
+border: 1px dashed rgba(255, 255, 255, 0.18);
+background: rgba(0, 0, 0, 0.2);
+pointer-events: none;
+}
+.card {
+position: absolute;
+left: 0;
+width: 100%;
+aspect-ratio: 44 / 62;
+border-radius: 5px;
+background: linear-gradient(180deg, #ffffff 0%, #faf8f5 70%, #f0ebd8 100%);
+border: 1px solid #b8b2a8;
+box-shadow: 0 3px 6px rgba(0,0,0,0.55), inset 0 1px 1px #fff;
+display: flex;
+flex-direction: column;
+justify-content: space-between;
+padding: 2.5px 3.5px;
+cursor: pointer;
+-webkit-backface-visibility: hidden;
+backface-visibility: hidden;
+transform: translateZ(0);
+transition: transform 0.12s ease, box-shadow 0.12s ease;
+touch-action: none;
+}
+.card.red { color: #d63031; }
+.card.black { color: #1e272e; }
+.card-corner {
+display: flex;
+flex-direction: column;
+align-items: center;
+line-height: 0.95;
+font-weight: 900;
+font-size: 0.78rem;
+pointer-events: none;
+}
+.card-corner svg {
+width: 9px;
+height: 9px;
+margin-top: 1px;
+}
+.card-center-suit {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+width: 20px;
+height: 20px;
+opacity: 0.9;
+pointer-events: none;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.card.selected {
+transform: translateY(-5px) translateZ(0);
+box-shadow:
+0 10px 18px rgba(0,0,0,0.85),
+0 0 12px var(--brass-glow),
+inset 0 0 0 2.5px var(--brass-gold);
+z-index: 500 !important;
+}
+.card.hinted {
+animation: hintBlink 0.75s infinite alternate ease-in-out;
+box-shadow:
+0 0 14px #2ecc71,
+inset 0 0 0 2.5px #2ecc71;
+}
+@keyframes hintBlink {
+from { transform: translateY(0) translateZ(0); }
+to { transform: translateY(-3px) translateZ(0); }
+}
+.ranking-container {
+width: 100%;
+max-width: 660px;
+margin-top: 20px;
+background: rgba(22, 14, 9, 0.85);
+border: 2px solid #3d2919;
+border-radius: 16px;
+padding: 14px 16px;
+box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+}
+.ranking-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+border-bottom: 1.5px solid #4a3422;
+padding-bottom: 8px;
+margin-bottom: 10px;
+}
+.ranking-title {
+font-size: 0.95rem;
+font-weight: 800;
+color: var(--brass-gold);
+display: flex;
+align-items: center;
+gap: 6px;
+}
+.ranking-tag {
+font-size: 0.75rem;
+background: #342014;
+color: #dfd2c4;
+padding: 3px 8px;
+border-radius: 8px;
+border: 1px solid #583c27;
+}
+.ranking-list {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 6px 14px;
+}
+@media (max-width: 480px) {
+.ranking-list {
+grid-template-columns: 1fr;
+}
+}
+.ranking-item {
+display: flex;
+justify-content: space-between;
+align-items: center;
+background: rgba(0,0,0,0.3);
+padding: 5px 10px;
+border-radius: 8px;
+font-size: 0.82rem;
+font-feature-settings: "tnum";
+}
+.ranking-rank {
+font-weight: 800;
+color: #8c7664;
+width: 28px;
+}
+.ranking-rank.top1 { color: #f1c40f; }
+.ranking-rank.top2 { color: #bdc3c7; }
+.ranking-rank.top3 { color: #e67e22; }
+.ranking-score {
+display: flex;
+gap: 8px;
+align-items: center;
+}
+.ranking-time {
+font-weight: 800;
+color: #f5ebe1;
+}
+.ranking-moves {
+font-size: 0.72rem;
+color: var(--brass-gold);
+}
+.ranking-date {
+color: #7d6b5c;
+font-size: 0.72rem;
+}
+.ranking-empty {
+text-align: center;
+color: #7d6b5c;
+font-size: 0.82rem;
+padding: 12px 0;
+grid-column: span 2;
+}
+.modal-overlay {
+display: none;
+position: fixed;
+top: 0; left: 0; width: 100vw; height: 100vh;
+background: rgba(0,0,0,0.82);
+backdrop-filter: blur(5px);
+z-index: 99999;
+align-items: center;
+justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+.modal-sheet {
+background: #20140c;
+border: 3px solid #4d3320;
+border-radius: 20px;
+padding: 22px;
+width: 88%;
+max-width: 440px;
+box-shadow: 0 25px 60px rgba(0,0,0,0.95);
+color: #ede2d5;
+max-height: 85vh;
+display: flex;
+flex-direction: column;
+}
+.modal-title {
+text-align: center;
+color: var(--brass-gold);
+font-size: 1.25rem;
+font-weight: 800;
+margin-bottom: 14px;
+}
+.modal-body {
+overflow-y: auto;
+font-size: 0.86rem;
+line-height: 1.6;
+color: #c9b9aa;
+margin-bottom: 16px;
+padding-right: 6px;
+}
+.modal-body::-webkit-scrollbar { width: 6px; }
+.modal-body::-webkit-scrollbar-thumb { background: #4d3320; border-radius: 3px; }
+.setting-item {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 12px 0;
+border-bottom: 1px solid #332014;
+}
+.toggle-switch {
+position: relative;
+width: 46px;
+height: 24px;
+background: #332014;
+border-radius: 12px;
+border: 1px solid #583d28;
+cursor: pointer;
+transition: background 0.2s;
+}
+.toggle-switch.on {
+background: var(--brass-gold);
+}
+.toggle-thumb {
+position: absolute;
+top: 2px;
+left: 2px;
+width: 18px;
+height: 18px;
+border-radius: 50%;
+background: #fff;
+transition: transform 0.2s;
+}
+.toggle-switch.on .toggle-thumb {
+transform: translateX(22px);
+background: #1a1008;
+}
+.modal-close-btn {
+width: 100%;
+padding: 12px;
+background: linear-gradient(180deg, #d4a359, #aa782e);
+border: none;
+border-radius: 12px;
+color: #140c06;
+font-weight: 900;
+font-size: 0.95rem;
+cursor: pointer;
+}
+</style>
+</head>
+<body>
+<!-- スタート画面 -->
+<div id="start-screen" class="start-screen-overlay">
+<div class="start-card">
+<div class="start-badge-tag">SOLITAIRE CLASSIC</div>
+<h1 class="start-title">フリーセル</h1>
+<div class="start-subtitle">FreeCell Card Game</div>
+<div class="start-suits-banner">
+<span>♠</span>
+<span style="color:#e74c3c;">♥</span>
+<span style="color:#e74c3c;">♦</span>
+<span>♣</span>
+</div>
+<button class="start-action-btn" onclick="onStartGameClick()">
+ゲーム開始
+</button>
+<div class="start-tips">すべてのカードが見えた状態で配られる論理パズルです</div>
+</div>
+</div>
+<div class="viewport">
+<div class="topbar">
+<!-- 上段：操作系 -->
+<div class="topbar-upper">
+<div class="tool-btn" onclick="toggleSettingsModal(true)" title="設定">⚙️</div>
+<div class="tool-btn" onclick="returnToTitle()" title="タイトルに戻る">🏠</div>
+<div class="tool-btn" onclick="restartGame()" title="最初から">🔄</div>
+<div class="tool-btn" onclick="undoMove()" title="1手戻す">↩️</div>
+<div class="tool-btn" onclick="getHint()" title="ヒント">💡</div>
+<div class="tool-btn" onclick="toggleRulesModal(true)" title="あそびかた">📖</div>
+</div>
+<!-- 下段：ステータス -->
+<div class="topbar-lower">
+<div class="stats-group">
+<div class="stat-badge">手数 <span id="stat-moves" class="stat-num">0</span></div>
+<div class="stat-badge">組札 <span id="stat-foundation" class="stat-num">0/52</span></div>
+</div>
+<div class="stat-badge">⏱️ <span id="stat-timer" class="stat-num">00:00</span></div>
+</div>
+</div>
+<!-- フェルト盤面 -->
+<div class="board-frame">
+<div class="top-cells">
+<div class="cell-slot freecell" data-idx="0" onclick="onCellSlotClick('freecell', 0)"></div>
+<div class="cell-slot freecell" data-idx="1" onclick="onCellSlotClick('freecell', 1)"></div>
+<div class="cell-slot freecell" data-idx="2" onclick="onCellSlotClick('freecell', 2)"></div>
+<div class="cell-slot freecell" data-idx="3" onclick="onCellSlotClick('freecell', 3)"></div>
+<div class="cell-slot foundation" data-idx="0" onclick="onCellSlotClick('foundation', 0)"><span class="cell-watermark">♠</span></div>
+<div class="cell-slot foundation" data-idx="1" onclick="onCellSlotClick('foundation', 1)"><span class="cell-watermark" style="color:#d63031;">♥</span></div>
+<div class="cell-slot foundation" data-idx="2" onclick="onCellSlotClick('foundation', 2)"><span class="cell-watermark" style="color:#d63031;">♦</span></div>
+<div class="cell-slot foundation" data-idx="3" onclick="onCellSlotClick('foundation', 3)"><span class="cell-watermark">♣</span></div>
+</div>
+<div class="tableau" id="tableau"></div>
+</div>
+<!-- ランキングボード (TOP 10) -->
+<div class="ranking-container">
+<div class="ranking-header">
+<div class="ranking-title">🏆 タイムランキング TOP 10</div>
+<div class="ranking-tag">フリーセル</div>
+</div>
+<div id="ranking-list" class="ranking-list"></div>
+</div>
+</div>
+<div id="modal-rules" class="modal-overlay">
+<div class="modal-sheet">
+<div class="modal-title">📖 フリーセルのあそびかた</div>
+<div class="modal-body">
+<p>すべてのカードが表向きで配られる、論理と思考力重視のトランプゲームです。</p>
+
+
+<b style="color:var(--brass-gold);">【エリアの説明】</b>
+<ul style="padding-left:18px; margin:6px 0;">
+<li><b>フリーセル（左上4枠）</b>：カードを1枚ずつ自由に退避できる場所。</li>
+<li><b>ホームセル（右上4枠）</b>：各マークをAからKまで順に積み上げるゴール。</li>
+<li><b>場札（下部8列）</b>：赤と黒が交互で、数字が1つ小さくなるように重ねられる。</li>
+</ul>
+
+
+<b style="color:var(--brass-gold);">【複数枚の連鎖移動】</b>
+<p>空いているフリーセルと空き列の数に応じて、整列されたカードの束をまとめて動かすことができます（最大可能枚数は自動計算されます）。</p>
+
+
+<b style="color:var(--brass-gold);">【快適な操作】</b>
+<p>カードを<b>ワンタップ</b>するだけで、ホームセルや空きマスへ自動で優先移動します。束の先頭をタップして移動先を選ぶことも可能です。</p>
+</div>
+<button class="modal-close-btn" onclick="toggleRulesModal(false)">閉じる</button>
+</div>
+</div>
+<div id="modal-settings" class="modal-overlay">
+<div class="modal-sheet">
+<div class="modal-title">⚙ 設定</div>
+<div class="modal-body">
+<div class="setting-item">
+<span>安全なカードの自動回収</span>
+<div id="toggle-autohome" class="toggle-switch on" onclick="toggleAutoHome()">
+<div class="toggle-thumb"></div>
+</div>
+</div>
+<div class="setting-item">
+<span>効果音 (SE)</span>
+<div id="toggle-sound" class="toggle-switch on" onclick="toggleSound()">
+<div class="toggle-thumb"></div>
+</div>
+</div>
+</div>
+<button class="modal-close-btn" onclick="toggleSettingsModal(false)">閉じる</button>
+</div>
+</div>
+<script>
+let audioCtx = null;
+let isSoundOn = true;
+function getAudio() {
+if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+if (audioCtx.state === 'suspended') audioCtx.resume();
+return audioCtx;
+}
+window.addEventListener('pointerdown', () => getAudio(), { once: true });
+function playCardSlideSound() {
+if (!isSoundOn) return;
+try {
+const ctx = getAudio();
+const osc = ctx.createOscillator();
+const gain = ctx.createGain();
+osc.type = 'triangle';
+osc.frequency.setValueAtTime(360, ctx.currentTime);
+osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.04);
+gain.gain.setValueAtTime(0.18, ctx.currentTime);
+gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+osc.connect(gain);
+gain.connect(ctx.destination);
+osc.start();
+osc.stop(ctx.currentTime + 0.05);
+} catch(e) {}
+}
+function playHomeCellSound() {
+if (!isSoundOn) return;
+try {
+const ctx = getAudio();
+const osc = ctx.createOscillator();
+const gain = ctx.createGain();
+osc.type = 'sine';
+osc.frequency.setValueAtTime(659.25, ctx.currentTime);
+osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.06);
+gain.gain.setValueAtTime(0.2, ctx.currentTime);
+gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+osc.connect(gain);
+gain.connect(ctx.destination);
+osc.start();
+osc.stop(ctx.currentTime + 0.22);
+} catch(e) {}
+}
+function playVictoryFanfare() {
+if (!isSoundOn) return;
+try {
+const ctx = getAudio();
+const notes = [523.25, 659.25, 783.99, 1046.50];
+notes.forEach((freq, idx) => {
+const osc = ctx.createOscillator();
+const gain = ctx.createGain();
+osc.type = 'triangle';
+osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.1);
+gain.gain.setValueAtTime(0.22, ctx.currentTime + idx * 0.1);
+gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.1 + 0.35);
+osc.connect(gain);
+gain.connect(ctx.destination);
+osc.start(ctx.currentTime + idx * 0.1);
+osc.stop(ctx.currentTime + idx * 0.1 + 0.36);
+});
+} catch(e) {}
+}
+const SUIT_SVGS = {
+spades: ⁠<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 C8 8 3 10 3 15 C3 18.5 6 20 8.5 20 C10.5 20 11.5 19 12 17.5 C12.5 19 13.5 20 15.5 20 C18 20 21 18.5 21 15 C21 10 16 8 12 2 Z M10.5 19 L9 22 L15 22 L13.5 19 Z"/></svg>⁠,
+hearts: ⁠<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21 C12 21 3 14 3 8.5 C3 5.5 5.5 3 8.5 3 C10.5 3 11.5 4 12 5 C12.5 4 13.5 3 15.5 3 C18.5 3 21 5.5 21 8.5 C21 14 12 21 12 21 Z"/></svg>⁠,
+diamonds: ⁠<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12,2 21,12 12,22 3,12"/></svg>⁠,
+clubs: ⁠<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7" r="4.5"/><circle cx="7" cy="14" r="4.5"/><circle cx="17" cy="14" r="4.5"/><polygon points="10.5,14 13.5,14 15,22 9,22"/></svg>⁠
+};
+const SUIT_KEYS = ['spades', 'hearts', 'diamonds', 'clubs'];
+const RANK_LABELS = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+let freeCells = [null, null, null, null];
+let foundations = [[], [], [], []]; // 0:♠, 1:♥, 2:♦, 3:♣
+let tableau = [[], [], [], [], [], [], [], []];
+let moveHistory = [];
+let moveCount = 0;
+let isAutoHomeEnabled = true;
+let selectedSource = null;
+// タイマー
+let timerInterval = null;
+let secondsElapsed = 0;
+let isGameRunning = false;
+window.addEventListener('DOMContentLoaded', () => {
+renderRanking();
+});
+function onStartGameClick() {
+const startScreen = document.getElementById('start-screen');
+startScreen.classList.add('hidden');
+initGame();
+}
+function returnToTitle() {
+if (isGameRunning && moveCount > 0) {
+if (!confirm('タイトルに戻りますか？現在のプレイ状況は破棄されます。')) return;
+}
+stopTimer();
+const startScreen = document.getElementById('start-screen');
+startScreen.classList.remove('hidden');
+}
+function startTimer() {
+stopTimer();
+secondsElapsed = 0;
+updateTimerUI();
+isGameRunning = true;
+timerInterval = setInterval(() => {
+secondsElapsed++;
+updateTimerUI();
+}, 1000);
+}
+function stopTimer() {
+if (timerInterval) clearInterval(timerInterval);
+timerInterval = null;
+isGameRunning = false;
+}
+function updateTimerUI() {
+document.getElementById('stat-timer').textContent = formatTime(secondsElapsed);
+}
+function formatTime(totalSec) {
+const m = String(Math.floor(totalSec / 60)).padStart(2, '0');
+const s = String(totalSec % 60).padStart(2, '0');
+return ⁠${m}:${s}⁠;
+}
+function initGame() {
+freeCells = [null, null, null, null];
+foundations = [[], [], [], []];
+tableau = [[], [], [], [], [], [], [], []];
+moveHistory = [];
+moveCount = 0;
+selectedSource = null;
+// 52枚デッキ構築＆シャッフル
+const deck = [];
+SUIT_KEYS.forEach(suit => {
+for (let r = 1; r <= 13; r++) {
+deck.push({ suit, rank: r });
+}
+});
+deck.sort(() => Math.random() - 0.5);
+// 8列にディール（左4列7枚、右4列6枚）
+for (let i = 0; i < 52; i++) {
+tableau[i % 8].push(deck[i]);
+}
+updateStatusUI();
+renderAll();
+renderRanking();
+startTimer();
+playCardSlideSound();
+}
+function recordState() {
+moveHistory.push({
+freeCells: JSON.parse(JSON.stringify(freeCells)),
+foundations: JSON.parse(JSON.stringify(foundations)),
+tableau: JSON.parse(JSON.stringify(tableau)),
+moveCount
+});
+}
+function undoMove() {
+if (moveHistory.length === 0) return;
+const prev = moveHistory.pop();
+freeCells = prev.freeCells;
+foundations = prev.foundations;
+tableau = prev.tableau;
+moveCount = prev.moveCount;
+selectedSource = null;
+playCardSlideSound();
+updateStatusUI();
+renderAll();
+}
+function updateStatusUI() {
+document.getElementById('stat-moves').textContent = moveCount;
+const completedCards = foundations.reduce((sum, f) => sum + f.length, 0);
+document.getElementById('stat-foundation').textContent = ⁠${completedCards}/52⁠;
+}
+function renderAll() {
+renderTopCells();
+renderTableau();
+}
+function renderTopCells() {
+document.querySelectorAll('.cell-slot.freecell').forEach((slot, idx) => {
+slot.innerHTML = '';
+const card = freeCells[idx];
+const isSelected = selectedSource && selectedSource.type === 'freecell' && selectedSource.colIdx === idx;
+if (card) {
+slot.appendChild(createCardElement(card, isSelected, () => onFreeCellClick(idx)));
+} else {
+slot.onclick = () => onCellSlotClick('freecell', idx);
+}
+});
+document.querySelectorAll('.cell-slot.foundation').forEach((slot, idx) => {
+slot.innerHTML = '';
+const stack = foundations[idx];
+const suit = SUIT_KEYS[idx];
+if (stack.length > 0) {
+const topCard = stack[stack.length - 1];
+slot.appendChild(createCardElement(topCard, false, null));
+} else {
+const isRed = (suit === 'hearts' || suit === 'diamonds');
+slot.innerHTML = ⁠<span class="cell-watermark" style="${isRed ? 'color:#d63031;' : ''}">${getSuitSymbol(suit)}</span>⁠;
+}
+});
+}
+function renderTableau() {
+const container = document.getElementById('tableau');
+container.innerHTML = '';
+for (let c = 0; c < 8; c++) {
+const colEl = document.createElement('div');
+colEl.className = 'cascade-col';
+colEl.dataset.col = c;
+const base = document.createElement('div');
+base.className = 'cascade-base';
+colEl.appendChild(base);
+colEl.onclick = (e) => {
+if (e.target === colEl || e.target === base) {
+onTableauEmptyColClick(c);
+}
+};
+const colCards = tableau[c];
+let topOffset = 0;
+colCards.forEach((card, idx) => {
+const isSelected = selectedSource && selectedSource.type === 'tableau' && selectedSource.colIdx === c && idx >= selectedSource.cardIdx;
+const cardEl = createCardElement(card, isSelected, (e) => {
+e.stopPropagation();
+onTableauCardClick(c, idx);
+});
+cardEl.style.top = ⁠${topOffset}px⁠;
+cardEl.style.zIndex = idx + 1;
+topOffset += 21;
+colEl.appendChild(cardEl);
+});
+container.appendChild(colEl);
+}
+}
+function createCardElement(card, isSelected, onClick) {
+const isRed = (card.suit === 'hearts' || card.suit === 'diamonds');
+const el = document.createElement('div');
+el.className = ⁠card ${isRed ? 'red' : 'black'}⁠ + (isSelected ? ' selected' : '');
+el.innerHTML = ⁠<div class="card-corner"> <span>${RANK_LABELS[card.rank]}</span> ${SUIT_SVGS[card.suit]} </div> <div class="card-center-suit">${SUIT_SVGS[card.suit]}</div> <div class="card-corner" style="transform: rotate(180deg);"> <span>${RANK_LABELS[card.rank]}</span> ${SUIT_SVGS[card.suit]} </div>⁠;
+if (onClick) el.onclick = onClick;
+return el;
+}
+function getSuitSymbol(suit) {
+if (suit === 'spades') return '♠';
+if (suit === 'hearts') return '♥';
+if (suit === 'diamonds') return '♦';
+return '♣';
+}
+function isOppositeColor(c1, c2) {
+const red1 = (c1.suit === 'hearts' || c1.suit === 'diamonds');
+const red2 = (c2.suit === 'hearts' || c2.suit === 'diamonds');
+return red1 !== red2;
+}
+function isValidSequence(colCards, startIdx) {
+for (let i = startIdx; i < colCards.length - 1; i++) {
+const curr = colCards[i];
+const next = colCards[i + 1];
+if (!isOppositeColor(curr, next) || curr.rank !== next.rank + 1) {
+return false;
+}
+}
+return true;
+}
+function getMaxMovableCards(targetColEmpty = false) {
+const emptyFree = freeCells.filter(c => c === null).length;
+let emptyCols = tableau.filter(col => col.length === 0).length;
+if (targetColEmpty && emptyCols > 0) emptyCols--;
+return (1 + emptyFree) * Math.pow(2, emptyCols);
+}
+function onTableauCardClick(colIdx, cardIdx) {
+const colCards = tableau[colIdx];
+const card = colCards[cardIdx];
+// 1. 移動試行（選択状態からのターゲット移動）
+if (selectedSource) {
+if (selectedSource.type === 'tableau' && selectedSource.colIdx === colIdx) {
+if (selectedSource.cardIdx === cardIdx) {
+selectedSource = null;
+} else if (isValidSequence(colCards, cardIdx)) {
+selectedSource.cardIdx = cardIdx;
+}
+renderAll();
+return;
+}
+if (cardIdx === colCards.length - 1) {
+const movingCards = getMovingCards();
+if (isOppositeColor(card, movingCards[0]) && card.rank === movingCards[0].rank + 1) {
+if (movingCards.length <= getMaxMovableCards(false)) {
+executeMoveToTableau(colIdx);
+return;
+}
+}
+}
+selectedSource = null;
+}
+// 2. ワンタップ自動移動（末尾カードの場合）
+if (cardIdx === colCards.length - 1) {
+// A. ホームセルへ
+if (tryMoveToFoundation(card, () => {
+recordState();
+colCards.pop();
+moveCount++;
+})) return;
+// B. 他の場札末尾へ
+for (let targetC = 0; targetC < 8; targetC++) {
+if (targetC === colIdx) continue;
+const targetCol = tableau[targetC];
+if (targetCol.length > 0) {
+const destCard = targetCol[targetCol.length - 1];
+if (isOppositeColor(destCard, card) && destCard.rank === card.rank + 1) {
+recordState();
+targetCol.push(colCards.pop());
+moveCount++;
+playCardSlideSound();
+onAfterAction();
+return;
+}
+}
+}
+}
+// 3. 束の選択
+if (isValidSequence(colCards, cardIdx)) {
+selectedSource = { type: 'tableau', colIdx, cardIdx };
+renderAll();
+}
+}
+function onFreeCellClick(idx) {
+const card = freeCells[idx];
+if (!card) return;
+if (selectedSource) {
+selectedSource = null;
+renderAll();
+return;
+}
+if (tryMoveToFoundation(card, () => {
+recordState();
+freeCells[idx] = null;
+moveCount++;
+})) return;
+for (let targetC = 0; targetC < 8; targetC++) {
+const col = tableau[targetC];
+if (col.length > 0) {
+const dest = col[col.length - 1];
+if (isOppositeColor(dest, card) && dest.rank === card.rank + 1) {
+recordState();
+col.push(card);
+freeCells[idx] = null;
+moveCount++;
+playCardSlideSound();
+onAfterAction();
+return;
+}
+}
+}
+selectedSource = { type: 'freecell', colIdx: idx };
+renderAll();
+}
+function onCellSlotClick(type, idx) {
+if (!selectedSource) return;
+if (type === 'freecell') {
+if (freeCells[idx] === null) {
+const movingCards = getMovingCards();
+if (movingCards.length === 1) {
+recordState();
+freeCells[idx] = movingCards[0];
+removeMovingCards();
+moveCount++;
+playCardSlideSound();
+selectedSource = null;
+onAfterAction();
+}
+}
+} else if (type === 'foundation') {
+const movingCards = getMovingCards();
+if (movingCards.length === 1) {
+const c = movingCards[0];
+const expectedSuit = SUIT_KEYS[idx];
+const stack = foundations[idx];
+if (c.suit === expectedSuit && c.rank === stack.length + 1) {
+recordState();
+stack.push(c);
+removeMovingCards();
+moveCount++;
+playHomeCellSound();
+selectedSource = null;
+onAfterAction();
+}
+}
+}
+}
+function onTableauEmptyColClick(targetColIdx) {
+if (!selectedSource) return;
+const movingCards = getMovingCards();
+if (movingCards.length <= getMaxMovableCards(true)) {
+executeMoveToTableau(targetColIdx);
+}
+}
+function getMovingCards() {
+if (!selectedSource) return [];
+if (selectedSource.type === 'freecell') {
+return [freeCells[selectedSource.colIdx]];
+}
+return tableau[selectedSource.colIdx].slice(selectedSource.cardIdx);
+}
+function removeMovingCards() {
+if (selectedSource.type === 'freecell') {
+freeCells[selectedSource.colIdx] = null;
+} else {
+tableau[selectedSource.colIdx].splice(selectedSource.cardIdx);
+}
+}
+function executeMoveToTableau(targetColIdx) {
+recordState();
+playCardSlideSound();
+const moving = getMovingCards();
+removeMovingCards();
+tableau[targetColIdx].push(...moving);
+selectedSource = null;
+moveCount++;
+onAfterAction();
+}
+function tryMoveToFoundation(card, onValid) {
+const fIdx = SUIT_KEYS.indexOf(card.suit);
+if (fIdx !== -1) {
+const stack = foundations[fIdx];
+if (card.rank === stack.length + 1) {
+onValid();
+stack.push(card);
+playHomeCellSound();
+onAfterAction();
+return true;
+}
+}
+return false;
+}
+function onAfterAction() {
+updateStatusUI();
+renderAll();
+if (isAutoHomeEnabled) {
+checkAutoHome();
+}
+checkVictory();
+}
+function checkAutoHome() {
+let moved = false;
+// 1. フリーセルから
+for (let i = 0; i < 4; i++) {
+const card = freeCells[i];
+if (card && isSafeToHome(card)) {
+const fIdx = SUIT_KEYS.indexOf(card.suit);
+foundations[fIdx].push(card);
+freeCells[i] = null;
+moved = true;
+break;
+}
+}
+// 2. 場札の末尾から
+if (!moved) {
+for (let c = 0; c < 8; c++) {
+const col = tableau[c];
+if (col.length > 0) {
+const card = col[col.length - 1];
+if (card && isSafeToHome(card)) {
+const fIdx = SUIT_KEYS.indexOf(card.suit);
+foundations[fIdx].push(card);
+col.pop();
+moved = true;
+break;
+}
+}
+}
+}
+if (moved) {
+playHomeCellSound();
+updateStatusUI();
+renderAll();
+setTimeout(checkAutoHome, 120);
+}
+}
+function isSafeToHome(card) {
+const fIdx = SUIT_KEYS.indexOf(card.suit);
+if (card.rank !== foundations[fIdx].length + 1) return false;
+if (card.rank <= 2) return true;
+const isRed = (card.suit === 'hearts' || card.suit === 'diamonds');
+const oppIdx1 = isRed ? 0 : 1;
+const oppIdx2 = isRed ? 3 : 2;
+const minOppRank = Math.min(foundations[oppIdx1].length, foundations[oppIdx2].length);
+return minOppRank >= card.rank - 1;
+}
+function checkVictory() {
+const total = foundations.reduce((s, f) => s + f.length, 0);
+if (total === 52) {
+stopTimer();
+playVictoryFanfare();
+saveRankingRecord(secondsElapsed, moveCount);
+renderRanking();
+setTimeout(() => {
+alert(⁠🎉 お見事！フリーセルを完全制覇しました！\n手数: ${moveCount}手 / タイム: ${formatTime(secondsElapsed)}⁠);
+}, 300);
+}
+}
+const RANKING_STORAGE_KEY = 'freecell_ranking';
+function saveRankingRecord(timeSec, moves) {
+let records = [];
+try {
+records = JSON.parse(localStorage.getItem(RANKING_STORAGE_KEY)) || [];
+} catch(e) { records = []; }
+const d = new Date();
+const dateStr = ⁠${d.getMonth() + 1}/${d.getDate()}⁠;
+records.push({ time: timeSec, moves: moves, date: dateStr });
+records.sort((a, b) => a.time - b.time || a.moves - b.moves);
+records = records.slice(0, 10);
+try {
+localStorage.setItem(RANKING_STORAGE_KEY, JSON.stringify(records));
+} catch(e) {}
+}
+function renderRanking() {
+const container = document.getElementById('ranking-list');
+container.innerHTML = '';
+let records = [];
+try {
+records = JSON.parse(localStorage.getItem(RANKING_STORAGE_KEY)) || [];
+} catch(e) { records = []; }
+if (records.length === 0) {
+container.innerHTML = ⁠<div class="ranking-empty">まだ記録がありません。クリアしてランクインを目指そう！</div>⁠;
+return;
+}
+records.forEach((rec, idx) => {
+const item = document.createElement('div');
+item.className = 'ranking-item';
+const rankClass = idx === 0 ? 'top1' : idx === 1 ? 'top2' : idx === 2 ? 'top3' : '';
+item.innerHTML = ⁠<div style="display:flex; align-items:center; gap:8px;"> <span class="ranking-rank ${rankClass}">${idx + 1}位</span> <div class="ranking-score"> <span class="ranking-time">${formatTime(rec.time)}</span> <span class="ranking-moves">(${rec.moves}手)</span> </div> </div> <span class="ranking-date">${rec.date}</span>⁠;
+container.appendChild(item);
+});
+}
+function getHint() {
+document.querySelectorAll('.card.hinted').forEach(el => el.classList.remove('hinted'));
+// 1. ホームセル移動のヒント
+for (let c = 0; c < 8; c++) {
+const col = tableau[c];
+if (col.length > 0) {
+const card = col[col.length - 1];
+const fIdx = SUIT_KEYS.indexOf(card.suit);
+if (card.rank === foundations[fIdx].length + 1) {
+highlightHintCard(c, col.length - 1);
+return;
+}
+}
+}
+for (let i = 0; i < 4; i++) {
+const card = freeCells[i];
+if (card) {
+const fIdx = SUIT_KEYS.indexOf(card.suit);
+if (card.rank === foundations[fIdx].length + 1) {
+const slot = document.querySelector(⁠.cell-slot.freecell[data-idx="${i}"] .card⁠);
+if (slot) slot.classList.add('hinted');
+return;
+}
+}
+}
+// 2. 場札間の移動ヒント
+for (let fromC = 0; fromC < 8; fromC++) {
+const col = tableau[fromC];
+for (let i = 0; i < col.length; i++) {
+if (!isValidSequence(col, i)) continue;
+const moving = col[i];
+const len = col.length - i;
+for (let toC = 0; toC < 8; toC++) {
+if (fromC === toC) continue;
+const targetCol = tableau[toC];
+if (targetCol.length > 0) {
+const dest = targetCol[targetCol.length - 1];
+if (isOppositeColor(dest, moving) && dest.rank === moving.rank + 1) {
+if (len <= getMaxMovableCards(false)) {
+highlightHintCard(fromC, i);
+return;
+}
+}
+}
+}
+}
+}
+// 3. 空列への移動ヒント
+for (let fromC = 0; fromC < 8; fromC++) {
+const col = tableau[fromC];
+if (col.length > 1 && isValidSequence(col, 0)) {
+// すでに完成階段ならパス
+} else {
+for (let i = 0; i < col.length; i++) {
+if (i === 0 && col.length > 0) continue;
+if (isValidSequence(col, i)) {
+for (let toC = 0; toC < 8; toC++) {
+if (tableau[toC].length === 0 && (col.length - i) <= getMaxMovableCards(true)) {
+highlightHintCard(fromC, i);
+return;
+}
+}
+}
+}
+}
+}
+alert('現在有効なヒントが見つかりません。フリーセルへ退避してみてください！💡');
+}
+function highlightHintCard(colIdx, cardIdx) {
+const colEl = document.querySelector(⁠.cascade-col[data-col="${colIdx}"]⁠);
+if (colEl) {
+const cardEls = colEl.querySelectorAll('.card');
+if (cardEls[cardIdx]) cardEls[cardIdx].classList.add('hinted');
+}
+}
+function toggleRulesModal(show) {
+document.getElementById('modal-rules').classList.toggle('active', show);
+}
+function toggleSettingsModal(show) {
+document.getElementById('modal-settings').classList.toggle('active', show);
+}
+function toggleAutoHome() {
+isAutoHomeEnabled = !isAutoHomeEnabled;
+document.getElementById('toggle-autohome').classList.toggle('on', isAutoHomeEnabled);
+if (isAutoHomeEnabled) checkAutoHome();
+}
+function toggleSound() {
+isSoundOn = !isSoundOn;
+document.getElementById('toggle-sound').classList.toggle('on', isSoundOn);
+}
+function restartGame() {
+if (confirm('最初から配り直しますか？')) initGame();
+}
+</script>
+</body>
+</html>
