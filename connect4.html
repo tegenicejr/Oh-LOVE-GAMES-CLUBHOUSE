@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>コネクトフォー (Connect 4)</title>
+  <style>
+    :root {
+      --bg-desk: #110c08;
+      --felt-dark: #122c19;
+      --felt-light: #1c4528;
+      --board-rim: #362214;
+      --brass-gold: #d4a359;
+      --brass-glow: rgba(212, 163, 89, 0.45);
+      --cell-size: 42px;
+      --hole-size: 34px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-desk);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      color: #fff;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .viewport {
+      width: 100%;
+      min-height: 100%;
+      padding: calc(14px + env(safe-area-inset-top)) 8px calc(60px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: radial-gradient(circle at 50% 20%, #2b1a10 0%, var(--bg-desk) 100%);
+      position: relative;
+    }
+
+    .topbar {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+    .topbar-upper {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .tool-btn {
+      background: linear-gradient(145deg, #2c1c12 0%, #1c1109 100%);
+      border: 1.5px solid #4d3320;
+      color: var(--brass-gold);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.15);
+      transition: transform 0.12s, border-color 0.12s;
+    }
+    .tool-btn:hover { border-color: var(--brass-gold); transform: translateY(-2px); }
+    .tool-btn:active { transform: scale(0.92); }
+
+    .topbar-lower {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .score-banner {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .player-badge {
+      background: rgba(0, 0, 0, 0.65);
+      border: 1.5px solid #442d1c;
+      border-radius: 14px;
+      padding: 6px 14px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #d1c1b2;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+      position: relative;
+      transition: all 0.2s;
+    }
+    .player-badge.turn-active {
+      border-color: var(--brass-gold);
+      box-shadow: 0 0 12px var(--brass-glow), inset 0 2px 5px rgba(0,0,0,0.8);
+    }
+    .mini-disc {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    }
+    .mini-disc.red {
+      background: radial-gradient(circle at 35% 30%, #ff6b6b, #c0392b 70%, #7f1d1d 100%);
+      border: 1px solid #ff7675;
+    }
+    .mini-disc.yellow {
+      background: radial-gradient(circle at 35% 30%, #ffeaa7, #f39c12 70%, #d35400 100%);
+      border: 1px solid #feca57;
+    }
+
+    .diff-badge {
+      background: rgba(0,0,0,0.6);
+      border: 1.5px solid #442d1c;
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      color: var(--brass-gold);
+      font-weight: 800;
+    }
+
+    .table-felt {
+      position: relative;
+      width: 100%;
+      max-width: 440px;
+      background: radial-gradient(circle at 50% 35%, var(--felt-light) 0%, var(--felt-dark) 100%);
+      border: 8px solid var(--board-rim);
+      border-radius: 20px;
+      padding: 16px 8px 24px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.95), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 0 35px rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      touch-action: manipulation;
+      overflow: hidden;
+    }
+
+    .turn-announcer {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #ede2d5;
+      text-align: center;
+      min-height: 22px;
+    }
+
+    /* 行動履歴バナー (画面端・卓上ログ) */
+    .action-history-bar {
+      width: 100%;
+      max-width: 320px;
+      background: rgba(10, 6, 4, 0.75);
+      border: 1px solid #523924;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      color: #dfcfbf;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+      min-height: 30px;
+    }
+    .action-history-tag {
+      color: var(--brass-gold);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .action-history-content {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+      text-align: right;
+    }
+
+    /* 投入ガイドゾーン */
+    .drop-guide-zone {
+      display: grid;
+      grid-template-columns: repeat(7, var(--cell-size));
+      gap: 4px;
+      width: fit-content;
+      height: 36px;
+      align-items: center;
+      justify-items: center;
+    }
+    .guide-slot {
+      width: var(--cell-size);
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--brass-gold);
+      font-size: 1.2rem;
+      transition: transform 0.12s, color 0.12s;
+    }
+    .guide-slot:hover {
+      transform: translateY(3px);
+    }
+    .guide-slot.cpu-target {
+      color: #2ecc71;
+      transform: translateY(5px);
+      filter: drop-shadow(0 0 8px #2ecc71);
+    }
+
+    /* 立体木製ボード */
+    .connect-board-frame {
+      position: relative;
+      background: linear-gradient(180deg, #3d2516 0%, #29180c 100%);
+      border: 4px solid #583920;
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: 0 16px 30px rgba(0,0,0,0.85), inset 0 2px 3px rgba(255,255,255,0.15);
+      overflow: hidden;
+    }
+
+    .connect-grid {
+      display: grid;
+      grid-template-columns: repeat(7, var(--cell-size));
+      grid-template-rows: repeat(6, var(--cell-size));
+      gap: 4px;
+      position: relative;
+      z-index: 2;
+    }
+
+    @media (max-width: 420px) {
+      :root {
+        --cell-size: 38px;
+        --hole-size: 30px;
+      }
+    }
+
+    .hole {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .hole-mask {
+      width: var(--hole-size);
+      height: var(--hole-size);
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, rgba(0,0,0,0.7) 0%, rgba(10,20,12,0.95) 100%);
+      box-shadow: inset 0 3px 6px rgba(0,0,0,0.9), 0 1px 1px rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .coin {
+      width: calc(var(--hole-size) - 2px);
+      height: calc(var(--hole-size) - 2px);
+      border-radius: 50%;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.5);
+      position: relative;
+      animation: dropAnim 0.38s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    .coin.red {
+      background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b 65%, #7f1d1d 100%);
+      border: 1.5px solid #ff9f43;
+    }
+    .coin.yellow {
+      background: radial-gradient(circle at 35% 30%, #fff2ac, #f39c12 65%, #d35400 100%);
+      border: 1.5px solid #f1c40f;
+    }
+
+    @keyframes dropAnim {
+      from { transform: translateY(-300px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .coin.win-highlight {
+      animation: pulseWin 0.75s infinite alternate ease-in-out;
+      box-shadow: 0 0 14px #2ecc71, inset 0 0 0 2px #fff;
+    }
+    @keyframes pulseWin {
+      from { transform: scale(1); }
+      to { transform: scale(1.12); }
+    }
+
+    /* スタート画面オーバーレイ（要件に合わせたモード選択デザイン） */
+    .screen-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(18, 11, 7, 0.96);
+      backdrop-filter: blur(6px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px; z-index: 50; padding: 18px 14px;
+    }
+    .screen-overlay.hidden { display: none; }
+    .overlay-title {
+      font-size: 1.4rem; font-weight: 900;
+      color: var(--brass-gold);
+      letter-spacing: 2px; text-shadow: 0 2px 8px rgba(0,0,0,0.85);
+      text-align: center;
+    }
+    .overlay-subtitle {
+      font-size: 0.78rem;
+      color: #bfa895;
+      margin-top: -8px;
+    }
+
+    /* スタートメニューカード */
+    .mode-select-card {
+      width: 100%;
+      max-width: 330px;
+      background: rgba(36, 22, 14, 0.85);
+      border: 1.5px solid #583c27;
+      border-radius: 14px;
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.7);
+    }
+    .mode-tabs {
+      display: flex;
+      background: rgba(0,0,0,0.4);
+      padding: 4px;
+      border-radius: 10px;
+      gap: 4px;
+      border: 1px solid #4a3424;
+    }
+    .mode-tab-btn {
+      flex: 1;
+      padding: 8px 6px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      border: none;
+      background: transparent;
+      color: #9f8f82;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .mode-tab-btn.active {
+      background: linear-gradient(145deg, #442a18, #2a180d);
+      color: var(--brass-gold);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1);
+      border: 1px solid #754d2e;
+    }
+    .divider-line {
+      height: 1px;
+      background: #4a3424;
+      width: 100%;
+    }
+
+    .config-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 0.84rem;
+      color: #d5c3b1;
+    }
+    .config-row-styled {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .theme-select {
+      background: #1f120a;
+      color: #ede2d5;
+      border: 1.5px solid var(--brass-gold);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      outline: none;
+      font-size: 0.84rem;
+    }
+
+    .start-btn {
+      background: linear-gradient(180deg, #d4a359 0%, #aa782e 100%);
+      color: #140c06; font-size: 1rem; font-weight: 900;
+      border: 1.5px solid #fff; border-radius: 20px;
+      padding: 10px 32px; cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.8), 0 0 12px var(--brass-glow);
+      align-self: center;
+      min-width: 160px;
+    }
+    .start-btn:active { transform: scale(0.95); }
+
+    /* ダイス先攻後攻抽選オーバーレイ */
+    .duel-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(10, 6, 4, 0.94);
+      backdrop-filter: blur(5px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px; z-index: 60;
+    }
+    .duel-overlay.hidden { display: none; }
+    .duel-title {
+      font-size: 1.15rem; font-weight: 900;
+      color: var(--brass-gold); letter-spacing: 2px;
+    }
+    .dice-container {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+    .dice-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .dice-label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #bdae9f;
+    }
+    .dice-face {
+      width: 60px;
+      height: 60px;
+      background: #fdfbf7;
+      border: 2px solid #333;
+      border-radius: 12px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.7), inset 0 2px 4px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: #111;
+      transition: transform 0.1s;
+    }
+    .dice-face.rolling {
+      animation: diceRollAnim 0.14s infinite linear;
+    }
+    @keyframes diceRollAnim {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(0.92); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+    .duel-result-text {
+      font-size: 0.95rem; font-weight: 900; color: #fff; min-height: 42px;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.9); text-align: center;
+      line-height: 1.4;
+      padding: 0 16px;
+    }
+
+    /* 端末パスオーバーレイ */
+    .pass-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(12, 8, 5, 0.96);
+      backdrop-filter: blur(6px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px; z-index: 55; padding: 20px;
+    }
+    .pass-overlay.hidden { display: none; }
+    .pass-icon { font-size: 3rem; }
+    .pass-target-name {
+      font-size: 1.35rem; font-weight: 900;
+      color: var(--brass-gold); text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+    .pass-msg {
+      font-size: 0.88rem; color: #d5c3b1; text-align: center; line-height: 1.6;
+    }
+
+    .ranking-container {
+      width: 100%;
+      max-width: 440px;
+      margin-top: 20px;
+      background: rgba(22, 14, 9, 0.85);
+      border: 2px solid #3d2919;
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+    }
+    .ranking-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1.5px solid #4a3422;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+    .ranking-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--brass-gold);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stat-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+    .stat-box {
+      background: rgba(0,0,0,0.3);
+      padding: 8px 6px;
+      border-radius: 8px;
+    }
+    .stat-box-title {
+      font-size: 0.72rem;
+      color: #9f8f80;
+      margin-bottom: 2px;
+    }
+    .stat-box-val {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: #ede2d5;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.82);
+      backdrop-filter: blur(5px);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-sheet {
+      background: #20140c;
+      border: 3px solid #4d3320;
+      border-radius: 20px;
+      padding: 22px;
+      width: 88%;
+      max-width: 440px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.95);
+      color: #ede2d5;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-title {
+      text-align: center;
+      color: var(--brass-gold);
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    .modal-body {
+      overflow-y: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      color: #c9b9aa;
+      margin-bottom: 16px;
+      padding-right: 6px;
+    }
+    .modal-close-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(180deg, #d4a359, #aa782e);
+      border: none;
+      border-radius: 12px;
+      color: #140c06;
+      font-weight: 900;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="viewport">
+    <div class="topbar">
+      <div class="topbar-upper">
+        <div class="tool-btn" onclick="openStartModal()" title="タイトル / モード変更">🔄</div>
+        <div class="tool-btn" onclick="undoMove()" title="1手戻す">↩️</div>
+        <div class="tool-btn" onclick="toggleRulesModal(true)" title="あそびかた">📖</div>
+      </div>
+
+      <div class="topbar-lower">
+        <div class="score-banner">
+          <div class="player-badge" id="badge-red">
+            <div class="mini-disc red"></div>
+            <span id="label-player-1">赤</span>
+          </div>
+          <div class="player-badge" id="badge-yellow">
+            <div class="mini-disc yellow"></div>
+            <span id="label-player-2">黄</span>
+          </div>
+        </div>
+        <div class="diff-badge" id="stat-diff-badge">COM: 中級</div>
+      </div>
+    </div>
+
+    <!-- フェルト卓 -->
+    <div class="table-felt">
+
+      <!-- スタート画面オーバーレイ -->
+      <div id="start-overlay" class="screen-overlay">
+        <div class="overlay-title">CONNECT 4</div>
+        <div class="overlay-subtitle">重力式四目並べ クラシックサロン</div>
+
+        <div class="mode-select-card">
+          <!-- タブ切替 -->
+          <div class="mode-tabs">
+            <button type="button" class="mode-tab-btn active" id="tab-single" onclick="switchModeTab('single')">
+              ● ひとりで遊ぶ
+            </button>
+            <button type="button" class="mode-tab-btn" id="tab-multi" onclick="switchModeTab('multi')">
+              ○ みんなで遊ぶ
+            </button>
+          </div>
+
+          <div class="divider-line"></div>
+
+          <!-- ひとりで遊ぶ設定 -->
+          <div id="panel-single" class="config-panel">
+            <div class="config-row-styled">
+              <span>プレイヤー</span>
+              <span>1人</span>
+            </div>
+            <div class="config-row-styled">
+              <span>相手 (CPU) の人数</span>
+              <select id="single-cpu-sel" class="theme-select">
+                <option value="1" selected>1人</option>
+              </select>
+            </div>
+            <div class="config-row-styled">
+              <span>CPUの強さ</span>
+              <select id="diff-sel" class="theme-select">
+                <option value="easy">初級 (気まぐれ)</option>
+                <option value="medium" selected>中級 (標準)</option>
+                <option value="hard">上級 (先読み)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- みんなで遊ぶ設定 (2人対戦) -->
+          <div id="panel-multi" class="config-panel" style="display:none;">
+            <div class="config-row-styled">
+              <span>遊ぶ人数 (プレイヤー)</span>
+              <select id="multi-player-sel" class="theme-select">
+                <option value="2" selected>2人</option>
+              </select>
+            </div>
+            <div class="config-row-styled">
+              <span>対戦形式</span>
+              <span>1台で交代プレイ</span>
+            </div>
+          </div>
+
+          <button class="start-btn" onclick="startNewSession()">ゲーム開始</button>
+        </div>
+      </div>
+
+      <!-- 先攻後攻ダイス抽選オーバーレイ -->
+      <div id="duel-overlay" class="duel-overlay hidden">
+        <div class="duel-title">🎲 INITIATIVE DICE 🎲</div>
+        <div class="dice-container">
+          <div class="dice-block">
+            <div class="dice-label" id="dice-p1-label">あなた</div>
+            <div class="dice-face rolling" id="dice-p1">⚀</div>
+          </div>
+          <div style="font-weight:900; color:var(--brass-gold); font-size:1.2rem;">VS</div>
+          <div class="dice-block">
+            <div class="dice-label" id="dice-p2-label">COM</div>
+            <div class="dice-face rolling" id="dice-p2">⚀</div>
+          </div>
+        </div>
+        <div class="duel-result-text" id="duel-result-text">ダイスを振って先攻（赤）を決定中...</div>
+      </div>
+
+      <!-- 端末パスオーバーレイ -->
+      <div id="pass-overlay" class="pass-overlay hidden">
+        <div class="pass-icon">📱🤝</div>
+        <div class="pass-target-name" id="pass-target-name">黄の番です</div>
+        <div class="pass-msg">
+          端末を次のプレイヤーに渡してください。<br>
+          準備ができたらボタンを押して盤面を表示します。
+        </div>
+        <button class="start-btn" onclick="dismissPassScreen()">盤面を見る</button>
+      </div>
+
+      <div class="turn-announcer" id="turn-announcer">スタートを押してください</div>
+
+      <!-- 直前行動履歴バー -->
+      <div class="action-history-bar">
+        <span class="action-history-tag">直前の行動</span>
+        <span class="action-history-content" id="action-history-text">まだ手番はありません</span>
+      </div>
+
+      <!-- 投入ガイド矢印（7列） -->
+      <div class="drop-guide-zone" id="drop-guide-zone">
+        <div class="guide-slot" id="guide-0" onclick="handleColumnClick(0)">▼</div>
+        <div class="guide-slot" id="guide-1" onclick="handleColumnClick(1)">▼</div>
+        <div class="guide-slot" id="guide-2" onclick="handleColumnClick(2)">▼</div>
+        <div class="guide-slot" id="guide-3" onclick="handleColumnClick(3)">▼</div>
+        <div class="guide-slot" id="guide-4" onclick="handleColumnClick(4)">▼</div>
+        <div class="guide-slot" id="guide-5" onclick="handleColumnClick(5)">▼</div>
+        <div class="guide-slot" id="guide-6" onclick="handleColumnClick(6)">▼</div>
+      </div>
+
+      <!-- ボード本体 -->
+      <div class="connect-board-frame">
+        <div class="connect-grid" id="connect-grid"></div>
+      </div>
+    </div>
+
+    <!-- 通算戦績ボード -->
+    <div class="ranking-container">
+      <div class="ranking-header">
+        <div class="ranking-title">📊 対COM 通算戦績</div>
+      </div>
+      <div class="stat-summary-grid">
+        <div class="stat-box">
+          <div class="stat-box-title">勝利</div>
+          <div class="stat-box-val" id="stat-wins" style="color:#2ecc71;">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">敗北</div>
+          <div class="stat-box-val" id="stat-losses" style="color:#e74c3c;">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">勝率</div>
+          <div class="stat-box-val" id="stat-winrate" style="color:var(--brass-gold);">0%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ルールモーダル -->
+  <div id="modal-rules" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">📖 コネクトフォーのあそびかた</div>
+      <div class="modal-body">
+        <p>上部からコインを落とし合い、タテ・ヨコ・ナナメのいずれかに<b>自分の色のコインを連続4枚</b>並べた方が勝ちとなる重力式四目並べです。</p>
+        <br>
+        <b style="color:var(--brass-gold);">【基本ルール】</b>
+        <ul style="padding-left:18px; margin:6px 0;">
+          <li><b>赤が先手</b>、<b>黄が後手</b>です。開始時にダイスで手番が決定します。</li>
+          <li>落としたい列をタップすると、一番下の空いているマスまで落ちます。</li>
+          <li>満杯になった列には落とせません。</li>
+          <li>タテ・ヨコ・ナナメのいずれかで4つ直線に揃えた瞬間に勝利となります。</li>
+        </ul>
+      </div>
+      <button class="modal-close-btn" onclick="toggleRulesModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    window.addEventListener('pointerdown', () => getAudio(), { once: true });
+
+    function playDropSound() {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.09);
+      } catch(e) {}
+    }
+
+    function playLandSound() {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(180, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.06);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.07);
+      } catch(e) {}
+    }
+
+    function playFanfareSound() {
+      try {
+        const ctx = getAudio();
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.08 + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.08);
+          osc.stop(ctx.currentTime + idx * 0.08 + 0.26);
+        });
+      } catch(e) {}
+    }
+
+    const ROWS = 6;
+    const COLS = 7;
+    const DICE_ICONS = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+
+    let grid = [];
+    let currentTurn = 1; // 1: 赤 (先手), 2: 黄 (後手)
+    let userPlayerNum = 1;
+    let selectedMode = 'single'; // 'single' または 'multi'
+    let difficulty = 'medium';
+    let gameState = 'TITLE'; // 'TITLE', 'DUEL', 'PLAYING', 'CPU_THINKING'
+    let isGameOver = false;
+    let historyStack = [];
+    let winCells = [];
+    let pendingPassCallback = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStats();
+      openStartModal();
+    });
+
+    function switchModeTab(mode) {
+      selectedMode = mode;
+      const tabSingle = document.getElementById('tab-single');
+      const tabMulti = document.getElementById('tab-multi');
+      const panelSingle = document.getElementById('panel-single');
+      const panelMulti = document.getElementById('panel-multi');
+
+      if (mode === 'single') {
+        tabSingle.className = 'mode-tab-btn active';
+        tabSingle.innerHTML = '● ひとりで遊ぶ';
+        tabMulti.className = 'mode-tab-btn';
+        tabMulti.innerHTML = '○ みんなで遊ぶ';
+        panelSingle.style.display = 'flex';
+        panelMulti.style.display = 'none';
+      } else {
+        tabSingle.className = 'mode-tab-btn';
+        tabSingle.innerHTML = '○ ひとりで遊ぶ';
+        tabMulti.className = 'mode-tab-btn active';
+        tabMulti.innerHTML = '● みんなで遊ぶ';
+        panelSingle.style.display = 'none';
+        panelMulti.style.display = 'flex';
+      }
+    }
+
+    function openStartModal() {
+      gameState = 'TITLE';
+      document.getElementById('start-overlay').classList.remove('hidden');
+      document.getElementById('duel-overlay').classList.add('hidden');
+      document.getElementById('pass-overlay').classList.add('hidden');
+      document.getElementById('turn-announcer').textContent = 'スタートを押してください';
+      updateActionHistory('対戦待機中');
+      resetBoardData();
+      updateUI();
+    }
+
+    function startNewSession() {
+      difficulty = document.getElementById('diff-sel').value;
+      document.getElementById('start-overlay').classList.add('hidden');
+
+      const names = { easy: '初級', medium: '中級', hard: '上級' };
+      document.getElementById('stat-diff-badge').textContent = (selectedMode === 'multi') ? '2人対戦' : `COM: ${names[difficulty]}`;
+
+      resetBoardData();
+      triggerDiceDuel();
+    }
+
+    function resetBoardData() {
+      grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
+      currentTurn = 1;
+      isGameOver = false;
+      historyStack = [];
+      winCells = [];
+      renderBoard();
+      clearGuideHighlights();
+    }
+
+    function updateActionHistory(msg) {
+      document.getElementById('action-history-text').textContent = msg;
+    }
+
+    /* ダイスによる先攻後攻決定演出 */
+    function triggerDiceDuel() {
+      gameState = 'DUEL';
+      const duelOverlay = document.getElementById('duel-overlay');
+      const dice1 = document.getElementById('dice-p1');
+      const dice2 = document.getElementById('dice-p2');
+      const resText = document.getElementById('duel-result-text');
+
+      const label1 = document.getElementById('dice-p1-label');
+      const label2 = document.getElementById('dice-p2-label');
+
+      if (selectedMode === 'single') {
+        label1.textContent = 'あなた';
+        label2.textContent = 'COM';
+      } else {
+        label1.textContent = '1P';
+        label2.textContent = '2P';
+      }
+
+      duelOverlay.classList.remove('hidden');
+      dice1.classList.add('rolling');
+      dice2.classList.add('rolling');
+      resText.textContent = 'ダイスを振って先攻（赤）を決定中...';
+
+      let count = 0;
+      const rollTimer = setInterval(() => {
+        dice1.textContent = DICE_ICONS[Math.floor(Math.random() * 6)];
+        dice2.textContent = DICE_ICONS[Math.floor(Math.random() * 6)];
+        count++;
+        if (count >= 10) {
+          clearInterval(rollTimer);
+          finalizeDiceDuel();
+        }
+      }, 100);
+    }
+
+    function finalizeDiceDuel() {
+      const dice1 = document.getElementById('dice-p1');
+      const dice2 = document.getElementById('dice-p2');
+      const resText = document.getElementById('duel-result-text');
+
+      dice1.classList.remove('rolling');
+      dice2.classList.remove('rolling');
+
+      let roll1 = Math.floor(Math.random() * 6) + 1;
+      let roll2 = Math.floor(Math.random() * 6) + 1;
+      while (roll1 === roll2) {
+        roll2 = Math.floor(Math.random() * 6) + 1;
+      }
+
+      dice1.textContent = DICE_ICONS[roll1 - 1];
+      dice2.textContent = DICE_ICONS[roll2 - 1];
+
+      const p1Wins = roll1 > roll2;
+      playFanfareSound();
+
+      if (selectedMode === 'single') {
+        userPlayerNum = p1Wins ? 1 : 2;
+        if (p1Wins) {
+          resText.innerHTML = `🎲 出目: あなた <b>${roll1}</b> vs COM <b>${roll2}</b><br>🎉 あなたが <b style="color:#ff7675;">赤（先手）</b> に決定！`;
+        } else {
+          resText.innerHTML = `🎲 出目: あなた <b>${roll1}</b> vs COM <b>${roll2}</b><br>COMが <b style="color:#ff7675;">赤（先手）</b> に決定！<br>(あなたは黄・後手)`;
+        }
+      } else {
+        userPlayerNum = 1;
+        if (p1Wins) {
+          resText.innerHTML = `🎲 出目: 1P <b>${roll1}</b> vs 2P <b>${roll2}</b><br>🎉 1Pが <b style="color:#ff7675;">赤（先手）</b> に決定！`;
+        } else {
+          resText.innerHTML = `🎲 出目: 1P <b>${roll1}</b> vs 2P <b>${roll2}</b><br>🎉 2Pが <b style="color:#ff7675;">赤（先手）</b> に決定！`;
+        }
+      }
+
+      setTimeout(() => {
+        document.getElementById('duel-overlay').classList.add('hidden');
+        gameState = 'PLAYING';
+        currentTurn = 1;
+        updateUI();
+        updateActionHistory('ゲーム開始 - 第1手目をお待ちください');
+
+        if (selectedMode === 'single' && userPlayerNum === 2) {
+          setTimeout(handleComTurnStepByStep, 800);
+        }
+      }, 1800);
+    }
+
+    function saveState() {
+      historyStack.push({
+        grid: JSON.parse(JSON.stringify(grid)),
+        turn: currentTurn
+      });
+    }
+
+    function undoMove() {
+      if (gameState !== 'PLAYING' || isGameOver) return;
+
+      if (selectedMode === 'single') {
+        if (historyStack.length < 2) return;
+        historyStack.pop();
+        const last = historyStack.pop();
+        grid = last.grid;
+        currentTurn = userPlayerNum;
+      } else {
+        if (historyStack.length === 0) return;
+        const last = historyStack.pop();
+        grid = last.grid;
+        currentTurn = last.turn;
+      }
+
+      winCells = [];
+      isGameOver = false;
+      clearGuideHighlights();
+      updateUI();
+      renderBoard();
+      updateActionHistory('1手戻しました');
+      playDropSound();
+    }
+
+    function renderBoard() {
+      const boardEl = document.getElementById('connect-grid');
+      boardEl.innerHTML = '';
+
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const holeEl = document.createElement('div');
+          holeEl.className = 'hole';
+          holeEl.onclick = () => handleColumnClick(c);
+
+          const maskEl = document.createElement('div');
+          maskEl.className = 'hole-mask';
+
+          const val = grid[r][c];
+          if (val !== 0) {
+            const coinEl = document.createElement('div');
+            coinEl.className = `coin ${val === 1 ? 'red' : 'yellow'}`;
+            if (winCells.some(([wr, wc]) => wr === r && wc === c)) {
+              coinEl.classList.add('win-highlight');
+            }
+            maskEl.appendChild(coinEl);
+          }
+
+          holeEl.appendChild(maskEl);
+          boardEl.appendChild(holeEl);
+        }
+      }
+    }
+
+    function handleColumnClick(col) {
+      if (gameState !== 'PLAYING' || isGameOver) return;
+      if (selectedMode === 'single' && currentTurn !== userPlayerNum) return;
+
+      const targetRow = getLowestEmptyRow(grid, col);
+      if (targetRow === -1) return;
+
+      saveState();
+      playDropSound();
+      grid[targetRow][col] = currentTurn;
+      setTimeout(playLandSound, 280);
+
+      const colorName = currentTurn === 1 ? '赤' : '黄';
+      const actorName = selectedMode === 'single' ? 'あなた' : (currentTurn === 1 ? '1P' : '2P');
+      updateActionHistory(`${actorName}(${colorName})が ${col + 1}列目に投入`);
+
+      const winningLine = checkWin(grid, currentTurn);
+      if (winningLine) {
+        winCells = winningLine;
+        isGameOver = true;
+        renderBoard();
+        updateUI();
+        finishGame(currentTurn);
+        return;
+      }
+
+      if (isDraw(grid)) {
+        isGameOver = true;
+        renderBoard();
+        updateUI();
+        updateActionHistory('引き分けで対局終了');
+        setTimeout(() => alert('🤝 引き分けです！'), 300);
+        return;
+      }
+
+      if (selectedMode === 'multi') {
+        currentTurn = (currentTurn === 1) ? 2 : 1;
+        updateUI();
+        renderBoard();
+        const nextPlayerName = (currentTurn === 1) ? '1P (赤)' : '2P (黄)';
+        showPassScreen(nextPlayerName, () => {
+          updateUI();
+        });
+      } else {
+        currentTurn = (currentTurn === 1) ? 2 : 1;
+        updateUI();
+        renderBoard();
+        setTimeout(handleComTurnStepByStep, 600);
+      }
+    }
+
+    /* COM思考ステップの可視化 & 行動ログ */
+    function handleComTurnStepByStep() {
+      if (isGameOver || currentTurn === userPlayerNum || selectedMode !== 'single') return;
+      gameState = 'CPU_THINKING';
+      document.getElementById('turn-announcer').textContent = 'COMが手を選んでいます...';
+
+      const bestCol = pickComMove();
+      if (bestCol === -1) return;
+
+      // ガイド矢印を緑色に光らせて投下列を可視化
+      clearGuideHighlights();
+      const targetGuide = document.getElementById(`guide-${bestCol}`);
+      if (targetGuide) targetGuide.classList.add('cpu-target');
+
+      setTimeout(() => {
+        clearGuideHighlights();
+        const targetRow = getLowestEmptyRow(grid, bestCol);
+        playDropSound();
+        grid[targetRow][bestCol] = currentTurn;
+        setTimeout(playLandSound, 280);
+
+        const colorName = currentTurn === 1 ? '赤' : '黄';
+        updateActionHistory(`COM(${colorName})が ${bestCol + 1}列目に投入`);
+
+        const winningLine = checkWin(grid, currentTurn);
+        if (winningLine) {
+          winCells = winningLine;
+          isGameOver = true;
+          gameState = 'PLAYING';
+          renderBoard();
+          updateUI();
+          recordMatch(false);
+          setTimeout(() => alert('💀 COMの勝利です...！'), 350);
+          return;
+        }
+
+        if (isDraw(grid)) {
+          isGameOver = true;
+          gameState = 'PLAYING';
+          renderBoard();
+          updateUI();
+          updateActionHistory('引き分けで対局終了');
+          setTimeout(() => alert('🤝 引き分けです！'), 300);
+          return;
+        }
+
+        gameState = 'PLAYING';
+        currentTurn = userPlayerNum;
+        updateUI();
+        renderBoard();
+      }, 750);
+    }
+
+    function clearGuideHighlights() {
+      document.querySelectorAll('.guide-slot').forEach(g => g.classList.remove('cpu-target'));
+    }
+
+    function getLowestEmptyRow(g, col) {
+      for (let r = ROWS - 1; r >= 0; r--) {
+        if (g[r][col] === 0) return r;
+      }
+      return -1;
+    }
+
+    function finishGame(winner) {
+      if (selectedMode === 'multi') {
+        playFanfareSound();
+        const winnerName = (winner === 1) ? '1P (赤)' : '2P (黄)';
+        updateActionHistory(`${winnerName}の勝利！`);
+        setTimeout(() => alert(`🎉 ${winnerName}の勝利です！見事な4連！`), 350);
+      } else {
+        const isUserWin = (winner === userPlayerNum);
+        recordMatch(isUserWin);
+        if (isUserWin) {
+          playFanfareSound();
+          updateActionHistory('あなたの勝利！');
+          setTimeout(() => alert('🎉 あなたの勝利です！見事な4連！'), 350);
+        } else {
+          updateActionHistory('COMの勝利');
+          setTimeout(() => alert('💀 COMの勝利です...！'), 350);
+        }
+      }
+    }
+
+    /* COM思考ルーチン */
+    function pickComMove() {
+      const validCols = [];
+      for (let c = 0; c < COLS; c++) {
+        if (getLowestEmptyRow(grid, c) !== -1) validCols.push(c);
+      }
+      if (validCols.length === 0) return -1;
+
+      const comColor = currentTurn;
+      const userColor = (comColor === 1) ? 2 : 1;
+
+      if (difficulty === 'easy') {
+        return validCols[Math.floor(Math.random() * validCols.length)];
+      }
+
+      // 1手でCOMが勝てる手
+      for (const c of validCols) {
+        const r = getLowestEmptyRow(grid, c);
+        grid[r][c] = comColor;
+        const win = checkWin(grid, comColor);
+        grid[r][c] = 0;
+        if (win) return c;
+      }
+
+      // プレイヤーの勝ち手をブロック
+      for (const c of validCols) {
+        const r = getLowestEmptyRow(grid, c);
+        grid[r][c] = userColor;
+        const win = checkWin(grid, userColor);
+        grid[r][c] = 0;
+        if (win) return c;
+      }
+
+      if (difficulty === 'medium') {
+        validCols.sort((a, b) => Math.abs(a - 3) - Math.abs(b - 3));
+        return validCols[0];
+      }
+
+      // 上級: 相手に勝ち手を与えるマスを回避し中央重視
+      const safeCols = [];
+      for (const c of validCols) {
+        const r = getLowestEmptyRow(grid, c);
+        grid[r][c] = comColor;
+        let givesOpponentWin = false;
+        if (r - 1 >= 0) {
+          grid[r - 1][c] = userColor;
+          if (checkWin(grid, userColor)) givesOpponentWin = true;
+          grid[r - 1][c] = 0;
+        }
+        grid[r][c] = 0;
+        if (!givesOpponentWin) safeCols.push(c);
+      }
+
+      const pool = safeCols.length > 0 ? safeCols : validCols;
+      pool.sort((a, b) => Math.abs(a - 3) - Math.abs(b - 3));
+      return pool[0];
+    }
+
+    function checkWin(g, player) {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c <= COLS - 4; c++) {
+          if (g[r][c] === player && g[r][c+1] === player && g[r][c+2] === player && g[r][c+3] === player) {
+            return [[r,c], [r,c+1], [r,c+2], [r,c+3]];
+          }
+        }
+      }
+      for (let r = 0; r <= ROWS - 4; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (g[r][c] === player && g[r+1][c] === player && g[r+2][c] === player && g[r+3][c] === player) {
+            return [[r,c], [r+1,c], [r+2,c], [r+3,c]];
+          }
+        }
+      }
+      for (let r = 0; r <= ROWS - 4; r++) {
+        for (let c = 0; c <= COLS - 4; c++) {
+          if (g[r][c] === player && g[r+1][c+1] === player && g[r+2][c+2] === player && g[r+3][c+3] === player) {
+            return [[r,c], [r+1,c+1], [r+2,c+2], [r+3,c+3]];
+          }
+        }
+      }
+      for (let r = 3; r < ROWS; r++) {
+        for (let c = 0; c <= COLS - 4; c++) {
+          if (g[r][c] === player && g[r-1][c+1] === player && g[r-2][c+2] === player && g[r-3][c+3] === player) {
+            return [[r,c], [r-1,c+1], [r-2,c+2], [r-3,c+3]];
+          }
+        }
+      }
+      return null;
+    }
+
+    function isDraw(g) {
+      return g[0].every(val => val !== 0);
+    }
+
+    function updateUI() {
+      const active = (gameState !== 'TITLE' && gameState !== 'DUEL');
+      document.getElementById('badge-red').classList.toggle('turn-active', currentTurn === 1 && active && !isGameOver);
+      document.getElementById('badge-yellow').classList.toggle('turn-active', currentTurn === 2 && active && !isGameOver);
+
+      const label1 = document.getElementById('label-player-1');
+      const label2 = document.getElementById('label-player-2');
+
+      if (selectedMode === 'multi') {
+        label1.textContent = '1P (赤)';
+        label2.textContent = '2P (黄)';
+      } else {
+        label1.textContent = (userPlayerNum === 1) ? 'あなた (赤)' : 'COM (赤)';
+        label2.textContent = (userPlayerNum === 2) ? 'あなた (黄)' : 'COM (黄)';
+      }
+
+      if (isGameOver) {
+        document.getElementById('turn-announcer').textContent = 'ゲーム終了';
+      } else if (gameState === 'PLAYING') {
+        const turnColorText = currentTurn === 1 ? '赤' : '黄';
+        if (selectedMode === 'multi') {
+          const pText = currentTurn === 1 ? '1P' : '2P';
+          document.getElementById('turn-announcer').textContent = `${pText}の番です (${turnColorText})`;
+        } else {
+          const isUser = (currentTurn === userPlayerNum);
+          document.getElementById('turn-announcer').textContent = isUser ? `あなたの番です (${turnColorText})` : `COMの番です (${turnColorText})`;
+        }
+      }
+    }
+
+    function showPassScreen(targetPlayerName, callback) {
+      pendingPassCallback = callback;
+      const overlay = document.getElementById('pass-overlay');
+      document.getElementById('pass-target-name').textContent = `${targetPlayerName} の番です`;
+      overlay.classList.remove('hidden');
+    }
+
+    function dismissPassScreen() {
+      document.getElementById('pass-overlay').classList.add('hidden');
+      if (pendingPassCallback) {
+        const cb = pendingPassCallback;
+        pendingPassCallback = null;
+        cb();
+      }
+    }
+
+    function recordMatch(isWin) {
+      if (selectedMode !== 'single') return;
+      let stats = { wins: 0, losses: 0 };
+      try {
+        stats = JSON.parse(localStorage.getItem('connect4_stats')) || stats;
+      } catch(e) {}
+
+      if (isWin) stats.wins++;
+      else stats.losses++;
+
+      try {
+        localStorage.setItem('connect4_stats', JSON.stringify(stats));
+      } catch(e) {}
+      loadStats();
+    }
+
+    function loadStats() {
+      let stats = { wins: 0, losses: 0 };
+      try {
+        stats = JSON.parse(localStorage.getItem('connect4_stats')) || stats;
+      } catch(e) {}
+
+      document.getElementById('stat-wins').textContent = stats.wins;
+      document.getElementById('stat-losses').textContent = stats.losses;
+      const total = stats.wins + stats.losses;
+      const rate = total > 0 ? Math.round((stats.wins / total) * 100) : 0;
+      document.getElementById('stat-winrate').textContent = `${rate}%`;
+    }
+
+    function toggleRulesModal(show) {
+      document.getElementById('modal-rules').classList.toggle('active', show);
+    }
+  </script>
+</body>
+</html>
