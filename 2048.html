@@ -137,6 +137,7 @@
       position: relative;
       box-shadow: 0 10px 25px rgba(0,0,0,0.8), inset 0 2px 6px rgba(0,0,0,0.9);
       touch-action: none;
+      overflow: hidden;
     }
 
     @media (max-width: 380px) {
@@ -171,7 +172,41 @@
       pointer-events: none;
     }
 
-    /* 焼き印ウッド＆真鍮調タイル */
+    /* スタート / ゲームオーバー オーバーレイ */
+    .screen-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(18, 11, 7, 0.88);
+      backdrop-filter: blur(4px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px;
+      z-index: 20;
+    }
+    .screen-overlay.hidden {
+      display: none;
+    }
+    .overlay-title {
+      font-size: 1.45rem; font-weight: 900;
+      color: var(--brass-gold);
+      text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+      letter-spacing: 2px;
+    }
+    .overlay-sub {
+      font-size: 0.82rem; color: #d5c3b1;
+      text-align: center; line-height: 1.5;
+    }
+    .start-btn {
+      background: linear-gradient(180deg, #d4a359 0%, #aa782e 100%);
+      color: #140c06; font-size: 1.05rem; font-weight: 900;
+      border: 1.5px solid #fff; border-radius: 20px;
+      padding: 10px 28px; cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.8), 0 0 12px var(--brass-glow);
+      transition: transform 0.1s;
+    }
+    .start-btn:active { transform: scale(0.94); }
+
+    /* タイル */
     .tile {
       position: absolute;
       width: var(--tile-size);
@@ -197,7 +232,6 @@
       100% { transform: scale(1); }
     }
 
-    /* タイル別デザイン（木目の深みと真鍮の輝き） */
     .tile-2    { background: linear-gradient(145deg, #eedbc5, #d9be9f); color: #432815; border: 1.5px solid #fff; }
     .tile-4    { background: linear-gradient(145deg, #e7cdb0, #cca983); color: #3b2210; border: 1.5px solid #fff; }
     .tile-8    { background: linear-gradient(145deg, #df9b58, #b86b20); color: #fff; border: 1.5px solid #ffd299; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
@@ -330,7 +364,7 @@
   <div class="viewport">
     <div class="topbar">
       <div class="topbar-upper">
-        <div class="tool-btn" onclick="restartGame()" title="最初から">🔄</div>
+        <div class="tool-btn" onclick="restartToTitle()" title="タイトルへ">🔄</div>
         <div class="tool-btn" onclick="undoMove()" title="1手戻す">↩️</div>
         <div class="tool-btn" onclick="toggleRulesModal(true)" title="あそびかた">📖</div>
       </div>
@@ -356,6 +390,13 @@
           <div class="grid-cell-slot"></div><div class="grid-cell-slot"></div><div class="grid-cell-slot"></div><div class="grid-cell-slot"></div>
         </div>
         <div class="tile-container" id="tile-container"></div>
+
+        <!-- スタート＆リトライ オーバーレイ -->
+        <div id="game-overlay" class="screen-overlay">
+          <div class="overlay-title" id="overlay-title">2048 CRAFT</div>
+          <div class="overlay-sub" id="overlay-sub">数字を重ねて伝説のタイル<br>「2048」を目指そう！</div>
+          <button class="start-btn" id="start-btn" onclick="startGame()">START</button>
+        </div>
       </div>
     </div>
 
@@ -460,21 +501,55 @@
     let hasReached2048 = false;
     let timerInterval = null;
     let secondsElapsed = 0;
+    let isPlaying = false;
 
     let touchStartX = 0;
     let touchStartY = 0;
 
     window.addEventListener('DOMContentLoaded', () => {
       loadBestScore();
-      initGame();
+      renderRanking();
+      setupInitialDisplay();
       setupControls();
     });
+
+    function setupInitialDisplay() {
+      grid = [
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0]
+      ];
+      score = 0;
+      secondsElapsed = 0;
+      stopTimer();
+      updateTimerUI();
+      updateUI();
+      renderBoard();
+    }
+
+    function startGame() {
+      document.getElementById('game-overlay').classList.add('hidden');
+      initGame();
+      isPlaying = true;
+    }
+
+    function resetToTitle() {
+      stopTimer();
+      isPlaying = false;
+      document.getElementById('overlay-title').textContent = '2048 CRAFT';
+      document.getElementById('overlay-sub').innerHTML = '数字を重ねて伝説のタイル<br>「2048」を目指そう！';
+      document.getElementById('start-btn').textContent = 'START';
+      document.getElementById('game-overlay').classList.remove('hidden');
+      setupInitialDisplay();
+    }
 
     function startTimer() {
       stopTimer();
       secondsElapsed = 0;
       updateTimerUI();
       timerInterval = setInterval(() => {
+        if (!isPlaying) return;
         secondsElapsed++;
         updateTimerUI();
       }, 1000);
@@ -528,7 +603,7 @@
     }
 
     function undoMove() {
-      if (historyStack.length === 0) return;
+      if (!isPlaying || historyStack.length === 0) return;
       const last = historyStack.pop();
       grid = last.grid;
       score = last.score;
@@ -575,7 +650,6 @@
             tile.classList.add('tile-pop');
           }
 
-          // 位置計算
           tile.style.transform = `translate(calc(${c} * (var(--tile-size) + var(--grid-gap))), calc(${r} * (var(--tile-size) + var(--grid-gap))))`;
           tile.textContent = val;
 
@@ -585,6 +659,7 @@
     }
 
     function move(dir) {
+      if (!isPlaying) return;
       saveState();
 
       let moved = false;
@@ -639,10 +714,15 @@
         renderBoard(newPopPos);
 
         if (checkGameOver()) {
+          isPlaying = false;
           stopTimer();
           saveRankingRecord(score, secondsElapsed);
           renderRanking();
-          setTimeout(() => alert(`ゲームオーバー！\n最終得点: ${score}点`), 300);
+
+          document.getElementById('overlay-title').textContent = 'GAME OVER';
+          document.getElementById('overlay-sub').innerHTML = `最終得点: <b>${score}点</b><br>タイム: <b>${document.getElementById('stat-timer').textContent}</b>`;
+          document.getElementById('start-btn').textContent = 'PLAY AGAIN';
+          document.getElementById('game-overlay').classList.remove('hidden');
         }
       } else {
         historyStack.pop();
@@ -662,6 +742,10 @@
 
     function setupControls() {
       window.addEventListener('keydown', (e) => {
+        if (!isPlaying && (e.key === ' ' || e.key === 'Enter')) {
+          startGame();
+          return;
+        }
         if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') move('left');
         else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') move('right');
         else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') move('up');
@@ -741,7 +825,7 @@
     }
 
     function restartGame() {
-      if (confirm('現在の盤面をリセットして新しく始めますか？')) initGame();
+      resetToTitle();
     }
   </script>
 </body>
