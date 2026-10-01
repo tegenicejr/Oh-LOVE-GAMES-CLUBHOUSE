@@ -44,6 +44,7 @@
       padding: 4px 10px;
       font-size: 0.8rem; font-weight: 800; color: #ede2d5;
       display: flex; align-items: center; gap: 5px;
+      transition: all 0.2s;
     }
     .bg-badge.turn-active {
       border-color: var(--brass-gold);
@@ -72,7 +73,8 @@
     .turn-announcer {
       font-size: 0.88rem; font-weight: 800; color: #ede2d5; min-height: 20px; text-align: center;
     }
-    /* バックギャモンボード：スマホの画面幅に合わせて完全フィット */
+
+    /* バックギャモンボードSVGコンテナ */
     .bg-board-frame {
       width: 100%; aspect-ratio: 1.25;
       background: #190f09;
@@ -92,6 +94,7 @@
     .bear-off-zone { fill: #120b06; stroke: #422814; stroke-width: 1; }
     .bear-off-zone.highlight { stroke: #2ecc71; stroke-width: 2; fill: rgba(46,204,113,0.3); }
 
+    /* ダイス＆操作コントロール */
     .controls-bar {
       display: flex; justify-content: space-between; align-items: center;
       width: 100%; padding: 0 4px;
@@ -113,6 +116,51 @@
       padding: 8px 16px; cursor: pointer;
     }
     .roll-btn:disabled { background: #3a2e26; color: #635245; cursor: not-allowed; }
+
+    /* スタート設定オーバーレイ */
+    .screen-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(18, 11, 7, 0.92);
+      backdrop-filter: blur(4px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px;
+      z-index: 50;
+      padding: 16px;
+    }
+    .screen-overlay.hidden { display: none; }
+    .overlay-title {
+      font-size: 1.35rem; font-weight: 900;
+      color: var(--brass-gold);
+      letter-spacing: 2px; text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+    .config-box {
+      width: 100%; max-width: 280px;
+      display: flex; flex-direction: column; gap: 10px;
+      background: rgba(0,0,0,0.4);
+      padding: 12px; border-radius: 12px;
+      border: 1px solid #4a3424;
+    }
+    .config-row {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.85rem; font-weight: 800; color: #d5c3b1;
+    }
+    .theme-select {
+      background: #2c1a10; color: #fff; border: 1.5px solid var(--brass-gold);
+      padding: 5px 10px; border-radius: 8px; font-weight: 700; outline: none;
+      font-size: 0.85rem;
+    }
+    .start-btn {
+      background: linear-gradient(180deg, #d4a359 0%, #aa782e 100%);
+      color: #140c06; font-size: 1rem; font-weight: 900;
+      border: 1.5px solid #fff; border-radius: 20px;
+      padding: 10px 32px; cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.8), 0 0 12px var(--brass-glow);
+    }
+    .start-btn:active { transform: scale(0.95); }
+
+    /* ルールモーダル */
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0,0,0,0.82); z-index: 99999;
@@ -129,7 +177,7 @@
   <div class="viewport">
     <div class="topbar">
       <div class="badge-bar">
-        <div class="bg-badge turn-active" id="badge-w">
+        <div class="bg-badge" id="badge-w">
           <div class="checker-icon white"></div>
           <span id="name-w">白: 残<b id="rem-w">15</b></span>
         </div>
@@ -139,13 +187,13 @@
         </div>
       </div>
       <div style="display:flex; gap:8px;">
-        <div class="tool-btn" onclick="initGame()">🔄</div>
+        <div class="tool-btn" onclick="openStartModal()">🔄</div>
         <div class="tool-btn" onclick="toggleRules(true)">📖</div>
       </div>
     </div>
 
     <div class="table-felt">
-      <div class="turn-announcer" id="announcer">白の手番：サイコロを振ってください</div>
+      <div class="turn-announcer" id="announcer">スタートを押してください</div>
 
       <div class="bg-board-frame">
         <svg id="bg-svg" viewBox="0 0 380 300">
@@ -166,6 +214,29 @@
           <g id="checkers-layer"></g>
           <g id="hits-layer"></g>
         </svg>
+
+        <!-- スタート画面オーバーレイ -->
+        <div id="start-overlay" class="screen-overlay">
+          <div class="overlay-title">BACKGAMMON</div>
+          <div class="config-box">
+            <div class="config-row">
+              <span>対戦形式</span>
+              <select id="mode-sel" class="theme-select" onchange="handleModeChange(this.value)">
+                <option value="cpu" selected>1人プレイ (vs CPU)</option>
+                <option value="pvp">2人対戦 (1台で対戦)</option>
+              </select>
+            </div>
+            <div class="config-row" id="diff-row">
+              <span>CPU難易度</span>
+              <select id="diff-sel" class="theme-select">
+                <option value="easy">初級</option>
+                <option value="medium" selected>中級</option>
+                <option value="hard">上級</option>
+              </select>
+            </div>
+          </div>
+          <button class="start-btn" onclick="startNewGame()">START</button>
+        </div>
       </div>
 
       <div class="controls-bar">
@@ -173,11 +244,12 @@
           <div class="bg-die" id="die-1">-</div>
           <div class="bg-die" id="die-2">-</div>
         </div>
-        <button class="roll-btn" id="btn-roll" onclick="rollDice()">サイコロを振る</button>
+        <button class="roll-btn" id="btn-roll" onclick="playerRollClick()" disabled>サイコロを振る</button>
       </div>
     </div>
   </div>
 
+  <!-- ルールモーダル -->
   <div id="modal-rules" class="modal-overlay">
     <div class="modal-sheet">
       <h3 style="color:var(--brass-gold); text-align:center; margin-bottom:12px;">📖 バックギャモンのあそびかた</h3>
@@ -186,6 +258,7 @@
         <br>
         <ul style="padding-left:18px;">
           <li><b>白は反時計回り</b>（0→23）、<b>赤は時計回り</b>（23→0）に進みます。</li>
+          <li>開始時にダイス対決を行い、出目の大きい方が先攻となります。</li>
           <li>相手の駒が1枚だけのマスに止まると<b>ヒット（中央バーへ送還）</b>できます。</li>
           <li><b>バーに駒がある場合</b>、まずバーの駒を最優先で復活させなければ他の駒は動かせません。</li>
           <li>すべての駒を自分のインナー（ゴール側6マス）に集めたら、右端から脱出（ベアオフ）できます！</li>
@@ -218,114 +291,142 @@
       } catch(e) {}
     }
 
+    /* ゲーム状態定義:
+       'TITLE': スタート画面待機
+       'OPENING': 先攻後攻ダイスロール中
+       'WAIT_ROLL': サイコロ待ち
+       'MOVING': 移動中
+       'CPU_THINKING': CPU行動中
+    */
+    let gameState = 'TITLE';
+    let gameMode = 'cpu'; // 'cpu' | 'pvp'
+    let cpuDifficulty = 'medium';
+
     let points = Array(24).fill(null).map(() => ({ player: null, count: 0 }));
     let bar = { W: 0, R: 0 };
     let off = { W: 0, R: 0 };
     let currentTurn = 'W'; // 'W' or 'R'
-    let dice = [];
     let movesLeft = [];
     let selectedFrom = null;
-    let isComThinking = false;
 
     window.addEventListener('DOMContentLoaded', () => {
       buildSvgBoard();
-      initGame();
+      setupInitialBoard();
     });
 
-    function initGame() {
-      points = Array(24).fill(null).map(() => ({ player: null, count: 0 }));
-      bar = { W: 0, R: 0 };
-      off = { W: 0, R: 0 };
-      currentTurn = 'W';
-      dice = [];
+    function handleModeChange(val) {
+      gameMode = val;
+      document.getElementById('diff-row').style.display = (val === 'cpu') ? 'flex' : 'none';
+    }
+
+    function openStartModal() {
+      gameState = 'TITLE';
       movesLeft = [];
       selectedFrom = null;
-      isComThinking = false;
-
-      // 正式初期配置
-      setPt(0, 'W', 2);  setPt(11, 'W', 5); setPt(16, 'W', 3); setPt(18, 'W', 5);
-      setPt(23, 'R', 2); setPt(12, 'R', 5); setPt(7, 'R', 3);  setPt(5, 'R', 5);
-
-      document.getElementById('btn-roll').disabled = false;
-      document.getElementById('die-1').textContent = '-';
-      document.getElementById('die-2').textContent = '-';
-      document.getElementById('die-1').classList.remove('used');
-      document.getElementById('die-2').classList.remove('used');
-
+      clearHighlights();
+      document.getElementById('btn-roll').disabled = true;
+      document.getElementById('start-overlay').classList.remove('hidden');
+      document.getElementById('announcer').textContent = 'スタートを押してください';
       updateUI();
-      renderCheckers();
     }
 
     function setPt(i, p, c) { points[i] = { player: p, count: c }; }
 
-    function buildSvgBoard() {
-      const bg = document.getElementById('board-bg-layer');
-      const tri = document.getElementById('triangles-layer');
-      const hits = document.getElementById('hits-layer');
-      bg.innerHTML = ''; tri.innerHTML = ''; hits.innerHTML = '';
+    function setupInitialBoard() {
+      points = Array(24).fill(null).map(() => ({ player: null, count: 0 }));
+      bar = { W: 0, R: 0 };
+      off = { W: 0, R: 0 };
+      setPt(0, 'W', 2);  setPt(11, 'W', 5); setPt(16, 'W', 3); setPt(18, 'W', 5);
+      setPt(23, 'R', 2); setPt(12, 'R', 5); setPt(7, 'R', 3);  setPt(5, 'R', 5);
+      renderCheckers();
+      updateUI();
+    }
 
-      // 中央バー (viewBox 380×300 中、X: 175〜199)
-      const barRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      barRect.setAttribute('x', 175); barRect.setAttribute('y', 0);
-      barRect.setAttribute('width', 24); barRect.setAttribute('height', 300);
-      barRect.setAttribute('class', 'bar-line');
-      barRect.setAttribute('id', 'bar-svg-rect');
-      bg.appendChild(barRect);
+    function startNewGame() {
+      gameMode = document.getElementById('mode-sel').value;
+      cpuDifficulty = document.getElementById('diff-sel').value;
+      document.getElementById('start-overlay').classList.add('hidden');
 
-      // 右端ベアオフ受皿 (X: 356〜380)
-      const offRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      offRect.setAttribute('x', 356); offRect.setAttribute('y', 0);
-      offRect.setAttribute('width', 24); offRect.setAttribute('height', 300);
-      offRect.setAttribute('class', 'bear-off-zone');
-      offRect.setAttribute('id', 'off-svg-zone');
-      offRect.onclick = () => handleBearOffClick();
-      bg.appendChild(offRect);
+      setupInitialBoard();
+      document.getElementById('name-w').innerHTML = `白: 残<b id="rem-w">15</b>`;
+      document.getElementById('name-r').innerHTML = `${gameMode === 'cpu' ? 'CPU' : '赤'}: 残<b id="rem-r">15</b>`;
 
-      // 24本の三角形
-      for (let i = 0; i < 24; i++) {
-        const coords = getTriangleCoords(i);
-        const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-        poly.setAttribute('points', coords);
-        poly.setAttribute('class', `pt-tri ${i % 2 === 0 ? 'pt-tri-dark' : 'pt-tri-light'}`);
-        poly.setAttribute('id', `tri-${i}`);
-        tri.appendChild(poly);
+      // 先攻後攻オープニングロール
+      runOpeningRoll();
+    }
 
-        // タップ判定
-        const hit = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-        hit.setAttribute('points', coords);
-        hit.setAttribute('class', 'pt-hit');
-        hit.onclick = () => handlePointClick(i);
-        hits.appendChild(hit);
+    /* 先攻後攻ダイス対決 */
+    function runOpeningRoll() {
+      gameState = 'OPENING';
+      document.getElementById('announcer').textContent = '🎲 先攻後攻のダイス対決中...';
+      document.getElementById('btn-roll').disabled = true;
+
+      playSound(340, 100);
+      let dW = Math.floor(Math.random() * 6) + 1;
+      let dR = Math.floor(Math.random() * 6) + 1;
+
+      // 同点なら振り直し
+      while (dW === dR) {
+        dR = Math.floor(Math.random() * 6) + 1;
       }
 
-      // バータップ判定
-      const barHit = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      barHit.setAttribute('x', 175); barHit.setAttribute('y', 0);
-      barHit.setAttribute('width', 24); barHit.setAttribute('height', 300);
-      barHit.setAttribute('class', 'pt-hit');
-      barHit.onclick = () => handleBarClick();
-      hits.appendChild(barHit);
+      document.getElementById('die-1').textContent = dW;
+      document.getElementById('die-2').textContent = dR;
+      document.getElementById('die-1').classList.remove('used');
+      document.getElementById('die-2').classList.remove('used');
+
+      setTimeout(() => {
+        if (dW > dR) {
+          currentTurn = 'W';
+          document.getElementById('announcer').textContent = `🎉 白が勝利！白の先攻です（出目: ${dW}, ${dR}）`;
+          movesLeft = [dW, dR];
+          gameState = 'MOVING';
+          updateUI();
+        } else {
+          currentTurn = 'R';
+          document.getElementById('announcer').textContent = `🎉 ${gameMode === 'cpu' ? 'CPU' : '赤'}が勝利！先攻です（出目: ${dW}, ${dR}）`;
+          movesLeft = [dW, dR];
+          updateUI();
+          if (gameMode === 'cpu') {
+            gameState = 'CPU_THINKING';
+            setTimeout(executeCpuTurn, 800);
+          } else {
+            gameState = 'MOVING';
+          }
+        }
+      }, 1000);
     }
 
-    function getTriangleCoords(i) {
-      let col = 0;
-      let isTop = i < 12;
-      if (isTop) col = (i < 6) ? (11 - i) : (12 - i);
-      else col = (i < 18) ? (i - 12) : (i - 11);
+    /* 手番開始時の処理 */
+    function startTurn(player) {
+      currentTurn = player;
+      movesLeft = [];
+      selectedFrom = null;
+      clearHighlights();
+      document.getElementById('die-1').classList.add('used');
+      document.getElementById('die-2').classList.add('used');
+      updateUI();
 
-      let x = col * 26 + (col >= 6 ? 36 : 6);
-      let yBase = isTop ? 0 : 300;
-      let yTip = isTop ? 120 : 180;
-      return `${x},${yBase} ${x+24},${yBase} ${x+12},${yTip}`;
+      if (player === 'W' || gameMode === 'pvp') {
+        gameState = 'WAIT_ROLL';
+        document.getElementById('btn-roll').disabled = false;
+        document.getElementById('announcer').textContent = `${player === 'W' ? '白' : '赤'}の手番：サイコロを振ってください`;
+      } else {
+        // CPUの手番
+        gameState = 'CPU_THINKING';
+        document.getElementById('btn-roll').disabled = true;
+        document.getElementById('announcer').textContent = 'CPU(赤)がサイコロを振っています...';
+        setTimeout(cpuRollAndAct, 800);
+      }
     }
 
-    function rollDice() {
-      if (movesLeft.length > 0 || isComThinking || currentTurn !== 'W') return;
+    /* プレイヤーのサイコロボタン押下 */
+    function playerRollClick() {
+      if (gameState !== 'WAIT_ROLL') return;
       playSound(340, 100);
 
       const d1 = Math.floor(Math.random() * 6) + 1;
       const d2 = Math.floor(Math.random() * 6) + 1;
-      dice = [d1, d2];
       movesLeft = (d1 === d2) ? [d1, d1, d1, d1] : [d1, d2];
 
       document.getElementById('die-1').textContent = d1;
@@ -334,29 +435,116 @@
       document.getElementById('die-2').classList.remove('used');
       document.getElementById('btn-roll').disabled = true;
 
+      gameState = 'MOVING';
       document.getElementById('announcer').textContent =
-        `白の出目 [${movesLeft.join(', ')}]：駒を選んでください`;
+        `${currentTurn === 'W' ? '白' : '赤'}の出目 [${movesLeft.join(', ')}]：駒を選んでください`;
 
-      if (!hasAnyLegalMoves('W')) {
+      // 合法手がない場合はパス
+      if (!hasAnyLegalMoves(currentTurn)) {
         setTimeout(() => {
-          alert('白は動かせる駒がありません。パスします。');
+          alert(`${currentTurn === 'W' ? '白' : '赤'}は動かせる駒がありません。パスします。`);
           endTurn();
-        }, 500);
+        }, 600);
       }
     }
 
+    /* CPUのサイコロ振りと行動 */
+    function cpuRollAndAct() {
+      if (gameState !== 'CPU_THINKING' || currentTurn !== 'R') return;
+      playSound(340, 100);
+
+      const d1 = Math.floor(Math.random() * 6) + 1;
+      const d2 = Math.floor(Math.random() * 6) + 1;
+      movesLeft = (d1 === d2) ? [d1, d1, d1, d1] : [d1, d2];
+
+      document.getElementById('die-1').textContent = d1;
+      document.getElementById('die-2').textContent = d2;
+      document.getElementById('die-1').classList.remove('used');
+      document.getElementById('die-2').classList.remove('used');
+      document.getElementById('announcer').textContent = `CPU(赤)の出目 [${movesLeft.join(', ')}]：移動中...`;
+
+      setTimeout(executeCpuTurn, 600);
+    }
+
+    function executeCpuTurn() {
+      if (movesLeft.length === 0 || !hasAnyLegalMoves('R')) {
+        endTurn();
+        return;
+      }
+
+      let acted = false;
+      // 1. バーからの復帰最優先
+      if (bar.R > 0) {
+        for (const d of movesLeft) {
+          const target = 24 - d;
+          if (points[target].player !== 'W' || points[target].count < 2) {
+            tryExecuteMove('bar', target, 'R');
+            acted = true;
+            break;
+          }
+        }
+      } else {
+        // 2. ベアオフ優先
+        if (canBearOff('R')) {
+          for (let i = 0; i <= 5; i++) {
+            if (points[i].player === 'R') {
+              if (tryExecuteBearOff(i, 'R')) { acted = true; break; }
+            }
+          }
+        }
+        // 3. 通常前進（ヒット優先）
+        if (!acted) {
+          let candidateMoves = [];
+          for (let i = 23; i >= 0; i--) {
+            if (points[i].player === 'R') {
+              for (const d of movesLeft) {
+                const target = i - d;
+                if (target >= 0 && (points[target].player !== 'W' || points[target].count < 2)) {
+                  const isHit = (points[target].player === 'W' && points[target].count === 1);
+                  candidateMoves.push({ from: i, to: target, isHit });
+                }
+              }
+            }
+          }
+          if (candidateMoves.length > 0) {
+            candidateMoves.sort((a, b) => (b.isHit ? 1 : 0) - (a.isHit ? 1 : 0));
+            tryExecuteMove(candidateMoves[0].from, candidateMoves[0].to, 'R');
+            acted = true;
+          }
+        }
+      }
+
+      if (acted && movesLeft.length > 0 && hasAnyLegalMoves('R')) {
+        setTimeout(executeCpuTurn, 500);
+      } else {
+        setTimeout(endTurn, 400);
+      }
+    }
+
+    function endTurn() {
+      const nextPlayer = (currentTurn === 'W') ? 'R' : 'W';
+      startTurn(nextPlayer);
+    }
+
+    /* プレイヤーのタッチ操作 */
     function handleBarClick() {
-      if (movesLeft.length === 0 || currentTurn !== 'W' || isComThinking) return;
-      if (bar.W > 0) {
+      if (gameState !== 'MOVING') return;
+      if (currentTurn === 'W' && bar.W > 0) {
+        selectedFrom = 'bar';
+        highlightLegalMovesFor('bar');
+      } else if (currentTurn === 'R' && gameMode === 'pvp' && bar.R > 0) {
         selectedFrom = 'bar';
         highlightLegalMovesFor('bar');
       }
     }
 
     function handlePointClick(idx) {
-      if (movesLeft.length === 0 || currentTurn !== 'W' || isComThinking) return;
+      if (gameState !== 'MOVING') return;
 
-      if (bar.W > 0 && selectedFrom !== 'bar') {
+      const player = currentTurn;
+      const opp = player === 'W' ? 'R' : 'W';
+
+      if (bar[player] > 0 && selectedFrom !== 'bar') {
         alert('バーに駒があります！まずバーから復帰させてください。');
         selectedFrom = 'bar';
         highlightLegalMovesFor('bar');
@@ -364,7 +552,7 @@
       }
 
       if (selectedFrom === null) {
-        if (points[idx].player === 'W' && points[idx].count > 0) {
+        if (points[idx].player === player && points[idx].count > 0) {
           selectedFrom = idx;
           highlightLegalMovesFor(idx);
         }
@@ -373,9 +561,9 @@
           selectedFrom = null;
           clearHighlights();
         } else {
-          const moved = tryExecuteMove(selectedFrom, idx, 'W');
+          const moved = tryExecuteMove(selectedFrom, idx, player);
           if (!moved) {
-            if (points[idx].player === 'W' && points[idx].count > 0 && bar.W === 0) {
+            if (points[idx].player === player && points[idx].count > 0 && bar[player] === 0) {
               selectedFrom = idx;
               highlightLegalMovesFor(idx);
             }
@@ -385,8 +573,8 @@
     }
 
     function handleBearOffClick() {
-      if (movesLeft.length === 0 || currentTurn !== 'W' || isComThinking || selectedFrom === null) return;
-      tryExecuteBearOff(selectedFrom, 'W');
+      if (gameState !== 'MOVING' || selectedFrom === null) return;
+      tryExecuteBearOff(selectedFrom, currentTurn);
     }
 
     function tryExecuteMove(from, to, player) {
@@ -430,7 +618,11 @@
       renderCheckers();
       updateUI();
 
-      checkTurnOrVictory();
+      if (player === 'W' || gameMode === 'pvp') {
+        if (movesLeft.length === 0 || !hasAnyLegalMoves(player)) {
+          endTurn();
+        }
+      }
       return true;
     }
 
@@ -468,11 +660,18 @@
         updateUI();
 
         if (off[player] === 15) {
-          setTimeout(() => alert(`🎉 ${player === 'W' ? '白' : '赤'}の勝利！全駒を脱出させました！`), 200);
+          setTimeout(() => {
+            alert(`🎉 ${player === 'W' ? '白' : (gameMode === 'cpu' ? 'CPU' : '赤')}の完全勝利！全駒を脱出させました！`);
+            openStartModal();
+          }, 200);
           return true;
         }
 
-        checkTurnOrVictory();
+        if (player === 'W' || gameMode === 'pvp') {
+          if (movesLeft.length === 0 || !hasAnyLegalMoves(player)) {
+            endTurn();
+          }
+        }
         return true;
       }
       return false;
@@ -513,115 +712,15 @@
       return false;
     }
 
-    function checkTurnOrVictory() {
-      if (movesLeft.length === 0 || !hasAnyLegalMoves(currentTurn)) {
-        endTurn();
-      }
-    }
-
-    function endTurn() {
-      currentTurn = (currentTurn === 'W') ? 'R' : 'W';
-      movesLeft = [];
-      selectedFrom = null;
-      clearHighlights();
-
-      document.getElementById('die-1').classList.add('used');
-      document.getElementById('die-2').classList.add('used');
-      updateUI();
-
-      if (currentTurn === 'R') {
-        document.getElementById('btn-roll').disabled = true;
-        setTimeout(handleComTurn, 600);
-      } else {
-        isComThinking = false;
-        document.getElementById('btn-roll').disabled = false;
-        document.getElementById('announcer').textContent = '白の手番：サイコロを振ってください';
-      }
-    }
-
-    /* COM思考ルーチン (赤) */
-    function handleComTurn() {
-      if (currentTurn !== 'R') return;
-      isComThinking = true;
-
-      playSound(340, 100);
-      const d1 = Math.floor(Math.random() * 6) + 1;
-      const d2 = Math.floor(Math.random() * 6) + 1;
-      dice = [d1, d2];
-      movesLeft = (d1 === d2) ? [d1, d1, d1, d1] : [d1, d2];
-
-      document.getElementById('die-1').textContent = d1;
-      document.getElementById('die-2').textContent = d2;
-      document.getElementById('die-1').classList.remove('used');
-      document.getElementById('die-2').classList.remove('used');
-      document.getElementById('announcer').textContent = `COM(赤)の出目 [${movesLeft.join(', ')}]：思考中...`;
-
-      // COMの行動実行ループ
-      const executeNextComMove = () => {
-        if (currentTurn !== 'R') return;
-
-        if (movesLeft.length === 0 || !hasAnyLegalMoves('R')) {
-          endTurn();
-          return;
-        }
-
-        let acted = false;
-        if (bar.R > 0) {
-          for (const d of movesLeft) {
-            const target = 24 - d;
-            if (points[target].player !== 'W' || points[target].count < 2) {
-              tryExecuteMove('bar', target, 'R');
-              acted = true;
-              break;
-            }
-          }
-        } else {
-          if (canBearOff('R')) {
-            for (let i = 0; i <= 5; i++) {
-              if (points[i].player === 'R') {
-                if (tryExecuteBearOff(i, 'R')) { acted = true; break; }
-              }
-            }
-          }
-          if (!acted) {
-            let candidateMoves = [];
-            for (let i = 23; i >= 0; i--) {
-              if (points[i].player === 'R') {
-                for (const d of movesLeft) {
-                  const target = i - d;
-                  if (target >= 0 && (points[target].player !== 'W' || points[target].count < 2)) {
-                    const isHit = (points[target].player === 'W' && points[target].count === 1);
-                    candidateMoves.push({ from: i, to: target, isHit });
-                  }
-                }
-              }
-            }
-            if (candidateMoves.length > 0) {
-              candidateMoves.sort((a, b) => (b.isHit ? 1 : 0) - (a.isHit ? 1 : 0));
-              tryExecuteMove(candidateMoves[0].from, candidateMoves[0].to, 'R');
-              acted = true;
-            }
-          }
-        }
-
-        if (acted && movesLeft.length > 0 && hasAnyLegalMoves('R')) {
-          setTimeout(executeNextComMove, 500);
-        } else {
-          endTurn();
-        }
-      };
-
-      setTimeout(executeNextComMove, 550);
-    }
-
     function highlightLegalMovesFor(from) {
       clearHighlights();
-      const opp = 'R';
+      const player = currentTurn;
+      const opp = player === 'W' ? 'R' : 'W';
 
       if (from === 'bar') {
         document.getElementById('bar-svg-rect').classList.add('bar-highlight');
         movesLeft.forEach(d => {
-          const target = d - 1;
+          const target = player === 'W' ? (d - 1) : (24 - d);
           if (points[target].player !== opp || points[target].count < 2) {
             document.getElementById(`tri-${target}`).classList.add('highlight');
           }
@@ -630,12 +729,12 @@
       }
 
       movesLeft.forEach(d => {
-        const target = from + d;
-        if (target <= 23) {
+        const target = player === 'W' ? (from + d) : (from - d);
+        if (target >= 0 && target <= 23) {
           if (points[target].player !== opp || points[target].count < 2) {
             document.getElementById(`tri-${target}`).classList.add('highlight');
           }
-        } else if (canBearOff('W')) {
+        } else if (canBearOff(player)) {
           document.getElementById('off-svg-zone').classList.add('highlight');
         }
       });
@@ -645,6 +744,62 @@
       document.querySelectorAll('.pt-tri').forEach(t => t.classList.remove('highlight'));
       document.getElementById('bar-svg-rect').classList.remove('bar-highlight');
       document.getElementById('off-svg-zone').classList.remove('highlight');
+    }
+
+    function buildSvgBoard() {
+      const bg = document.getElementById('board-bg-layer');
+      const tri = document.getElementById('triangles-layer');
+      const hits = document.getElementById('hits-layer');
+      bg.innerHTML = ''; tri.innerHTML = ''; hits.innerHTML = '';
+
+      const barRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      barRect.setAttribute('x', 175); barRect.setAttribute('y', 0);
+      barRect.setAttribute('width', 24); barRect.setAttribute('height', 300);
+      barRect.setAttribute('class', 'bar-line');
+      barRect.setAttribute('id', 'bar-svg-rect');
+      bg.appendChild(barRect);
+
+      const offRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      offRect.setAttribute('x', 356); offRect.setAttribute('y', 0);
+      offRect.setAttribute('width', 24); offRect.setAttribute('height', 300);
+      offRect.setAttribute('class', 'bear-off-zone');
+      offRect.setAttribute('id', 'off-svg-zone');
+      offRect.onclick = () => handleBearOffClick();
+      bg.appendChild(offRect);
+
+      for (let i = 0; i < 24; i++) {
+        const coords = getTriangleCoords(i);
+        const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        poly.setAttribute('points', coords);
+        poly.setAttribute('class', `pt-tri ${i % 2 === 0 ? 'pt-tri-dark' : 'pt-tri-light'}`);
+        poly.setAttribute('id', `tri-${i}`);
+        tri.appendChild(poly);
+
+        const hit = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        hit.setAttribute('points', coords);
+        hit.setAttribute('class', 'pt-hit');
+        hit.onclick = () => handlePointClick(i);
+        hits.appendChild(hit);
+      }
+
+      const barHit = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      barHit.setAttribute('x', 175); barHit.setAttribute('y', 0);
+      barHit.setAttribute('width', 24); barHit.setAttribute('height', 300);
+      barHit.setAttribute('class', 'pt-hit');
+      barHit.onclick = () => handleBarClick();
+      hits.appendChild(barHit);
+    }
+
+    function getTriangleCoords(i) {
+      let col = 0;
+      let isTop = i < 12;
+      if (isTop) col = (i < 6) ? (11 - i) : (12 - i);
+      else col = (i < 18) ? (i - 12) : (i - 11);
+
+      let x = col * 26 + (col >= 6 ? 36 : 6);
+      let yBase = isTop ? 0 : 300;
+      let yTip = isTop ? 120 : 180;
+      return `${x},${yBase} ${x+24},${yBase} ${x+12},${yTip}`;
     }
 
     function renderCheckers() {
@@ -698,8 +853,8 @@
     }
 
     function updateUI() {
-      document.getElementById('badge-w').classList.toggle('turn-active', currentTurn === 'W');
-      document.getElementById('badge-r').classList.toggle('turn-active', currentTurn === 'R');
+      document.getElementById('badge-w').classList.toggle('turn-active', currentTurn === 'W' && gameState !== 'TITLE');
+      document.getElementById('badge-r').classList.toggle('turn-active', currentTurn === 'R' && gameState !== 'TITLE');
       document.getElementById('rem-w').textContent = 15 - off.W;
       document.getElementById('rem-r').textContent = 15 - off.R;
     }
