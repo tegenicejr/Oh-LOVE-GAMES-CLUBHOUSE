@@ -222,7 +222,7 @@
       background: rgba(229, 169, 80, 0.25);
     }
 
-    /* スマホ常時2列グリッド（PC・タブレットでは幅に応じて拡張） */
+    /* スマホ常時2列グリッド */
     .games-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -377,29 +377,31 @@
       box-shadow: inset 0 1px 1.5px rgba(0,0,0,0.6), 0 0.5px 0.5px rgba(255,255,255,0.7);
     }
 
-    /* === 4. 立体ミニ数独 === */
+    /* === 4. 立体ミニ数独（数字のはみ出し完全修正版） === */
     .sudoku-mini-board {
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-template-rows: repeat(3, 1fr);
-      gap: 1px;
+      gap: 1.5px;
       background: #4a3424;
-      padding: 1.5px;
+      padding: 2px;
       border-radius: 5px;
-      border: 1px solid #6b4d35;
+      border: 1.5px solid #6b4d35;
       box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+      overflow: hidden;
     }
     .sudoku-mini-cell {
       background: #251b14;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.65rem;
+      font-size: 0.6rem;
       font-weight: 900;
       color: #ede2d5;
       border-radius: 1px;
+      line-height: 1;
     }
     .sudoku-mini-cell.accent {
       color: var(--accent);
@@ -572,17 +574,6 @@
       text-overflow: ellipsis;
       max-width: 100%;
     }
-    .card-badge-count {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: var(--accent);
-      color: #1a1008;
-      font-size: 0.62rem;
-      font-weight: 800;
-      padding: 1px 6px;
-      border-radius: 8px;
-    }
 
     .game-card.locked {
       opacity: 0.45;
@@ -657,7 +648,7 @@
 
     <!-- RPG・クエストへのリンク -->
     <div class="drawer-item" onclick="launchFromDrawer('rpg')">
-      <div class="drawer-item-icon">⚔️</div>
+      <div class="drawer-item-icon">⚔️️</div>
       <div>
         <div class="drawer-item-title">Oh LOVE QUEST</div>
         <div class="drawer-item-sub">冒険RPG / 特別編</div>
@@ -672,12 +663,11 @@
       <div class="sub-logo">Clubhouse</div>
     </div>
 
-    <!-- 上段：カテゴリー -->
+    <!-- 上段：カテゴリー (CATバッジ削除済み) -->
     <div class="section-label">CATEGORIES</div>
     <div class="games-grid">
       <!-- トランプ -->
       <div class="game-card" onclick="openSubMenu('trump')">
-        <span class="card-badge-count">CAT</span>
         <div class="card-icon">
           <div class="cards-icon-pair">
             <div class="mini-pcard card-spade">
@@ -696,7 +686,6 @@
 
       <!-- 麻雀 -->
       <div class="game-card" onclick="openSubMenu('mahjong')">
-        <span class="card-badge-count">CAT</span>
         <div class="card-icon">
           <div class="mj-icon-pair">
             <div class="mj-mini-tile"><span class="mj-mini-text color-chun">中</span></div>
@@ -707,9 +696,8 @@
         <div class="card-genre">上海 / 四川省</div>
       </div>
 
-      <!-- ダイス -->
+      <!-- ダイス (2P対戦表記追加) -->
       <div class="game-card" onclick="openSubMenu('dice')">
-        <span class="card-badge-count">CAT</span>
         <div class="card-icon">
           <div class="dice-icon-pair">
             <div class="mini-die">
@@ -727,14 +715,14 @@
           </div>
         </div>
         <div class="card-title">ダイス</div>
-        <div class="card-genre">ヨット / 確率</div>
+        <div class="card-genre">ヨット(2人可) / 確率</div>
       </div>
     </div>
 
-    <!-- 下段：単体ゲーム（知名度順・縦2列） -->
+    <!-- 下段：単体ゲーム（知名度順・2P表記追加） -->
     <div class="section-label">POPULAR GAMES</div>
     <div class="games-grid">
-      <!-- 1位：数独 -->
+      <!-- 1位：数独 (数字のはみ出し修正済み) -->
       <div class="game-card" onclick="launchGame('sudoku')">
         <div class="card-icon">
           <div class="sudoku-mini-board">
@@ -753,7 +741,7 @@
         <div class="card-genre">ナンプレ</div>
       </div>
 
-      <!-- 2位：リバーシ -->
+      <!-- 2位：リバーシ (2P対戦表記) -->
       <div class="game-card" onclick="launchGame('reversi')">
         <div class="card-icon">
           <div class="reversi-icon-pair">
@@ -762,10 +750,10 @@
           </div>
         </div>
         <div class="card-title">リバーシ</div>
-        <div class="card-genre">対COM</div>
+        <div class="card-genre">対COM / 2人対戦</div>
       </div>
 
-      <!-- 3位：コネクトフォー -->
+      <!-- 3位：コネクトフォー (2P対戦表記) -->
       <div class="game-card" onclick="launchGame('connect4')">
         <div class="card-icon">
           <div class="connect-icon-pair">
@@ -774,7 +762,7 @@
           </div>
         </div>
         <div class="card-title">コネクトフォー</div>
-        <div class="card-genre">四目並べ</div>
+        <div class="card-genre">四目並べ / 2人対戦</div>
       </div>
 
       <!-- 4位：マインスイーパー -->
@@ -813,7 +801,7 @@
         <div class="card-genre">電灯パズル</div>
       </div>
 
-      <!-- 7位：ヒット＆ブロー -->
+      <!-- 7位：ヒット＆ブロー (2P対戦表記) -->
       <div class="game-card" onclick="launchGame('hit-and-blow')">
         <div class="card-icon">
           <div class="hnb-pegs">
@@ -823,12 +811,12 @@
           </div>
         </div>
         <div class="card-title">ヒット＆ブロー</div>
-        <div class="card-genre">推理パズル</div>
+        <div class="card-genre">推理 / 2人対戦</div>
       </div>
     </div>
   </div>
 
-  <!-- 2. トランプ サブメニュー画面（ブラックジャック追加） -->
+  <!-- 2. トランプ サブメニュー画面 -->
   <div id="screen-trump" class="screen-container" style="display: none;">
     <button class="global-back-btn" onclick="backToMainFromSub()">◀ メインメニュー</button>
     <div class="logo-container" style="margin-top: 24px;">
@@ -837,25 +825,21 @@
     </div>
 
     <div class="games-grid">
-      <!-- ブラックジャック -->
       <div class="game-card" onclick="launchGame('blackjack')">
         <div class="card-icon" style="font-size: 38px;">🎰🃏</div>
         <div class="card-title">ブラックジャック</div>
         <div class="card-genre">カジノ / 21</div>
       </div>
-      <!-- クロンダイク -->
       <div class="game-card" onclick="launchGame('klondike')">
         <div class="card-icon" style="font-size: 38px;">👑♦</div>
         <div class="card-title">クロンダイク</div>
         <div class="card-genre">王道ソリティア</div>
       </div>
-      <!-- フリーセル -->
       <div class="game-card" onclick="launchGame('freecell')">
         <div class="card-icon" style="font-size: 38px;">🃏♣️</div>
         <div class="card-title">フリーセル</div>
         <div class="card-genre">思考ソリティア</div>
       </div>
-      <!-- スパイダー -->
       <div class="game-card" onclick="launchGame('spider')">
         <div class="card-icon" style="font-size: 38px;">🕷️♠️</div>
         <div class="card-title">スパイダー</div>
@@ -896,7 +880,7 @@
     </div>
   </div>
 
-  <!-- 4. ダイス サブメニュー画面 -->
+  <!-- 4. ダイス サブメニュー画面 (ヨットに2人可表記) -->
   <div id="screen-dice" class="screen-container" style="display: none;">
     <button class="global-back-btn" onclick="backToMainFromSub()">◀ メインメニュー</button>
     <div class="logo-container" style="margin-top: 24px;">
@@ -923,7 +907,7 @@
           </div>
         </div>
         <div class="card-title">ヨット</div>
-        <div class="card-genre">ダイスパズル</div>
+        <div class="card-genre">ダイス / 2人対戦可</div>
       </div>
       <div class="game-card locked">
         <div class="card-icon" style="font-size: 38px;">🎲✨</div>
@@ -1016,7 +1000,7 @@
 
   <script>
     let portalAudioCtx = null;
-    let currentActiveMenu = 'main'; // 'main', 'trump', 'mahjong', 'dice'
+    let currentActiveMenu = 'main';
 
     function getPortalAudioContext() {
       if (!portalAudioCtx) {
