@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>2048</title>
+  <title>2048 CRAFT</title>
   <style>
     :root {
       --bg-desk: #110c08;
@@ -56,7 +56,21 @@
     }
     .topbar-upper {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .game-logo-badge {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--brass-gold);
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+    .tool-group {
+      display: flex;
       gap: 10px;
     }
     .tool-btn {
@@ -176,35 +190,71 @@
     .screen-overlay {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(18, 11, 7, 0.88);
-      backdrop-filter: blur(4px);
+      background: rgba(18, 11, 7, 0.94);
+      backdrop-filter: blur(8px);
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      gap: 14px;
+      gap: 16px;
       z-index: 20;
+      padding: 20px;
+      text-align: center;
+      transition: opacity 0.25s ease;
     }
     .screen-overlay.hidden {
       display: none;
     }
+    .overlay-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
     .overlay-title {
-      font-size: 1.45rem; font-weight: 900;
+      font-size: 2.1rem;
+      font-weight: 900;
       color: var(--brass-gold);
-      text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+      text-shadow: 0 3px 8px rgba(0,0,0,0.9);
+      letter-spacing: 3px;
+    }
+    .overlay-tagline {
+      font-size: 0.75rem;
       letter-spacing: 2px;
+      color: #9d8774;
+      text-transform: uppercase;
+      font-weight: 700;
     }
     .overlay-sub {
-      font-size: 0.82rem; color: #d5c3b1;
-      text-align: center; line-height: 1.5;
+      font-size: 0.85rem;
+      color: #d5c3b1;
+      line-height: 1.6;
+      background: rgba(0,0,0,0.45);
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(212, 163, 89, 0.2);
     }
     .start-btn {
-      background: linear-gradient(180deg, #d4a359 0%, #aa782e 100%);
-      color: #140c06; font-size: 1.05rem; font-weight: 900;
-      border: 1.5px solid #fff; border-radius: 20px;
-      padding: 10px 28px; cursor: pointer;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.8), 0 0 12px var(--brass-glow);
-      transition: transform 0.1s;
+      background: linear-gradient(180deg, #e4b56c 0%, #aa782e 100%);
+      color: #140c06;
+      font-size: 1.1rem;
+      font-weight: 900;
+      border: 2px solid #fff;
+      border-radius: 25px;
+      padding: 12px 36px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.8), 0 0 16px var(--brass-glow);
+      transition: transform 0.1s, box-shadow 0.1s;
+      letter-spacing: 1px;
     }
-    .start-btn:active { transform: scale(0.94); }
+    .start-btn:hover {
+      box-shadow: 0 8px 24px rgba(0,0,0,0.9), 0 0 24px var(--brass-glow);
+    }
+    .start-btn:active {
+      transform: scale(0.95);
+    }
+    .overlay-tips {
+      font-size: 0.75rem;
+      color: #7d6b5c;
+    }
 
     /* タイル */
     .tile {
@@ -224,10 +274,10 @@
     }
 
     .tile-pop {
-      animation: popAnim 0.15s ease-in-out;
+      animation: popAnim 0.18s ease-in-out;
     }
     @keyframes popAnim {
-      0% { transform: scale(0.6); }
+      0% { transform: scale(0.5); }
       70% { transform: scale(1.15); }
       100% { transform: scale(1); }
     }
@@ -364,9 +414,12 @@
   <div class="viewport">
     <div class="topbar">
       <div class="topbar-upper">
-        <div class="tool-btn" onclick="restartToTitle()" title="タイトルへ">🔄</div>
-        <div class="tool-btn" onclick="undoMove()" title="1手戻す">↩️</div>
-        <div class="tool-btn" onclick="toggleRulesModal(true)" title="あそびかた">📖</div>
+        <div class="game-logo-badge">✦ 2048 CRAFT</div>
+        <div class="tool-group">
+          <div class="tool-btn" onclick="restartToTitle()" title="タイトルへ">🔄</div>
+          <div class="tool-btn" onclick="undoMove()" title="1手戻す">↩️</div>
+          <div class="tool-btn" onclick="toggleRulesModal(true)" title="あそびかた">📖</div>
+        </div>
       </div>
 
       <div class="topbar-lower">
@@ -393,9 +446,15 @@
 
         <!-- スタート＆リトライ オーバーレイ -->
         <div id="game-overlay" class="screen-overlay">
-          <div class="overlay-title" id="overlay-title">2048 CRAFT</div>
-          <div class="overlay-sub" id="overlay-sub">数字を重ねて伝説のタイル<br>「2048」を目指そう！</div>
-          <button class="start-btn" id="start-btn" onclick="startGame()">START</button>
+          <div class="overlay-brand">
+            <div class="overlay-title" id="overlay-title">2048</div>
+            <div class="overlay-tagline">Classic Slide Puzzle</div>
+          </div>
+          <div class="overlay-sub" id="overlay-sub">
+            数字タイルを合体させて<br>伝説の数字<b>「2048」</b>を目指そう！
+          </div>
+          <button class="start-btn" id="start-btn" onclick="startGame()">START GAME</button>
+          <div class="overlay-tips">スワイプまたは矢印キーでタイルを移動</div>
         </div>
       </div>
     </div>
@@ -414,12 +473,12 @@
     <div class="modal-sheet">
       <div class="modal-title">📖 2048のあそびかた</div>
       <div class="modal-body">
-        <p>タイルをスライドさせて合体させ、伝説の数字<b>「2048」</b>の完成を目指すスライドパズルです。</p>
+        <p>タイルをスライドさせて合体させ、伝説の数字<b>「2048」</b>の完成を目指すパズルゲームです。</p>
         <br>
         <b style="color:var(--brass-gold);">【基本ルール】</b>
         <ul style="padding-left:18px; margin:6px 0;">
-          <li><b>スワイプ / 矢印キー:</b> 全てのタイルが上下左右の指定した方向に滑ります。</li>
-          <li><b>タイルの合体:</b> 同じ数字のタイルがぶつかると、合体して<b>2倍の数字（2+2=4、4+4=8…）</b>になります。</li>
+          <li><b>スワイプ / 矢印キー:</b> 全てのタイルが指定した方向へ一斉に滑ります。</li>
+          <li><b>タイルの合体:</b> 同じ数字同士がぶつかると、合体して<b>2倍の数字（2+2=4、4+4=8…）</b>に進化します。</li>
           <li>動かすたびに空いたマスに新しいタイル（2または4）が1枚出現します。</li>
           <li>動かせるマスがなくなり、合体もできなくなるとゲームオーバーです。</li>
         </ul>
@@ -513,6 +572,7 @@
       setupControls();
     });
 
+    // 初期状態：ゲームは開始せず空のグリッドとタイトルを表示
     function setupInitialDisplay() {
       grid = [
         [0, 0, 0, 0],
@@ -522,6 +582,8 @@
       ];
       score = 0;
       secondsElapsed = 0;
+      historyStack = [];
+      hasReached2048 = false;
       stopTimer();
       updateTimerUI();
       updateUI();
@@ -534,12 +596,12 @@
       isPlaying = true;
     }
 
-    function resetToTitle() {
+    function restartToTitle() {
       stopTimer();
       isPlaying = false;
-      document.getElementById('overlay-title').textContent = '2048 CRAFT';
-      document.getElementById('overlay-sub').innerHTML = '数字を重ねて伝説のタイル<br>「2048」を目指そう！';
-      document.getElementById('start-btn').textContent = 'START';
+      document.getElementById('overlay-title').textContent = '2048';
+      document.getElementById('overlay-sub').innerHTML = '数字タイルを合体させて<br>伝説の数字<b>「2048」</b>を目指そう！';
+      document.getElementById('start-btn').textContent = 'START GAME';
       document.getElementById('game-overlay').classList.remove('hidden');
       setupInitialDisplay();
     }
@@ -577,6 +639,7 @@
       historyStack = [];
       hasReached2048 = false;
 
+      // ゲーム開始時に初めてタイルを2枚生成
       addRandomTile();
       addRandomTile();
 
@@ -743,7 +806,10 @@
     function setupControls() {
       window.addEventListener('keydown', (e) => {
         if (!isPlaying && (e.key === ' ' || e.key === 'Enter')) {
-          startGame();
+          const overlay = document.getElementById('game-overlay');
+          if (!overlay.classList.contains('hidden')) {
+            startGame();
+          }
           return;
         }
         if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') move('left');
@@ -822,10 +888,6 @@
 
     function toggleRulesModal(show) {
       document.getElementById('modal-rules').classList.toggle('active', show);
-    }
-
-    function restartGame() {
-      resetToTitle();
     }
   </script>
 </body>
