@@ -377,7 +377,7 @@
       box-shadow: inset 0 1px 1.5px rgba(0,0,0,0.6), 0 0.5px 0.5px rgba(255,255,255,0.7);
     }
 
-    /* === 4. 立体ミニ数独（数字のはみ出し完全修正版） === */
+    /* === 4. 立体ミニ数独 === */
     .sudoku-mini-board {
       width: 42px;
       height: 42px;
@@ -429,7 +429,30 @@
       border: 1px solid #ddd;
     }
 
-    /* === 6. コネクトフォー === */
+    /* === 6. マンカラ（木製トレイ & ビーズ） === */
+    .mancala-icon-board {
+      width: 48px;
+      height: 26px;
+      background: linear-gradient(180deg, #3a2213, #22140b);
+      border: 1.5px solid #5d3b23;
+      border-radius: 13px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 5px;
+    }
+    .mancala-icon-gem {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.7), inset 0.8px 0.8px 1px #fff;
+    }
+    .m-gem-cyan { background: radial-gradient(circle at 35% 30%, #55efc4, #00b894); }
+    .m-gem-gold { background: radial-gradient(circle at 35% 30%, #ffeaa7, #fdcb6e); }
+    .m-gem-coral { background: radial-gradient(circle at 35% 30%, #ff7675, #d63031); }
+
+    /* === 7. コネクトフォー === */
     .connect-icon-pair {
       display: flex;
       gap: 6px;
@@ -450,7 +473,7 @@
       border: 1px solid #f1c40f;
     }
 
-    /* === 7. マインスイーパー === */
+    /* === 8. マインスイーパー === */
     .mines-icon-pair {
       display: flex;
       gap: 5px;
@@ -479,7 +502,7 @@
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.7);
     }
 
-    /* === 8. 2048 === */
+    /* === 9. 2048 === */
     .mini-2048-pair {
       display: flex;
       gap: 5px;
@@ -508,7 +531,7 @@
       border: 1px solid #fff;
     }
 
-    /* === 9. ライツアウト === */
+    /* === 10. ライツアウト === */
     .lights-icon-pair {
       display: flex;
       gap: 6px;
@@ -532,7 +555,7 @@
       opacity: 0.8;
     }
 
-    /* === 10. ヒット＆ブロー === */
+    /* === 11. ヒット＆ブロー === */
     .hnb-pegs {
       display: flex;
       gap: 5px;
@@ -648,7 +671,7 @@
 
     <!-- RPG・クエストへのリンク -->
     <div class="drawer-item" onclick="launchFromDrawer('rpg')">
-      <div class="drawer-item-icon">⚔️️</div>
+      <div class="drawer-item-icon">⚔</div>
       <div>
         <div class="drawer-item-title">Oh LOVE QUEST</div>
         <div class="drawer-item-sub">冒険RPG / 特別編</div>
@@ -663,7 +686,7 @@
       <div class="sub-logo">Clubhouse</div>
     </div>
 
-    <!-- 上段：カテゴリー (CATバッジ削除済み) -->
+    <!-- 上段：カテゴリー -->
     <div class="section-label">CATEGORIES</div>
     <div class="games-grid">
       <!-- トランプ -->
@@ -696,7 +719,7 @@
         <div class="card-genre">上海 / 四川省</div>
       </div>
 
-      <!-- ダイス (2P対戦表記追加) -->
+      <!-- ダイス -->
       <div class="game-card" onclick="openSubMenu('dice')">
         <div class="card-icon">
           <div class="dice-icon-pair">
@@ -719,10 +742,10 @@
       </div>
     </div>
 
-    <!-- 下段：単体ゲーム（知名度順・2P表記追加） -->
+    <!-- 下段：単体ゲーム（知名度・王道順） -->
     <div class="section-label">POPULAR GAMES</div>
     <div class="games-grid">
-      <!-- 1位：数独 (数字のはみ出し修正済み) -->
+      <!-- 1位：数独 -->
       <div class="game-card" onclick="launchGame('sudoku')">
         <div class="card-icon">
           <div class="sudoku-mini-board">
@@ -741,7 +764,7 @@
         <div class="card-genre">ナンプレ</div>
       </div>
 
-      <!-- 2位：リバーシ (2P対戦表記) -->
+      <!-- 2位：リバーシ -->
       <div class="game-card" onclick="launchGame('reversi')">
         <div class="card-icon">
           <div class="reversi-icon-pair">
@@ -753,7 +776,20 @@
         <div class="card-genre">対COM / 2人対戦</div>
       </div>
 
-      <!-- 3位：コネクトフォー (2P対戦表記) -->
+      <!-- 3位：マンカラ (新規追加) -->
+      <div class="game-card" onclick="launchGame('mancala')">
+        <div class="card-icon">
+          <div class="mancala-icon-board">
+            <div class="mancala-icon-gem m-gem-cyan"></div>
+            <div class="mancala-icon-gem m-gem-gold"></div>
+            <div class="mancala-icon-gem m-gem-coral"></div>
+          </div>
+        </div>
+        <div class="card-title">マンカラ</div>
+        <div class="card-genre">古代ボード / 2人対戦</div>
+      </div>
+
+      <!-- 4位：コネクトフォー -->
       <div class="game-card" onclick="launchGame('connect4')">
         <div class="card-icon">
           <div class="connect-icon-pair">
@@ -765,7 +801,7 @@
         <div class="card-genre">四目並べ / 2人対戦</div>
       </div>
 
-      <!-- 4位：マインスイーパー -->
+      <!-- 5位：マインスイーパー -->
       <div class="game-card" onclick="launchGame('minesweeper')">
         <div class="card-icon">
           <div class="mines-icon-pair">
@@ -777,7 +813,7 @@
         <div class="card-genre">地雷撤去</div>
       </div>
 
-      <!-- 5位：2048 -->
+      <!-- 6位：2048 -->
       <div class="game-card" onclick="launchGame('2048')">
         <div class="card-icon">
           <div class="mini-2048-pair">
@@ -789,7 +825,7 @@
         <div class="card-genre">スライドパズル</div>
       </div>
 
-      <!-- 6位：ライツアウト -->
+      <!-- 7位：ライツアウト -->
       <div class="game-card" onclick="launchGame('lightsout')">
         <div class="card-icon">
           <div class="lights-icon-pair">
@@ -801,7 +837,7 @@
         <div class="card-genre">電灯パズル</div>
       </div>
 
-      <!-- 7位：ヒット＆ブロー (2P対戦表記) -->
+      <!-- 8位：ヒット＆ブロー -->
       <div class="game-card" onclick="launchGame('hit-and-blow')">
         <div class="card-icon">
           <div class="hnb-pegs">
@@ -841,7 +877,7 @@
         <div class="card-genre">思考ソリティア</div>
       </div>
       <div class="game-card" onclick="launchGame('spider')">
-        <div class="card-icon" style="font-size: 38px;">🕷️♠️</div>
+        <div class="card-icon" style="font-size: 38px;">🕷️♠️️</div>
         <div class="card-title">スパイダー</div>
         <div class="card-genre">連鎖ソリティア</div>
       </div>
@@ -880,7 +916,7 @@
     </div>
   </div>
 
-  <!-- 4. ダイス サブメニュー画面 (ヨットに2人可表記) -->
+  <!-- 4. ダイス サブメニュー画面 -->
   <div id="screen-dice" class="screen-container" style="display: none;">
     <button class="global-back-btn" onclick="backToMainFromSub()">◀ メインメニュー</button>
     <div class="logo-container" style="margin-top: 24px;">
@@ -923,6 +959,11 @@
   </div>
 
   <!-- 5. ゲーム表示フレーム (iframe群) -->
+  <div id="view-mancala" class="game-viewport">
+    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
+    <iframe id="frame-mancala" src="mancala.html" class="game-frame" allow="autoplay"></iframe>
+  </div>
+
   <div id="view-blackjack" class="game-viewport">
     <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
     <iframe id="frame-blackjack" src="blackjack.html" class="game-frame" allow="autoplay"></iframe>
