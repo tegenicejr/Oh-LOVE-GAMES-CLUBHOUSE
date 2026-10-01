@@ -771,11 +771,6 @@
       max-width: 100%;
     }
 
-    .game-card.locked {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
     /* ゲーム＆サブメニュー画面 */
     .game-viewport {
       display: none;
@@ -862,7 +857,7 @@
     <!-- 上段：カテゴリー -->
     <div class="section-label">CATEGORIES</div>
     <div class="games-grid">
-      <!-- トランプ (スピード追加で6ゲームに更新) -->
+      <!-- トランプ (全6作) -->
       <div class="game-card" onclick="openSubMenu('trump')">
         <div class="card-icon">
           <div class="cards-icon-pair">
@@ -880,7 +875,7 @@
         <div class="card-genre">6ゲーム収録</div>
       </div>
 
-      <!-- 麻雀 -->
+      <!-- 麻雀 (全3作本稼働) -->
       <div class="game-card" onclick="openSubMenu('mahjong')">
         <div class="card-icon">
           <div class="mj-icon-pair">
@@ -889,10 +884,10 @@
           </div>
         </div>
         <div class="card-title">麻雀</div>
-        <div class="card-genre">上海 / 四川省</div>
+        <div class="card-genre">四人麻雀 / 上海</div>
       </div>
 
-      <!-- ダイス -->
+      <!-- ダイス (全3作本稼働) -->
       <div class="game-card" onclick="openSubMenu('dice')">
         <div class="card-icon">
           <div class="dice-icon-pair">
@@ -911,7 +906,7 @@
           </div>
         </div>
         <div class="card-title">ダイス</div>
-        <div class="card-genre">ヨット / ファークル</div>
+        <div class="card-genre">ヨット / ゾンビ / ファークル</div>
       </div>
     </div>
 
@@ -1023,7 +1018,7 @@
         <div class="card-genre">四目並べ / 2人対戦</div>
       </div>
 
-      <!-- 7位：ドット＆ボックス (修正済み) -->
+      <!-- 7位：ドット＆ボックス (枠ズレ修正版) -->
       <div class="game-card" onclick="launchGame('dotsandboxes')">
         <div class="card-icon">
           <svg class="dnb-svg-icon" viewBox="0 0 40 40">
@@ -1051,7 +1046,7 @@
         <div class="card-genre">陣取り / 2人対戦</div>
       </div>
 
-      <!-- 8位：ウサギと猟犬 (新規追加) -->
+      <!-- 8位：ウサギと猟犬 -->
       <div class="game-card" onclick="launchGame('hare-and-hounds')">
         <div class="card-icon">
           <div class="hah-mini-board">
@@ -1127,7 +1122,7 @@
     </div>
   </div>
 
-  <!-- 2. トランプ サブメニュー画面 (スピード追加で6タイトル) -->
+  <!-- 2. トランプ サブメニュー画面（知名度順・トランプ絵柄左配置） -->
   <div id="screen-trump" class="screen-container" style="display: none;">
     <button class="global-back-btn" onclick="backToMainFromSub()">◀ メインメニュー</button>
     <div class="logo-container" style="margin-top: 24px;">
@@ -1136,41 +1131,51 @@
     </div>
 
     <div class="games-grid">
-      <!-- スピード (新規追加) -->
-      <div class="game-card" onclick="launchGame('speed')">
-        <div class="card-icon" style="font-size: 38px;">⚡🃏</div>
-        <div class="card-title">スピード</div>
-        <div class="card-genre">リアルタイム対戦 / 2人可</div>
-      </div>
-      <div class="game-card" onclick="launchGame('golf')">
-        <div class="card-icon" style="font-size: 38px;">⛳🃏</div>
-        <div class="card-title">ゴルフ</div>
-        <div class="card-genre">スピード連鎖</div>
-      </div>
-      <div class="game-card" onclick="launchGame('blackjack')">
-        <div class="card-icon" style="font-size: 38px;">🎰🃏</div>
-        <div class="card-title">ブラックジャック</div>
-        <div class="card-genre">カジノ / 21</div>
-      </div>
+      <!-- 1位：クロンダイク（王道ソリティア） -->
       <div class="game-card" onclick="launchGame('klondike')">
-        <div class="card-icon" style="font-size: 38px;">👑♦</div>
+        <div class="card-icon" style="font-size: 36px;">🃏👑</div>
         <div class="card-title">クロンダイク</div>
         <div class="card-genre">王道ソリティア</div>
       </div>
+
+      <!-- 2位：スパイダー -->
+      <div class="game-card" onclick="launchGame('spider')">
+        <div class="card-icon" style="font-size: 36px;">🃏🕷️</div>
+        <div class="card-title">スパイダー</div>
+        <div class="card-genre">連鎖ソリティア</div>
+      </div>
+
+      <!-- 3位：フリーセル -->
       <div class="game-card" onclick="launchGame('freecell')">
-        <div class="card-icon" style="font-size: 38px;">🃏♣️</div>
+        <div class="card-icon" style="font-size: 36px;">🃏♣️</div>
         <div class="card-title">フリーセル</div>
         <div class="card-genre">思考ソリティア</div>
       </div>
-      <div class="game-card" onclick="launchGame('spider')">
-        <div class="card-icon" style="font-size: 38px;">🕷️♠</div>
-        <div class="card-title">スパイダー</div>
-        <div class="card-genre">連鎖ソリティア</div>
+
+      <!-- 4位：ブラックジャック -->
+      <div class="game-card" onclick="launchGame('blackjack')">
+        <div class="card-icon" style="font-size: 36px;">🃏🎰</div>
+        <div class="card-title">ブラックジャック</div>
+        <div class="card-genre">カジノ / 21</div>
+      </div>
+
+      <!-- 5位：スピード -->
+      <div class="game-card" onclick="launchGame('speed')">
+        <div class="card-icon" style="font-size: 36px;">🃏⚡</div>
+        <div class="card-title">スピード</div>
+        <div class="card-genre">リアルタイム対戦 / 2人可</div>
+      </div>
+
+      <!-- 6位：ゴルフ -->
+      <div class="game-card" onclick="launchGame('golf')">
+        <div class="card-icon" style="font-size: 36px;">🃏⛳</div>
+        <div class="card-title">ゴルフ</div>
+        <div class="card-genre">スピード連鎖</div>
       </div>
     </div>
   </div>
 
-  <!-- 3. 麻雀 サブメニュー画面 -->
+  <!-- 3. 麻雀 サブメニュー画面（知名度順・本稼働） -->
   <div id="screen-mahjong" class="screen-container" style="display: none;">
     <button class="global-back-btn" onclick="backToMainFromSub()">◀ メインメニュー</button>
     <div class="logo-container" style="margin-top: 24px;">
@@ -1179,11 +1184,21 @@
     </div>
 
     <div class="games-grid">
+      <!-- 1位：四人麻雀（本稼働） -->
+      <div class="game-card" onclick="launchGame('mahjong4p')">
+        <div class="card-icon" style="font-size: 36px;">🀄👥</div>
+        <div class="card-title">四人麻雀</div>
+        <div class="card-genre">CPU東風戦</div>
+      </div>
+
+      <!-- 2位：上海 -->
       <div class="game-card" onclick="launchGame('shanghai')">
-        <div class="card-icon" style="font-size: 38px;">🀄🏔️</div>
+        <div class="card-icon" style="font-size: 36px;">🀄🏔️</div>
         <div class="card-title">上海</div>
         <div class="card-genre">ピラミッド牌</div>
       </div>
+
+      <!-- 3位：四川省 -->
       <div class="game-card" onclick="launchGame('shisen')">
         <div class="card-icon">
           <div class="mj-icon-pair">
@@ -1194,15 +1209,10 @@
         <div class="card-title">四川省</div>
         <div class="card-genre">二角取り</div>
       </div>
-      <div class="game-card locked">
-        <div class="card-icon" style="font-size: 38px;">🀙🀚</div>
-        <div class="card-title">四人麻雀</div>
-        <div class="card-genre">準備中</div>
-      </div>
     </div>
   </div>
 
-  <!-- 4. ダイス サブメニュー画面 -->
+  <!-- 4. ダイス サブメニュー画面（知名度順・本稼働） -->
   <div id="screen-dice" class="screen-container" style="display: none;">
     <button class="global-back-btn" onclick="backToMainFromSub()">◀ メインメニュー</button>
     <div class="logo-container" style="margin-top: 24px;">
@@ -1211,6 +1221,7 @@
     </div>
 
     <div class="games-grid">
+      <!-- 1位：ヨット -->
       <div class="game-card" onclick="launchGame('yacht')">
         <div class="card-icon">
           <div class="dice-icon-pair">
@@ -1232,21 +1243,33 @@
         <div class="card-genre">ダイス / 2人対戦可</div>
       </div>
 
-      <div class="game-card" onclick="launchGame('farkle')">
-        <div class="card-icon" style="font-size: 38px;">🎲🔥</div>
-        <div class="card-title">ファークル</div>
-        <div class="card-genre">スリル / 2人対戦可</div>
+      <!-- 2位：ゾンビダイス（本稼働） -->
+      <div class="game-card" onclick="launchGame('zombiedice')">
+        <div class="card-icon" style="font-size: 36px;">🎲🧟</div>
+        <div class="card-title">ゾンビダイス</div>
+        <div class="card-genre">脳みそ争奪サバイバル</div>
       </div>
 
-      <div class="game-card locked">
-        <div class="card-icon" style="font-size: 38px;">🧟🎲</div>
-        <div class="card-title">ゾンビダイス</div>
-        <div class="card-genre">準備中</div>
+      <!-- 3位：ファークル -->
+      <div class="game-card" onclick="launchGame('farkle')">
+        <div class="card-icon" style="font-size: 36px;">🎲🔥</div>
+        <div class="card-title">ファークル</div>
+        <div class="card-genre">スリル / 2人対戦可</div>
       </div>
     </div>
   </div>
 
   <!-- 5. ゲーム表示フレーム (iframe群) -->
+  <div id="view-mahjong4p" class="game-viewport">
+    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
+    <iframe id="frame-mahjong4p" src="mahjong4p.html" class="game-frame" allow="autoplay"></iframe>
+  </div>
+
+  <div id="view-zombiedice" class="game-viewport">
+    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
+    <iframe id="frame-zombiedice" src="zombiedice.html" class="game-frame" allow="autoplay"></iframe>
+  </div>
+
   <div id="view-speed" class="game-viewport">
     <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
     <iframe id="frame-speed" src="speed.html" class="game-frame" allow="autoplay"></iframe>
