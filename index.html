@@ -408,7 +408,102 @@
       background: #332319;
     }
 
-    /* === 5. 立体リバーシ石 === */
+    /* === 5. 五目並べ（木目盤と黒白碁石） === */
+    .gomoku-mini-board {
+      width: 40px;
+      height: 40px;
+      background: radial-gradient(circle at 40% 40%, #e0aa6a, #9e6c35);
+      border: 1.5px solid #5a3c1f;
+      border-radius: 6px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .gomoku-grid-lines {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(to right, rgba(78, 50, 21, 0.6) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(78, 50, 21, 0.6) 1px, transparent 1px);
+      background-size: 10px 10px;
+      background-position: 5px 5px;
+    }
+    .gomoku-stones-pair {
+      display: flex;
+      gap: 3px;
+      z-index: 2;
+    }
+    .mini-go-stone {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.7);
+    }
+    .mini-go-stone.black {
+      background: radial-gradient(circle at 35% 30%, #555, #181818 70%, #050505);
+      border: 0.8px solid #444;
+    }
+    .mini-go-stone.white {
+      background: radial-gradient(circle at 35% 30%, #fff, #e2e2e2 70%, #b8b8b8);
+      border: 0.8px solid #ddd;
+    }
+
+    /* === 6. バックギャモン（ポイント盤とチェッカー＆ダイス） === */
+    .bg-mini-icon {
+      width: 44px;
+      height: 32px;
+      background: #190f09;
+      border: 1.5px solid #583920;
+      border-radius: 6px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 3px;
+      overflow: hidden;
+    }
+    .bg-icon-triangles {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: 
+        repeating-linear-gradient(90deg, #4a2810 0px, #4a2810 7px, #cba36b 7px, #cba36b 14px);
+      opacity: 0.7;
+    }
+    .bg-icon-checker {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      z-index: 2;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+    .bg-chk-w {
+      background: radial-gradient(circle at 35% 30%, #fff, #bbb);
+      border: 1px solid #fff;
+    }
+    .bg-chk-r {
+      background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b);
+      border: 1px solid #ff9f43;
+    }
+    .bg-icon-die {
+      width: 11px;
+      height: 11px;
+      background: #fff;
+      border-radius: 2px;
+      font-size: 8px;
+      font-weight: 900;
+      color: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    }
+
+    /* === 7. 立体リバーシ石 === */
     .reversi-icon-pair {
       display: flex;
       gap: 6px;
@@ -429,7 +524,7 @@
       border: 1px solid #ddd;
     }
 
-    /* === 6. マンカラ === */
+    /* === 8. マンカラ === */
     .mancala-mini-board {
       width: 60px;
       height: 32px;
@@ -485,7 +580,7 @@
     .m-gem-gold { background: radial-gradient(circle at 35% 30%, #ffeaa7, #fdcb6e); }
     .m-gem-purple { background: radial-gradient(circle at 35% 30%, #d980fa, #8854d0); }
 
-    /* === 7. ピクロス === */
+    /* === 9. ピクロス === */
     .picross-mini-board {
       width: 38px;
       height: 38px;
@@ -508,7 +603,7 @@
       box-shadow: 0 0 4px rgba(229, 169, 80, 0.6);
     }
 
-    /* === 8. ドット＆ボックス === */
+    /* === 10. ドット＆ボックス === */
     .dnb-svg-icon {
       width: 40px;
       height: 40px;
@@ -519,7 +614,7 @@
       display: block;
     }
 
-    /* === 9. 倉庫番 === */
+    /* === 11. 倉庫番 === */
     .sokoban-mini-board {
       display: flex;
       align-items: center;
@@ -554,7 +649,7 @@
       text-shadow: 0 0 4px var(--accent-glow);
     }
 
-    /* === 10. ウサギと猟犬 === */
+    /* === 12. ウサギと猟犬 === */
     .hah-mini-board {
       width: 46px;
       height: 30px;
@@ -591,7 +686,7 @@
       box-shadow: 0 0 5px rgba(255,255,255,0.7);
     }
 
-    /* === 11. コネクトフォー === */
+    /* === 13. コネクトフォー === */
     .connect-icon-pair {
       display: flex;
       gap: 6px;
@@ -612,7 +707,7 @@
       border: 1px solid #f1c40f;
     }
 
-    /* === 12. マインスイーパー === */
+    /* === 14. マインスイーパー === */
     .mines-icon-pair {
       display: flex;
       gap: 5px;
@@ -641,7 +736,7 @@
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.7);
     }
 
-    /* === 13. 2048 === */
+    /* === 15. 2048 === */
     .mini-2048-pair {
       display: flex;
       gap: 5px;
@@ -670,7 +765,7 @@
       border: 1px solid #fff;
     }
 
-    /* === 14. ライツアウト === */
+    /* === 16. ライツアウト === */
     .lights-icon-pair {
       display: flex;
       gap: 6px;
@@ -694,7 +789,7 @@
       opacity: 0.8;
     }
 
-    /* === 15. ヒット＆ブロー === */
+    /* === 17. ヒット＆ブロー === */
     .hnb-icon-unit {
       display: flex;
       align-items: center;
@@ -932,7 +1027,22 @@
         <div class="card-genre">ナンプレ</div>
       </div>
 
-      <!-- 2位：ピクロス -->
+      <!-- 2位：五目並べ (新規追加) -->
+      <div class="game-card" onclick="launchGame('gomoku')">
+        <div class="card-icon">
+          <div class="gomoku-mini-board">
+            <div class="gomoku-grid-lines"></div>
+            <div class="gomoku-stones-pair">
+              <div class="mini-go-stone black"></div>
+              <div class="mini-go-stone white"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card-title">五目並べ</div>
+        <div class="card-genre">連珠 / 2人対戦</div>
+      </div>
+
+      <!-- 3位：ピクロス -->
       <div class="game-card" onclick="launchGame('picross')">
         <div class="card-icon">
           <div class="picross-mini-board">
@@ -958,7 +1068,7 @@
         <div class="card-genre">イラストロジック</div>
       </div>
 
-      <!-- 3位：倉庫番 -->
+      <!-- 4位：倉庫番 -->
       <div class="game-card" onclick="launchGame('sokoban')">
         <div class="card-icon">
           <div class="sokoban-mini-board">
@@ -970,7 +1080,7 @@
         <div class="card-genre">1人用 / 木箱押し</div>
       </div>
 
-      <!-- 4位：リバーシ -->
+      <!-- 5位：リバーシ -->
       <div class="game-card" onclick="launchGame('reversi')">
         <div class="card-icon">
           <div class="reversi-icon-pair">
@@ -982,7 +1092,7 @@
         <div class="card-genre">対COM / 2人対戦</div>
       </div>
 
-      <!-- 5位：マンカラ -->
+      <!-- 6位：マンカラ -->
       <div class="game-card" onclick="launchGame('mancala')">
         <div class="card-icon">
           <div class="mancala-mini-board">
@@ -1006,7 +1116,21 @@
         <div class="card-genre">古代ボード / 2人対戦</div>
       </div>
 
-      <!-- 6位：コネクトフォー -->
+      <!-- 7位：バックギャモン (新規追加) -->
+      <div class="game-card" onclick="launchGame('backgammon')">
+        <div class="card-icon">
+          <div class="bg-mini-icon">
+            <div class="bg-icon-triangles"></div>
+            <div class="bg-icon-checker bg-chk-w"></div>
+            <div class="bg-icon-die">5</div>
+            <div class="bg-icon-checker bg-chk-r"></div>
+          </div>
+        </div>
+        <div class="card-title">バックギャモン</div>
+        <div class="card-genre">ダイスボード / 2人対戦</div>
+      </div>
+
+      <!-- 8位：コネクトフォー -->
       <div class="game-card" onclick="launchGame('connect4')">
         <div class="card-icon">
           <div class="connect-icon-pair">
@@ -1018,7 +1142,7 @@
         <div class="card-genre">四目並べ / 2人対戦</div>
       </div>
 
-      <!-- 7位：ドット＆ボックス (枠ズレ修正版) -->
+      <!-- 9位：ドット＆ボックス[cite: 2] -->
       <div class="game-card" onclick="launchGame('dotsandboxes')">
         <div class="card-icon">
           <svg class="dnb-svg-icon" viewBox="0 0 40 40">
@@ -1046,7 +1170,7 @@
         <div class="card-genre">陣取り / 2人対戦</div>
       </div>
 
-      <!-- 8位：ウサギと猟犬 -->
+      <!-- 10位：ウサギと猟犬 -->
       <div class="game-card" onclick="launchGame('hare-and-hounds')">
         <div class="card-icon">
           <div class="hah-mini-board">
@@ -1062,7 +1186,7 @@
         <div class="card-genre">古典頭脳戦 / 2人対戦</div>
       </div>
 
-      <!-- 9位：マインスイーパー -->
+      <!-- 11位：マインスイーパー -->
       <div class="game-card" onclick="launchGame('minesweeper')">
         <div class="card-icon">
           <div class="mines-icon-pair">
@@ -1074,7 +1198,7 @@
         <div class="card-genre">地雷撤去</div>
       </div>
 
-      <!-- 10位：2048 -->
+      <!-- 12位：2048 -->
       <div class="game-card" onclick="launchGame('2048')">
         <div class="card-icon">
           <div class="mini-2048-pair">
@@ -1086,7 +1210,7 @@
         <div class="card-genre">スライドパズル</div>
       </div>
 
-      <!-- 11位：ライツアウト -->
+      <!-- 13位：ライツアウト -->
       <div class="game-card" onclick="launchGame('lightsout')">
         <div class="card-icon">
           <div class="lights-icon-pair">
@@ -1098,7 +1222,7 @@
         <div class="card-genre">電灯パズル</div>
       </div>
 
-      <!-- 12位：ヒット＆ブロー -->
+      <!-- 14位：ヒット＆ブロー -->
       <div class="game-card" onclick="launchGame('hit-and-blow')">
         <div class="card-icon">
           <div class="hnb-icon-unit">
@@ -1122,7 +1246,7 @@
     </div>
   </div>
 
-  <!-- 2. トランプ サブメニュー画面（知名度順・トランプ絵柄左配置） -->
+  <!-- 2. トランプ サブメニュー画面 -->
   <div id="screen-trump" class="screen-container" style="display: none;">
     <button class="global-back-btn" onclick="backToMainFromSub()">◀ メインメニュー</button>
     <div class="logo-container" style="margin-top: 24px;">
@@ -1131,42 +1255,31 @@
     </div>
 
     <div class="games-grid">
-      <!-- 1位：クロンダイク（王道ソリティア） -->
       <div class="game-card" onclick="launchGame('klondike')">
         <div class="card-icon" style="font-size: 36px;">🃏👑</div>
         <div class="card-title">クロンダイク</div>
         <div class="card-genre">王道ソリティア</div>
       </div>
-
-      <!-- 2位：スパイダー -->
       <div class="game-card" onclick="launchGame('spider')">
         <div class="card-icon" style="font-size: 36px;">🃏🕷️</div>
         <div class="card-title">スパイダー</div>
         <div class="card-genre">連鎖ソリティア</div>
       </div>
-
-      <!-- 3位：フリーセル -->
       <div class="game-card" onclick="launchGame('freecell')">
         <div class="card-icon" style="font-size: 36px;">🃏♣️</div>
         <div class="card-title">フリーセル</div>
         <div class="card-genre">思考ソリティア</div>
       </div>
-
-      <!-- 4位：ブラックジャック -->
       <div class="game-card" onclick="launchGame('blackjack')">
         <div class="card-icon" style="font-size: 36px;">🃏🎰</div>
         <div class="card-title">ブラックジャック</div>
         <div class="card-genre">カジノ / 21</div>
       </div>
-
-      <!-- 5位：スピード -->
       <div class="game-card" onclick="launchGame('speed')">
         <div class="card-icon" style="font-size: 36px;">🃏⚡</div>
         <div class="card-title">スピード</div>
         <div class="card-genre">リアルタイム対戦 / 2人可</div>
       </div>
-
-      <!-- 6位：ゴルフ -->
       <div class="game-card" onclick="launchGame('golf')">
         <div class="card-icon" style="font-size: 36px;">🃏⛳</div>
         <div class="card-title">ゴルフ</div>
@@ -1175,7 +1288,7 @@
     </div>
   </div>
 
-  <!-- 3. 麻雀 サブメニュー画面（知名度順・本稼働） -->
+  <!-- 3. 麻雀 サブメニュー画面 -->
   <div id="screen-mahjong" class="screen-container" style="display: none;">
     <button class="global-back-btn" onclick="backToMainFromSub()">◀ メインメニュー</button>
     <div class="logo-container" style="margin-top: 24px;">
@@ -1184,21 +1297,16 @@
     </div>
 
     <div class="games-grid">
-      <!-- 1位：四人麻雀（本稼働） -->
       <div class="game-card" onclick="launchGame('mahjong4p')">
         <div class="card-icon" style="font-size: 36px;">🀄👥</div>
         <div class="card-title">四人麻雀</div>
         <div class="card-genre">CPU東風戦</div>
       </div>
-
-      <!-- 2位：上海 -->
       <div class="game-card" onclick="launchGame('shanghai')">
         <div class="card-icon" style="font-size: 36px;">🀄🏔️</div>
         <div class="card-title">上海</div>
         <div class="card-genre">ピラミッド牌</div>
       </div>
-
-      <!-- 3位：四川省 -->
       <div class="game-card" onclick="launchGame('shisen')">
         <div class="card-icon">
           <div class="mj-icon-pair">
@@ -1212,7 +1320,7 @@
     </div>
   </div>
 
-  <!-- 4. ダイス サブメニュー画面（知名度順・本稼働） -->
+  <!-- 4. ダイス サブメニュー画面 -->
   <div id="screen-dice" class="screen-container" style="display: none;">
     <button class="global-back-btn" onclick="backToMainFromSub()">◀ メインメニュー</button>
     <div class="logo-container" style="margin-top: 24px;">
@@ -1221,7 +1329,6 @@
     </div>
 
     <div class="games-grid">
-      <!-- 1位：ヨット -->
       <div class="game-card" onclick="launchGame('yacht')">
         <div class="card-icon">
           <div class="dice-icon-pair">
@@ -1242,15 +1349,11 @@
         <div class="card-title">ヨット</div>
         <div class="card-genre">ダイス / 2人対戦可</div>
       </div>
-
-      <!-- 2位：ゾンビダイス（本稼働） -->
       <div class="game-card" onclick="launchGame('zombiedice')">
         <div class="card-icon" style="font-size: 36px;">🎲🧟</div>
         <div class="card-title">ゾンビダイス</div>
         <div class="card-genre">脳みそ争奪サバイバル</div>
       </div>
-
-      <!-- 3位：ファークル -->
       <div class="game-card" onclick="launchGame('farkle')">
         <div class="card-icon" style="font-size: 36px;">🎲🔥</div>
         <div class="card-title">ファークル</div>
@@ -1260,6 +1363,16 @@
   </div>
 
   <!-- 5. ゲーム表示フレーム (iframe群) -->
+  <div id="view-gomoku" class="game-viewport">
+    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
+    <iframe id="frame-gomoku" src="gomoku.html" class="game-frame" allow="autoplay"></iframe>
+  </div>
+
+  <div id="view-backgammon" class="game-viewport">
+    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
+    <iframe id="frame-backgammon" src="backgammon.html" class="game-frame" allow="autoplay"></iframe>
+  </div>
+
   <div id="view-mahjong4p" class="game-viewport">
     <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
     <iframe id="frame-mahjong4p" src="mahjong4p.html" class="game-frame" allow="autoplay"></iframe>
