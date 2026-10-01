@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ゾンビダイス (Zombie Dice)</title>
+  <style>
+    :root {
+      --bg-desk: #110c08;
+      --felt-dark: #122c19;
+      --felt-light: #1c4528;
+      --board-rim: #362214;
+      --brass-gold: #d4a359;
+      --brass-glow: rgba(212, 163, 89, 0.45);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-desk);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      color: #fff;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    .viewport {
+      width: 100%;
+      min-height: 100%;
+      padding: calc(12px + env(safe-area-inset-top)) 8px calc(60px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: radial-gradient(circle at 50% 20%, #2b1a10 0%, var(--bg-desk) 100%);
+    }
+    .topbar {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 0 4px;
+    }
+    .tool-btn {
+      background: linear-gradient(145deg, #2c1c12 0%, #1c1109 100%);
+      border: 1.5px solid #4d3320;
+      color: var(--brass-gold);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+    }
+    .score-badge {
+      background: rgba(0,0,0,0.7);
+      border: 1.5px solid #442d1c;
+      border-radius: 14px;
+      padding: 5px 14px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--brass-gold);
+    }
+    .table-felt {
+      position: relative;
+      width: 100%;
+      max-width: 440px;
+      background: radial-gradient(circle at 50% 35%, var(--felt-light) 0%, var(--felt-dark) 100%);
+      border: 6px solid var(--board-rim);
+      border-radius: 20px;
+      padding: 16px 12px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.95), inset 0 0 35px rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .turn-announcer {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #ede2d5;
+      text-align: center;
+      min-height: 24px;
+    }
+    .status-panel {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      background: rgba(14, 25, 17, 0.8);
+      border: 1.5px solid #3c5441;
+      border-radius: 14px;
+      padding: 8px 4px;
+    }
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .stat-label {
+      font-size: 0.72rem;
+      color: #a8b9ab;
+    }
+    .stat-val {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #fff;
+    }
+    .dice-floor {
+      width: 100%;
+      min-height: 140px;
+      background: #1b120c;
+      border: 3px solid #4a3424;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 16px 8px;
+    }
+    .cup-indicator {
+      font-size: 0.78rem;
+      color: #c9b9aa;
+      font-weight: 800;
+    }
+    .zd-die {
+      width: 54px;
+      height: 54px;
+      border-radius: 12px;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.7), inset 0 1px 1px #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      border: 2px solid rgba(255,255,255,0.4);
+    }
+    .zd-green { background: linear-gradient(145deg, #2ecc71, #1e824c); }
+    .zd-yellow { background: linear-gradient(145deg, #f1c40f, #d35400); }
+    .zd-red { background: linear-gradient(145deg, #e74c3c, #962d22); }
+    .controls {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+    .act-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 14px;
+      font-size: 0.95rem;
+      font-weight: 900;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 5px 12px rgba(0,0,0,0.6);
+    }
+    .act-btn:active { transform: scale(0.95); }
+    .btn-roll {
+      background: linear-gradient(180deg, #d4a359, #aa782e);
+      color: #140c06;
+    }
+    .btn-bank {
+      background: linear-gradient(180deg, #2ecc71, #1e824c);
+      color: #fff;
+    }
+    .act-btn:disabled {
+      background: #3a2e26;
+      color: #635245;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.82);
+      backdrop-filter: blur(5px);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-sheet {
+      background: #20140c;
+      border: 3px solid #4d3320;
+      border-radius: 20px;
+      padding: 22px;
+      width: 88%;
+      max-width: 440px;
+      color: #ede2d5;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-title {
+      text-align: center;
+      color: var(--brass-gold);
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+    .modal-body {
+      overflow-y: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      color: #c9b9aa;
+      margin-bottom: 14px;
+    }
+    .modal-close-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(180deg, #d4a359, #aa782e);
+      border: none;
+      border-radius: 12px;
+      color: #140c06;
+      font-weight: 900;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="viewport">
+    <div class="topbar">
+      <div class="score-badge">目標: 13 脳みそ</div>
+      <div style="display:flex; gap:8px;">
+        <div class="tool-btn" onclick="initGame()">🔄</div>
+        <div class="tool-btn" onclick="toggleRules(true)">📖</div>
+      </div>
+    </div>
+
+    <div class="table-felt">
+      <div class="turn-announcer" id="announcer">ダイスを振って脳みそを奪え！</div>
+
+      <div class="status-panel">
+        <div class="stat-item">
+          <span class="stat-label">銀行貯蓄</span>
+          <span class="stat-val" id="val-banked" style="color:var(--brass-gold);">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">今ターンの脳みそ</span>
+          <span class="stat-val" id="val-brains" style="color:#2ecc71;">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">被弾 (上限3)</span>
+          <span class="stat-val" id="val-blasts" style="color:#e74c3c;">0 / 3</span>
+        </div>
+      </div>
+
+      <div class="cup-indicator" id="cup-info">カップ内残り: 緑6 / 黄4 / 赤3</div>
+
+      <div class="dice-floor" id="dice-floor">
+        <span style="color:#7f6b5b; font-size:0.85rem;">「ダイスを振る」を押してください</span>
+      </div>
+
+      <div class="controls">
+        <button id="btn-roll" class="act-btn btn-roll" onclick="rollDice()">ダイスを振る (3個)</button>
+        <button id="btn-bank" class="act-btn btn-bank" onclick="bankPoints()" disabled>確定 (Bank)</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-rules" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">📖 ゾンビダイスのあそびかた</div>
+      <div class="modal-body">
+        <p>あなたは飢えたゾンビです。カップから引いたサイコロを転がして脳みそを集めましょう！</p>
+        <br>
+        <b style="color:var(--brass-gold);">【ダイスの種類】</b>
+        <ul style="padding-left:18px; margin:4px 0;">
+          <li><b>緑ダイス (6個)</b>: 安全 (脳みそ3 / 足跡2 / 銃撃1)</li>
+          <li><b>黄ダイス (4個)</b>: 普通 (脳みそ2 / 足跡2 / 銃撃2)</li>
+          <li><b>赤ダイス (3個)</b>: 危険 (脳みそ1 / 足跡2 / 銃撃3)</li>
+        </ul>
+        <br>
+        <b style="color:var(--brass-gold);">【出目とルール】</b>
+        <ul style="padding-left:18px; margin:4px 0;">
+          <li>🧠 <b>脳みそ</b>: 1点獲得！</li>
+          <li>👣 <b>足跡</b>: 逃げられたので次のロールに持ち越します。</li>
+          <li>💥 <b>ショットガン</b>: 3発撃たれると死亡（そのターンの脳みそ全没収）！</li>
+          <li>撃たれる前に「確定」して銀行に預け、合計13点集めればゲームクリアです。</li>
+        </ul>
+      </div>
+      <button class="modal-close-btn" onclick="toggleRules(false)">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    window.addEventListener('pointerdown', () => getAudio(), { once: true });
+
+    function playSound(type) {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        if (type === 'roll') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(320, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.06);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+        } else if (type === 'brain') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, ctx.currentTime);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        } else if (type === 'blast') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, ctx.currentTime);
+          gain.gain.setValueAtTime(0.25, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        }
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.16);
+      } catch(e) {}
+    }
+
+    const DIE_CONFIGS = {
+      green:  ['brain', 'brain', 'brain', 'feet', 'feet', 'blast'],
+      yellow: ['brain', 'brain', 'feet', 'feet', 'blast', 'blast'],
+      red:    ['brain', 'feet', 'feet', 'blast', 'blast', 'blast']
+    };
+
+    let cup = [];
+    let keptFeet = [];
+    let bankedScore = 0;
+    let turnBrains = 0;
+    let turnBlasts = 0;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initGame();
+    });
+
+    function initGame() {
+      bankedScore = 0;
+      resetTurn();
+      updateUI();
+    }
+
+    function resetTurn() {
+      cup = [
+        'green','green','green','green','green','green',
+        'yellow','yellow','yellow','yellow',
+        'red','red','red'
+      ];
+      keptFeet = [];
+      turnBrains = 0;
+      turnBlasts = 0;
+      document.getElementById('dice-floor').innerHTML = '<span style="color:#7f6b5b; font-size:0.85rem;">「ダイスを振る」を押してください</span>';
+      document.getElementById('btn-roll').disabled = false;
+      document.getElementById('btn-bank').disabled = true;
+      document.getElementById('announcer').textContent = 'ダイスを振って脳みそを奪え！';
+      updateUI();
+    }
+
+    function rollDice() {
+      playSound('roll');
+      // 3個になるようカップから補充
+      while (keptFeet.length < 3) {
+        if (cup.length === 0) {
+          // カップが空になったら再装填
+          cup = [
+            'green','green','green','green','green','green',
+            'yellow','yellow','yellow','yellow',
+            'red','red','red'
+          ];
+        }
+        const pickIdx = Math.floor(Math.random() * cup.length);
+        keptFeet.push(cup.splice(pickIdx, 1)[0]);
+      }
+
+      const currentDice = [...keptFeet];
+      keptFeet = [];
+      const floor = document.getElementById('dice-floor');
+      floor.innerHTML = '';
+
+      currentDice.forEach(color => {
+        const sides = DIE_CONFIGS[color];
+        const res = sides[Math.floor(Math.random() * sides.length)];
+
+        const dieEl = document.createElement('div');
+        dieEl.className = `zd-die zd-${color}`;
+
+        if (res === 'brain') {
+          dieEl.textContent = '🧠';
+          turnBrains++;
+          playSound('brain');
+        } else if (res === 'blast') {
+          dieEl.textContent = '💥';
+          turnBlasts++;
+          playSound('blast');
+        } else {
+          dieEl.textContent = '👣';
+          keptFeet.push(color); // 次回に持ち越し
+        }
+        floor.appendChild(dieEl);
+      });
+
+      updateUI();
+
+      if (turnBlasts >= 3) {
+        document.getElementById('btn-roll').disabled = true;
+        document.getElementById('btn-bank').disabled = true;
+        document.getElementById('announcer').textContent = '💀 3発撃たれて死亡！ターン終了...';
+        setTimeout(() => {
+          alert('💥 被弾が3発に達しました！このターンの脳みそは全没収です。');
+          resetTurn();
+        }, 500);
+      } else {
+        document.getElementById('btn-bank').disabled = (turnBrains === 0);
+      }
+    }
+
+    function bankPoints() {
+      bankedScore += turnBrains;
+      updateUI();
+      if (bankedScore >= 13) {
+        setTimeout(() => {
+          alert(`🎉 脳みそ ${bankedScore} 個達成！人間界を制圧しました！`);
+          initGame();
+        }, 200);
+      } else {
+        resetTurn();
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('val-banked').textContent = bankedScore;
+      document.getElementById('val-brains').textContent = turnBrains;
+      document.getElementById('val-blasts').textContent = `${turnBlasts} / 3`;
+
+      const gCount = cup.filter(c => c === 'green').length;
+      const yCount = cup.filter(c => c === 'yellow').length;
+      const rCount = cup.filter(c => c === 'red').length;
+      document.getElementById('cup-info').textContent = `カップ内残り: 緑${gCount} / 黄${yCount} / 赤${rCount}`;
+    }
+
+    function toggleRules(show) {
+      document.getElementById('modal-rules').classList.toggle('active', show);
+    }
+  </script>
+</body>
+</html>
