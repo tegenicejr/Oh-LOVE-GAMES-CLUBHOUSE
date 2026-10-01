@@ -62,6 +62,7 @@
       padding: 5px 12px;
       font-size: 0.85rem; font-weight: 800; color: #d1c1b2;
       display: flex; align-items: center; gap: 6px;
+      transition: all 0.2s;
     }
     .role-badge.turn-active {
       border-color: var(--brass-gold);
@@ -86,10 +87,12 @@
       padding: 14px 10px 18px;
       box-shadow: 0 20px 50px rgba(0,0,0,0.95);
       display: flex; flex-direction: column; align-items: center; gap: 12px;
+      overflow: hidden;
     }
     .turn-announcer {
       font-size: 0.95rem; font-weight: 800; color: #ede2d5; min-height: 24px; text-align: center;
     }
+
     /* 8×8 チェッカー盤 */
     .checker-board-frame {
       width: 100%; max-width: 380px; aspect-ratio: 1;
@@ -102,7 +105,10 @@
     #board-svg { width: 100%; height: 100%; display: block; }
     .sq-light { fill: #dfa561; }
     .sq-dark { fill: #3a1e0f; }
-    .sq-highlight { fill: #2ecc71 !important; opacity: 0.7; cursor: pointer; }
+    .sq-highlight { fill: #2ecc71 !important; opacity: 0.75; cursor: pointer; }
+    .sq-cpu-from { fill: #e5a950 !important; opacity: 0.85; filter: drop-shadow(0 0 6px #e5a950); }
+    .sq-cpu-to { fill: #2ecc71 !important; opacity: 0.85; filter: drop-shadow(0 0 6px #2ecc71); }
+
     .piece { cursor: pointer; transition: transform 0.12s ease; }
     .piece.selected {
       transform: scale(1.12);
@@ -113,6 +119,109 @@
       fill: #ffd32a; text-anchor: middle; dominant-baseline: central;
       pointer-events: none;
     }
+
+    /* スタート画面オーバーレイ */
+    .screen-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(18, 11, 7, 0.94);
+      backdrop-filter: blur(4px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px; z-index: 50; padding: 16px;
+    }
+    .screen-overlay.hidden { display: none; }
+    .overlay-title {
+      font-size: 1.35rem; font-weight: 900;
+      color: var(--brass-gold);
+      letter-spacing: 2px; text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+    .config-box {
+      width: 100%; max-width: 280px;
+      background: rgba(0,0,0,0.4); padding: 12px; border-radius: 12px;
+      border: 1px solid #4a3424; display: flex; flex-direction: column; gap: 10px;
+    }
+    .config-row {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.85rem; font-weight: 800; color: #d5c3b1;
+    }
+    .theme-select {
+      background: #2c1a10; color: #fff; border: 1.5px solid var(--brass-gold);
+      padding: 5px 10px; border-radius: 8px; font-weight: 700; outline: none;
+      font-size: 0.85rem;
+    }
+    .start-btn {
+      background: linear-gradient(180deg, #d4a359 0%, #aa782e 100%);
+      color: #140c06; font-size: 1rem; font-weight: 900;
+      border: 1.5px solid #fff; border-radius: 20px;
+      padding: 10px 32px; cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.8), 0 0 12px var(--brass-glow);
+    }
+    .start-btn:active { transform: scale(0.95); }
+
+    /* 先攻後攻抽選（駒当てコイントス）オーバーレイ */
+    .duel-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(10, 6, 4, 0.92);
+      backdrop-filter: blur(5px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px; z-index: 60;
+    }
+    .duel-overlay.hidden { display: none; }
+    .duel-title {
+      font-size: 1.15rem; font-weight: 900;
+      color: var(--brass-gold); letter-spacing: 2px;
+    }
+    .duel-coin {
+      width: 76px; height: 76px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem; font-weight: 900;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+      border: 3px solid #fff;
+    }
+    .duel-coin.red {
+      background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b);
+      color: #fff; border-color: #ff9f43;
+    }
+    .duel-coin.white {
+      background: radial-gradient(circle at 35% 30%, #fff, #bbb);
+      color: #222; border-color: #fff;
+    }
+    .duel-coin.flipping {
+      animation: coinFlipAnim 0.15s infinite linear;
+    }
+    @keyframes coinFlipAnim {
+      0% { transform: scaleX(1) scaleY(1); }
+      50% { transform: scaleX(0.1) scaleY(1.08); }
+      100% { transform: scaleX(1) scaleY(1); }
+    }
+    .duel-result-text {
+      font-size: 1rem; font-weight: 900; color: #fff; min-height: 24px;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.9); text-align: center;
+    }
+
+    /* 端末受け渡し待機オーバーレイ (PASS SCREEN) */
+    .pass-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(12, 8, 5, 0.96);
+      backdrop-filter: blur(6px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px; z-index: 55; padding: 20px;
+    }
+    .pass-overlay.hidden { display: none; }
+    .pass-icon { font-size: 3rem; }
+    .pass-target-name {
+      font-size: 1.35rem; font-weight: 900;
+      color: var(--brass-gold); text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+    .pass-msg {
+      font-size: 0.88rem; color: #d5c3b1; text-align: center; line-height: 1.6;
+    }
+
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0,0,0,0.82); z-index: 99999;
@@ -127,14 +236,6 @@
       text-align: center; color: var(--brass-gold);
       font-size: 1.25rem; font-weight: 800; margin-bottom: 14px;
     }
-    .setting-item {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 0; border-bottom: 1px solid #332014; font-size: 0.9rem;
-    }
-    .theme-select {
-      background: #2c1a10; color: #fff; border: 1.5px solid var(--brass-gold);
-      padding: 6px 12px; border-radius: 10px; font-weight: 700; outline: none;
-    }
     .modal-close-btn {
       width: 100%; padding: 12px;
       background: linear-gradient(180deg, #d4a359, #aa782e);
@@ -147,14 +248,13 @@
   <div class="viewport">
     <div class="topbar">
       <div class="topbar-upper">
-        <div class="tool-btn" onclick="toggleSettings(true)">⚙️</div>
-        <div class="tool-btn" onclick="initGame()">🔄</div>
-        <div class="tool-btn" onclick="undoMove()">↩️</div>
-        <div class="tool-btn" onclick="toggleRules(true)">📖</div>
+        <div class="tool-btn" onclick="openStartModal()" title="タイトル / モード変更">🔄</div>
+        <div class="tool-btn" onclick="undoMove()" title="1手戻す">↩️</div>
+        <div class="tool-btn" onclick="toggleRules(true)" title="あそびかた">📖</div>
       </div>
       <div class="topbar-lower">
         <div class="player-badges">
-          <div class="role-badge turn-active" id="badge-red">
+          <div class="role-badge" id="badge-red">
             <div class="chk-icon red"></div>
             <span id="label-red">赤: 12</span>
           </div>
@@ -168,7 +268,48 @@
     </div>
 
     <div class="table-felt">
-      <div class="turn-announcer" id="announcer">赤（あなた）の手番です</div>
+      <!-- スタート画面オーバーレイ -->
+      <div id="start-overlay" class="screen-overlay">
+        <div class="overlay-title">CHECKERS CLUB</div>
+        <div class="config-box">
+          <div class="config-row">
+            <span>対戦モード</span>
+            <select id="mode-sel" class="theme-select" onchange="handleModeChange(this.value)">
+              <option value="pve" selected>1人プレイ (vs COM)</option>
+              <option value="pvp">2人対戦 (1台で対戦)</option>
+            </select>
+          </div>
+          <div class="config-row" id="diff-row">
+            <span>COMの強さ</span>
+            <select id="diff-sel" class="theme-select">
+              <option value="easy">初級</option>
+              <option value="medium" selected>中級</option>
+              <option value="hard">上級</option>
+            </select>
+          </div>
+        </div>
+        <button class="start-btn" onclick="startNewSession()">START</button>
+      </div>
+
+      <!-- 先攻後攻抽選（駒当て）オーバーレイ -->
+      <div id="duel-overlay" class="duel-overlay hidden">
+        <div class="duel-title">🎲 FIRST MOVE DRAW 🎲</div>
+        <div class="duel-coin red flipping" id="duel-coin">赤</div>
+        <div class="duel-result-text" id="duel-result-text">先攻（赤駒）を抽選中...</div>
+      </div>
+
+      <!-- 端末パスオーバーレイ (PASS SCREEN) -->
+      <div id="pass-overlay" class="pass-overlay hidden">
+        <div class="pass-icon">📱🤝</div>
+        <div class="pass-target-name" id="pass-target-name">白の番です</div>
+        <div class="pass-msg">
+          画面を次のプレイヤーに渡してください。<br>
+          準備ができたらボタンを押して盤面を表示します。
+        </div>
+        <button class="start-btn" onclick="dismissPassScreen()">盤面を見る</button>
+      </div>
+
+      <div class="turn-announcer" id="announcer">スタートを押してください</div>
       <div class="checker-board-frame">
         <svg id="board-svg" viewBox="0 0 320 320">
           <defs>
@@ -198,36 +339,14 @@
         <p>斜めマスを進み、相手の駒を飛び越えて奪い合う古典ボードゲームです。</p>
         <br>
         <ul style="padding-left:18px;">
-          <li><b>通常駒</b>：斜め前方へ1マス進めます。</li>
-          <li><b>ジャンプ捕獲</b>：斜め前にある相手の駒を飛び越えてその先の空きマスに着地すると、飛び越えた相手の駒を獲得（除去）できます。</li>
-          <li><b>連続ジャンプ</b>：着地した先からさらにジャンプできる場合は連続で飛び越えます。</li>
+          <li><b>先攻・後攻</b>：開始時に駒当て抽選を行い、赤駒（手前側）が常に先攻となります。</li>
+          <li><b>通常移動</b>：斜め前方へ1マス進めます。</li>
+          <li><b>ジャンプ捕獲</b>：斜め前にある相手の駒を飛び越えて空きマスに着地すると、飛び越えた相手の駒を獲得（除去）します。</li>
+          <li><b>連続ジャンプ</b>：着地後さらに飛び越えられる場合は連続ジャンプ可能です。</li>
           <li><b>キング（王）</b>：相手陣地の最奥列に達すると王冠が付き、前後両方向に斜め移動＆ジャンプできるようになります！</li>
-          <li>相手の駒をすべて奪うか、相手を動けなくした方の勝利です。</li>
         </ul>
       </div>
       <button class="modal-close-btn" onclick="toggleRules(false)">閉じる</button>
-    </div>
-  </div>
-
-  <div id="modal-settings" class="modal-overlay">
-    <div class="modal-sheet">
-      <div class="modal-title">⚙ 設定</div>
-      <div class="setting-item">
-        <span>対戦モード</span>
-        <select id="mode-sel" class="theme-select" onchange="changeMode(this.value)">
-          <option value="pve" selected>1人プレイ (vs COM)</option>
-          <option value="pvp">2人対戦 (1台で対戦)</option>
-        </select>
-      </div>
-      <div class="setting-item" id="setting-diff">
-        <span>COMの強さ</span>
-        <select id="diff-sel" class="theme-select" onchange="changeDiff(this.value)">
-          <option value="easy">初級</option>
-          <option value="medium" selected>中級</option>
-          <option value="hard">上級</option>
-        </select>
-      </div>
-      <button class="modal-close-btn" onclick="toggleSettings(false)">閉じる</button>
     </div>
   </div>
 
@@ -254,14 +373,31 @@
       } catch(e) {}
     }
 
+    function playFanfare() {
+      try {
+        const ctx = getAudio();
+        [523.25, 659.25, 783.99].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.08 + 0.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.08);
+          osc.stop(ctx.currentTime + idx * 0.08 + 0.22);
+        });
+      } catch(e) {}
+    }
+
     const BOARD_SIZE = 8;
     const SQ_SIZE = 40;
 
-    // 盤面: null | { player: 'red' | 'white', isKing: boolean }
-    // 赤: 手前側 (r: 5〜7から上方向へ進行)
-    // 白: 奥側 (r: 0〜2から下方向へ進行)
+    let gameState = 'TITLE'; // 'TITLE', 'DUEL', 'PLAYING', 'CPU_MOVING'
     let board = [];
-    let currentTurn = 'red';
+    let currentTurn = 'red'; // 赤が先攻
+    let playerColor = 'red'; // PVE時、プレイヤーが操作する色 ('red' または 'white')
     let gameMode = 'pve';
     let difficulty = 'medium';
     let isGameOver = false;
@@ -269,12 +405,38 @@
     let validMovesForSelected = [];
     let historyStack = [];
 
+    let pendingPassCallback = null;
+
     window.addEventListener('DOMContentLoaded', () => {
       buildBoardSvg();
-      initGame();
+      openStartModal();
     });
 
-    function initGame() {
+    function handleModeChange(val) {
+      gameMode = val;
+      document.getElementById('diff-row').style.display = (val === 'pve') ? 'flex' : 'none';
+    }
+
+    function openStartModal() {
+      gameState = 'TITLE';
+      document.getElementById('start-overlay').classList.remove('hidden');
+      document.getElementById('duel-overlay').classList.add('hidden');
+      document.getElementById('pass-overlay').classList.add('hidden');
+      document.getElementById('announcer').textContent = 'スタートを押してください';
+      updateUI();
+    }
+
+    function startNewSession() {
+      gameMode = document.getElementById('mode-sel').value;
+      difficulty = document.getElementById('diff-sel').value;
+      document.getElementById('diff-badge').textContent = gameMode === 'pvp' ? '2人対戦' : `COM: ${difficulty === 'easy' ? '初級' : (difficulty === 'hard' ? '上級' : '中級')}`;
+      document.getElementById('start-overlay').classList.add('hidden');
+
+      initBoardData();
+      triggerOpeningDuel();
+    }
+
+    function initBoardData() {
       board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
       currentTurn = 'red';
       isGameOver = false;
@@ -282,7 +444,7 @@
       validMovesForSelected = [];
       historyStack = [];
 
-      // 初期配置 (黒マスのみに配置)
+      // 初期配置 (黒マスのみ)
       for (let r = 0; r < BOARD_SIZE; r++) {
         for (let c = 0; c < BOARD_SIZE; c++) {
           if ((r + c) % 2 === 1) {
@@ -291,9 +453,73 @@
           }
         }
       }
-
-      updateUI();
       renderPieces();
+      clearHighlights();
+    }
+
+    /* 先攻後攻（色当て）抽選演出 */
+    function triggerOpeningDuel() {
+      gameState = 'DUEL';
+      const duelOverlay = document.getElementById('duel-overlay');
+      const coin = document.getElementById('duel-coin');
+      const resText = document.getElementById('duel-result-text');
+
+      duelOverlay.classList.remove('hidden');
+      coin.className = 'duel-coin red flipping';
+      coin.textContent = '？';
+      resText.textContent = '駒当て抽選で手番を決定中...';
+
+      let count = 0;
+      const flipTimer = setInterval(() => {
+        playSound(320 + Math.random() * 80, 100);
+        coin.className = (count % 2 === 0) ? 'duel-coin red flipping' : 'duel-coin white flipping';
+        count++;
+        if (count >= 6) {
+          clearInterval(flipTimer);
+          finalizeDuel();
+        }
+      }, 130);
+    }
+
+    function finalizeDuel() {
+      const coin = document.getElementById('duel-coin');
+      const resText = document.getElementById('duel-result-text');
+
+      coin.classList.remove('flipping');
+
+      // 50% の確率であなたが赤（先攻）または白（後攻）になる
+      const userIsRed = Math.random() < 0.5;
+      playerColor = userIsRed ? 'red' : 'white';
+
+      playFanfare();
+
+      if (gameMode === 'pve') {
+        if (userIsRed) {
+          coin.className = 'duel-coin red';
+          coin.textContent = '赤';
+          resText.innerHTML = `🎉 あなたが <b style="color:#ff7675;">赤（先攻）</b> に決定しました！`;
+        } else {
+          coin.className = 'duel-coin white';
+          coin.textContent = '白';
+          resText.innerHTML = `COMが <b style="color:#ff7675;">赤（先攻）</b> に決定しました！<br>(あなたは白・後攻)`;
+        }
+      } else {
+        coin.className = 'duel-coin red';
+        coin.textContent = '赤';
+        resText.innerHTML = `1Pが <b style="color:#ff7675;">赤（先攻）</b>、2Pが <b style="color:#ffffff;">白（後攻）</b> です！`;
+      }
+
+      setTimeout(() => {
+        document.getElementById('duel-overlay').classList.add('hidden');
+        gameState = 'PLAYING';
+        currentTurn = 'red';
+        updateUI();
+
+        // COMが赤（先攻）の場合はCOMから開始
+        if (gameMode === 'pve' && playerColor === 'white') {
+          setTimeout(handleComTurnStepByStep, 800);
+        }
+      }, 1600);
     }
 
     function buildBoardSvg() {
@@ -315,12 +541,11 @@
     }
 
     function handleCellClick(r, c) {
-      if (isGameOver) return;
-      if (gameMode === 'pve' && currentTurn === 'white') return;
+      if (gameState !== 'PLAYING' || isGameOver) return;
+      if (gameMode === 'pve' && currentTurn !== playerColor) return;
 
       const piece = board[r][c];
 
-      // すでに自分の駒が選択されていて、移動可能マスをタップした場合
       if (selectedCell) {
         const move = validMovesForSelected.find(m => m.r === r && m.c === c);
         if (move) {
@@ -329,7 +554,6 @@
         }
       }
 
-      // 新しく自分の駒を選択
       if (piece && piece.player === currentTurn) {
         selectedCell = { r, c };
         validMovesForSelected = getMovesForPiece(r, c);
@@ -350,7 +574,6 @@
       const isKing = piece.isKing;
       const player = piece.player;
 
-      // 進行方向
       const rowDirs = isKing ? [-1, 1] : (player === 'red' ? [-1] : [1]);
       const colDirs = [-1, 1];
 
@@ -390,13 +613,12 @@
       board[toMove.r][toMove.c] = piece;
 
       if (toMove.isJump) {
-        board[toMove.midR][toMove.midC] = null; // 相手駒捕獲
+        board[toMove.midR][toMove.midC] = null;
         playSound(550, 220);
       } else {
         playSound(380, 140);
       }
 
-      // キング昇格判定
       if (piece.player === 'red' && toMove.r === 0) piece.isKing = true;
       if (piece.player === 'white' && toMove.r === BOARD_SIZE - 1) piece.isKing = true;
 
@@ -408,7 +630,7 @@
           validMovesForSelected = nextJumps;
           renderPieces();
           renderHighlights();
-          return; // 連続手番継続
+          return;
         }
       }
 
@@ -422,9 +644,62 @@
 
       if (checkVictory()) return;
 
-      if (gameMode === 'pve' && currentTurn === 'white') {
-        setTimeout(handleComTurn, 550);
+      if (gameMode === 'pve') {
+        if (currentTurn !== playerColor) {
+          setTimeout(handleComTurnStepByStep, 700);
+        }
+      } else {
+        // 2人対戦時のパス画面
+        const nextPlayerName = currentTurn === 'red' ? '1P (赤)' : '2P (白)';
+        showPassScreen(nextPlayerName, () => {
+          updateUI();
+        });
       }
+    }
+
+    /* COM思考ルーチン（人間らしいテンポで1手ずつ見せる） */
+    function handleComTurnStepByStep() {
+      if (isGameOver || currentTurn === playerColor) return;
+      gameState = 'CPU_MOVING';
+
+      const comColor = currentTurn;
+      const allMoves = [];
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+          if (board[r][c] && board[r][c].player === comColor) {
+            const moves = getMovesForPiece(r, c);
+            moves.forEach(m => allMoves.push({ from: { r, c }, to: m }));
+          }
+        }
+      }
+
+      if (allMoves.length === 0) {
+        checkVictory();
+        return;
+      }
+
+      // ジャンプ優先 ＆ 前進評価
+      allMoves.sort((a, b) => {
+        if (a.to.isJump !== b.to.isJump) return b.to.isJump ? 1 : -1;
+        return comColor === 'red' ? (a.to.r - b.to.r) : (b.to.r - a.to.r);
+      });
+
+      const chosen = allMoves[0];
+
+      // === 移動前の予告ハイライト（黄色：元、緑色：先） ===
+      clearHighlights();
+      const sqFrom = document.getElementById(`sq-${chosen.from.r}-${chosen.from.c}`);
+      const sqTo = document.getElementById(`sq-${chosen.to.r}-${chosen.to.c}`);
+      if (sqFrom) sqFrom.classList.add('sq-cpu-from');
+      if (sqTo) sqTo.classList.add('sq-cpu-to');
+
+      document.getElementById('announcer').innerHTML = `COM: 駒を選択して移動中...`;
+
+      // 650ms見せてから動かす
+      setTimeout(() => {
+        executeMove(chosen.from, chosen.to);
+        gameState = 'PLAYING';
+      }, 650);
     }
 
     function checkVictory() {
@@ -448,44 +723,17 @@
 
       if (redCount === 0 || !redCanMove) {
         isGameOver = true;
-        setTimeout(() => alert('🎉 白（COM）の勝利です！'), 200);
+        playFanfare();
+        setTimeout(() => alert('🎉 白の勝利です！'), 200);
         return true;
       }
       if (whiteCount === 0 || !whiteCanMove) {
         isGameOver = true;
-        setTimeout(() => alert('🎉 赤（あなた）の勝利です！'), 200);
+        playFanfare();
+        setTimeout(() => alert('🎉 赤の勝利です！'), 200);
         return true;
       }
       return false;
-    }
-
-    /* COM思考ルーチン (白) */
-    function handleComTurn() {
-      if (isGameOver || currentTurn !== 'white') return;
-
-      const allMoves = [];
-      for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
-          if (board[r][c] && board[r][c].player === 'white') {
-            const moves = getMovesForPiece(r, c);
-            moves.forEach(m => allMoves.push({ from: { r, c }, to: m }));
-          }
-        }
-      }
-
-      if (allMoves.length === 0) {
-        checkVictory();
-        return;
-      }
-
-      // ジャンプ優先 ＆ 前進評価
-      allMoves.sort((a, b) => {
-        if (a.to.isJump !== b.to.isJump) return b.to.isJump ? 1 : -1;
-        return (b.to.r - a.to.r);
-      });
-
-      const chosen = allMoves[0];
-      executeMove(chosen.from, chosen.to);
     }
 
     function renderPieces() {
@@ -542,6 +790,10 @@
 
     function clearHighlights() {
       document.getElementById('highlights-layer').innerHTML = '';
+      document.querySelectorAll('.sq-dark').forEach(sq => {
+        sq.classList.remove('sq-cpu-from');
+        sq.classList.remove('sq-cpu-to');
+      });
     }
 
     function saveState() {
@@ -552,7 +804,7 @@
     }
 
     function undoMove() {
-      if (historyStack.length === 0 || isGameOver) return;
+      if (gameState !== 'PLAYING' || historyStack.length === 0 || isGameOver) return;
       const steps = (gameMode === 'pve' && historyStack.length >= 2) ? 2 : 1;
       let last;
       for (let i = 0; i < steps; i++) last = historyStack.pop();
@@ -580,20 +832,34 @@
       document.getElementById('badge-white').classList.toggle('turn-active', currentTurn === 'white' && !isGameOver);
 
       if (!isGameOver) {
-        document.getElementById('announcer').textContent =
-          (currentTurn === 'red' ? (gameMode === 'pvp' ? '1P(赤)' : '赤（あなた）') : (gameMode === 'pvp' ? '2P(白)' : '白（COM）')) + ' の手番です';
+        if (gameMode === 'pvp') {
+          document.getElementById('announcer').textContent = (currentTurn === 'red' ? '1P (赤)' : '2P (白)') + ' の手番です';
+        } else {
+          const isUserTurn = (currentTurn === playerColor);
+          const colorName = currentTurn === 'red' ? '赤' : '白';
+          document.getElementById('announcer').textContent = isUserTurn ? `${colorName}（あなた）の手番です` : `${colorName}（COM）が考え中...`;
+        }
+      }
+    }
+
+    /* 端末受け渡し待機画面 (PASS SCREEN) */
+    function showPassScreen(targetPlayerName, callback) {
+      pendingPassCallback = callback;
+      const overlay = document.getElementById('pass-overlay');
+      document.getElementById('pass-target-name').textContent = `${targetPlayerName} の番です`;
+      overlay.classList.remove('hidden');
+    }
+
+    function dismissPassScreen() {
+      document.getElementById('pass-overlay').classList.add('hidden');
+      if (pendingPassCallback) {
+        const cb = pendingPassCallback;
+        pendingPassCallback = null;
+        cb();
       }
     }
 
     function toggleRules(show) { document.getElementById('modal-rules').classList.toggle('active', show); }
-    function toggleSettings(show) { document.getElementById('modal-settings').classList.toggle('active', show); }
-    function changeMode(val) {
-      gameMode = val;
-      document.getElementById('setting-diff').style.display = (val === 'pve') ? 'flex' : 'none';
-      toggleSettings(false);
-      initGame();
-    }
-    function changeDiff(val) { difficulty = val; toggleSettings(false); initGame(); }
   </script>
 </body>
 </html>
