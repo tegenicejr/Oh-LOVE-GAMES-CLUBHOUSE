@@ -177,7 +177,6 @@
       color: #9f8f80;
     }
 
-    /* メインコンテナ */
     .screen-container {
       padding: 32px 12px calc(80px + env(safe-area-inset-bottom));
       max-width: 900px;
@@ -267,7 +266,7 @@
       justify-content: center;
     }
 
-    /* === 1. 立体トランプ === */
+    /* === 立体トランプ === */
     .cards-icon-pair {
       position: relative;
       width: 54px;
@@ -304,7 +303,7 @@
     .mini-pcard-val { font-size: 0.8rem; }
     .mini-pcard-suit { font-size: 0.72rem; margin-top: 1px; }
 
-    /* === 2. リアル象牙麻雀牌 === */
+    /* === リアル象牙麻雀牌 === */
     .mj-icon-pair {
       display: flex;
       gap: 6px;
@@ -334,7 +333,7 @@
     .color-chun { color: #d63031; }
     .color-hatsu { color: #1e824c; }
 
-    /* === 3. リアル彫り込みダイス === */
+    /* === リアル彫り込みダイス === */
     .dice-icon-pair {
       display: flex;
       gap: 6px;
@@ -378,208 +377,85 @@
       box-shadow: inset 0 1px 1.5px rgba(0,0,0,0.6), 0 0.5px 0.5px rgba(255,255,255,0.7);
     }
 
-    /* === 4. 立体ミニ数独 === */
+    /* === 各ゲームの立体アイコン === */
     .sudoku-mini-board {
-      width: 42px;
-      height: 42px;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-      gap: 1.5px;
-      background: #4a3424;
-      padding: 2px;
-      border-radius: 5px;
-      border: 1.5px solid #6b4d35;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.5);
-      overflow: hidden;
+      width: 42px; height: 42px;
+      display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+      gap: 1.5px; background: #4a3424; padding: 2px; border-radius: 5px;
+      border: 1.5px solid #6b4d35; box-shadow: 0 3px 8px rgba(0,0,0,0.5); overflow: hidden;
     }
     .sudoku-mini-cell {
-      background: #251b14;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.6rem;
-      font-weight: 900;
-      color: #ede2d5;
-      border-radius: 1px;
-      line-height: 1;
+      background: #251b14; display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem; font-weight: 900; color: #ede2d5; border-radius: 1px; line-height: 1;
     }
-    .sudoku-mini-cell.accent {
-      color: var(--accent);
-      background: #332319;
-    }
+    .sudoku-mini-cell.accent { color: var(--accent); background: #332319; }
 
-    /* === 5. 五目並べ === */
     .gomoku-mini-board {
-      width: 40px;
-      height: 40px;
+      width: 40px; height: 40px;
       background: radial-gradient(circle at 40% 40%, #e0aa6a, #9e6c35);
-      border: 1.5px solid #5a3c1f;
-      border-radius: 6px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      border: 1.5px solid #5a3c1f; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+      position: relative; display: flex; align-items: center; justify-content: center;
     }
     .gomoku-grid-lines {
-      position: absolute;
-      width: 100%;
-      height: 100%;
+      position: absolute; width: 100%; height: 100%;
       background-image: 
         linear-gradient(to right, rgba(78, 50, 21, 0.6) 1px, transparent 1px),
         linear-gradient(to bottom, rgba(78, 50, 21, 0.6) 1px, transparent 1px);
-      background-size: 10px 10px;
-      background-position: 5px 5px;
+      background-size: 10px 10px; background-position: 5px 5px;
     }
-    .gomoku-stones-pair {
-      display: flex;
-      gap: 3px;
-      z-index: 2;
-    }
-    .mini-go-stone {
-      width: 15px;
-      height: 15px;
-      border-radius: 50%;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.7);
-    }
-    .mini-go-stone.black {
-      background: radial-gradient(circle at 35% 30%, #555, #181818 70%, #050505);
-      border: 0.8px solid #444;
-    }
-    .mini-go-stone.white {
-      background: radial-gradient(circle at 35% 30%, #fff, #e2e2e2 70%, #b8b8b8);
-      border: 0.8px solid #ddd;
-    }
+    .gomoku-stones-pair { display: flex; gap: 3px; z-index: 2; }
+    .mini-go-stone { width: 15px; height: 15px; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.7); }
+    .mini-go-stone.black { background: radial-gradient(circle at 35% 30%, #555, #181818 70%, #050505); border: 0.8px solid #444; }
+    .mini-go-stone.white { background: radial-gradient(circle at 35% 30%, #fff, #e2e2e2 70%, #b8b8b8); border: 0.8px solid #ddd; }
 
-    /* === 6. ピクロス === */
     .picross-mini-board {
-      width: 38px;
-      height: 38px;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(4, 1fr);
-      gap: 1.5px;
-      background: #180f08;
-      padding: 2.5px;
-      border-radius: 6px;
-      border: 1.5px solid #4a3424;
+      width: 38px; height: 38px; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr);
+      gap: 1.5px; background: #180f08; padding: 2.5px; border-radius: 6px; border: 1.5px solid #4a3424;
       box-shadow: 0 4px 8px rgba(0,0,0,0.6);
     }
-    .pic-cell {
-      border-radius: 1px;
-      background: #2c1d12;
-    }
+    .pic-cell { border-radius: 1px; background: #2c1d12; }
     .pic-cell.filled {
       background: linear-gradient(135deg, #e5a950 0%, #aa782e 100%);
       box-shadow: 0 0 4px rgba(229, 169, 80, 0.6);
     }
 
-    /* === 7. 倉庫番 === */
-    .sokoban-mini-board {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+    .sokoban-mini-board { display: flex; align-items: center; gap: 6px; }
     .soko-mini-box {
-      width: 24px;
-      height: 24px;
-      background: linear-gradient(145deg, #b0743b 0%, #7d4d21 100%);
-      border: 1.5px solid #583313;
-      border-radius: 4px;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 900;
-      color: #3e220c;
+      width: 24px; height: 24px; background: linear-gradient(145deg, #b0743b 0%, #7d4d21 100%);
+      border: 1.5px solid #583313; border-radius: 4px; box-shadow: 0 3px 6px rgba(0,0,0,0.6);
+      display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; color: #3e220c;
     }
     .soko-mini-goal {
-      width: 22px;
-      height: 22px;
-      background: #1a0f08;
-      border: 1.5px dashed var(--accent);
-      border-radius: 4px;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--accent);
-      font-size: 12px;
-      text-shadow: 0 0 4px var(--accent-glow);
+      width: 22px; height: 22px; background: #1a0f08; border: 1.5px dashed var(--accent); border-radius: 4px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;
+      color: var(--accent); font-size: 12px; text-shadow: 0 0 4px var(--accent-glow);
     }
 
-    /* === 8. 立体リバーシ石 === */
-    .reversi-icon-pair {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-    .mini-reversi-disc {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.55);
-    }
-    .mini-reversi-disc.black {
-      background: radial-gradient(circle at 35% 30%, #444, #111 60%, #000 100%);
-      border: 1px solid #555;
-    }
-    .mini-reversi-disc.white {
-      background: radial-gradient(circle at 35% 30%, #ffffff, #e6e6e6 65%, #c8c8c8 100%);
-      border: 1px solid #ddd;
-    }
+    .reversi-icon-pair { display: flex; gap: 6px; align-items: center; }
+    .mini-reversi-disc { width: 28px; height: 28px; border-radius: 50%; box-shadow: 0 3px 6px rgba(0,0,0,0.55); }
+    .mini-reversi-disc.black { background: radial-gradient(circle at 35% 30%, #444, #111 60%, #000 100%); border: 1px solid #555; }
+    .mini-reversi-disc.white { background: radial-gradient(circle at 35% 30%, #ffffff, #e6e6e6 65%, #c8c8c8 100%); border: 1px solid #ddd; }
 
-    /* === 9. マンカラ === */
     .mancala-mini-board {
-      width: 60px;
-      height: 32px;
-      background: linear-gradient(180deg, #3d2414 0%, #1f1108 100%);
-      border: 1.5px solid #5d381f;
-      border-radius: 12px;
+      width: 60px; height: 32px; background: linear-gradient(180deg, #3d2414 0%, #1f1108 100%);
+      border: 1.5px solid #5d381f; border-radius: 12px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.2);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 3px 4px;
-      gap: 3px;
+      display: flex; align-items: center; justify-content: space-between; padding: 3px 4px; gap: 3px;
     }
     .m-mini-store {
-      width: 9px;
-      height: 24px;
-      background: #0d0704;
-      border-radius: 6px;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.95);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
+      width: 9px; height: 24px; background: #0d0704; border-radius: 6px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
     }
     .m-mini-pits-grid {
-      flex: 1;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(2, 1fr);
-      gap: 2.5px 3px;
-      align-items: center;
-      justify-items: center;
+      flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr);
+      gap: 2.5px 3px; align-items: center; justify-items: center;
     }
     .m-mini-pit {
-      width: 9.5px;
-      height: 9.5px;
-      background: #0d0704;
-      border-radius: 50%;
-      box-shadow: inset 0 1.5px 3px rgba(0,0,0,0.95);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 9.5px; height: 9.5px; background: #0d0704; border-radius: 50%;
+      box-shadow: inset 0 1.5px 3px rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center;
     }
     .m-mini-gem {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
+      width: 5px; height: 5px; border-radius: 50%;
       box-shadow: inset 0.8px 0.8px 1px rgba(255,255,255,0.8), 0 1px 1.5px rgba(0,0,0,0.6);
     }
     .m-gem-cyan { background: radial-gradient(circle at 35% 30%, #55efc4, #00b894); }
@@ -587,384 +463,109 @@
     .m-gem-gold { background: radial-gradient(circle at 35% 30%, #ffeaa7, #fdcb6e); }
     .m-gem-purple { background: radial-gradient(circle at 35% 30%, #d980fa, #8854d0); }
 
-    /* === 10. チェッカー (新アイコン) === */
-    .checkers-mini-board {
-      width: 40px;
-      height: 40px;
-      background: #24130a;
-      border: 1.5px solid #583920;
-      border-radius: 6px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(4, 1fr);
-      padding: 2px;
-      position: relative;
-    }
-    .chk-sq-dark { background: #3a1e0f; }
-    .chk-sq-light { background: #dfa561; }
-    .chk-piece-red {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.8);
-      margin: auto;
-    }
-    .chk-piece-white {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, #fff, #bbb);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.8);
-      margin: auto;
-    }
-
-    /* === 11. バックギャモン === */
     .bg-mini-icon {
-      width: 44px;
-      height: 32px;
-      background: #190f09;
-      border: 1.5px solid #583920;
-      border-radius: 6px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: space-around;
-      padding: 0 3px;
-      overflow: hidden;
+      width: 44px; height: 32px; background: #190f09; border: 1.5px solid #583920; border-radius: 6px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6); position: relative; display: flex; align-items: center; justify-content: space-around;
+      padding: 0 3px; overflow: hidden;
     }
     .bg-icon-triangles {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: 
-        repeating-linear-gradient(90deg, #4a2810 0px, #4a2810 7px, #cba36b 7px, #cba36b 14px);
-      opacity: 0.7;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: repeating-linear-gradient(90deg, #4a2810 0px, #4a2810 7px, #cba36b 7px, #cba36b 14px); opacity: 0.7;
     }
-    .bg-icon-checker {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      z-index: 2;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.8);
-    }
-    .bg-chk-w {
-      background: radial-gradient(circle at 35% 30%, #fff, #bbb);
-      border: 1px solid #fff;
-    }
-    .bg-chk-r {
-      background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b);
-      border: 1px solid #ff9f43;
-    }
+    .bg-icon-checker { width: 12px; height: 12px; border-radius: 50%; z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+    .bg-chk-w { background: radial-gradient(circle at 35% 30%, #fff, #bbb); border: 1px solid #fff; }
+    .bg-chk-r { background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b); border: 1px solid #ff9f43; }
     .bg-icon-die {
-      width: 11px;
-      height: 11px;
-      background: #fff;
-      border-radius: 2px;
-      font-size: 8px;
-      font-weight: 900;
-      color: #111;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      width: 11px; height: 11px; background: #fff; border-radius: 2px; font-size: 8px; font-weight: 900; color: #111;
+      display: flex; align-items: center; justify-content: center; z-index: 2; box-shadow: 0 1px 2px rgba(0,0,0,0.8);
     }
 
-    /* === 12. コネクトフォー === */
-    .connect-icon-pair {
-      display: flex;
-      gap: 6px;
-      align-items: center;
+    .checkers-mini-board {
+      width: 38px; height: 38px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+      background: #24130a; border: 1.5px solid #583920; border-radius: 6px; padding: 1.5px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6); position: relative;
     }
-    .mini-connect-coin {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.55), inset 0 1px 1px rgba(255,255,255,0.4);
-    }
-    .mini-connect-coin.red {
-      background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b 65%, #7f1d1d 100%);
-      border: 1px solid #ff9f43;
-    }
-    .mini-connect-coin.yellow {
-      background: radial-gradient(circle at 35% 30%, #fff2ac, #f39c12 65%, #d35400 100%);
-      border: 1px solid #f1c40f;
-    }
+    .chk-cell-dark { background: #3a1e0f; display: flex; align-items: center; justify-content: center; }
+    .chk-cell-light { background: #dfa561; }
+    .chk-cell-p-red { width: 8.5px; height: 8.5px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b); }
+    .chk-cell-p-white { width: 8.5px; height: 8.5px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #bbb); }
 
-    /* === 13. スネーク (新アイコン) === */
-    .snake-mini-board {
-      width: 40px;
-      height: 40px;
-      background: #180f08;
-      border: 1.5px solid #583920;
-      border-radius: 6px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .snake-grid-bg {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background-image: 
-        linear-gradient(to right, rgba(74, 48, 23, 0.4) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(74, 48, 23, 0.4) 1px, transparent 1px);
-      background-size: 8px 8px;
-    }
-    .snake-body-chain {
-      position: absolute;
-      display: flex;
-      align-items: center;
-      gap: 1.5px;
-      left: 6px;
-      top: 14px;
-      z-index: 2;
-    }
-    .snake-joint {
-      width: 6px;
-      height: 6px;
-      border-radius: 2px;
-      background: #27ae60;
-    }
-    .snake-joint.head {
-      background: #2ecc71;
-      box-shadow: 0 0 4px rgba(46, 204, 113, 0.8);
-      border-radius: 3px;
-      width: 7px;
-      height: 7px;
-    }
-    .snake-golden-apple {
-      position: absolute;
-      right: 7px;
-      bottom: 8px;
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, #fff4cc, #e5a950 60%, #91601d);
-      box-shadow: 0 0 5px rgba(229, 169, 80, 0.9);
-      z-index: 2;
-    }
+    .connect-icon-pair { display: flex; gap: 6px; align-items: center; }
+    .mini-connect-coin { width: 28px; height: 28px; border-radius: 50%; box-shadow: 0 3px 6px rgba(0,0,0,0.55); }
+    .mini-connect-coin.red { background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b 65%, #7f1d1d 100%); border: 1px solid #ff9f43; }
+    .mini-connect-coin.yellow { background: radial-gradient(circle at 35% 30%, #fff2ac, #f39c12 65%, #d35400 100%); border: 1px solid #f1c40f; }
 
-    /* === 14. ドット＆ボックス === */
     .dnb-svg-icon {
-      width: 40px;
-      height: 40px;
-      background: #180f08;
-      border: 1.5px solid #4a3424;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
-      display: block;
+      width: 40px; height: 40px; background: #180f08; border: 1.5px solid #4a3424; border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6); display: block;
     }
 
-    /* === 15. ウサギと猟犬 === */
+    .snake-mini-board {
+      width: 38px; height: 38px; background: #180f08; border: 1.5px solid #583920; border-radius: 6px;
+      position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;
+    }
+    .snake-body-s {
+      position: absolute; width: 6px; height: 6px; background: #2ecc71; border-radius: 2px;
+      box-shadow: 0 0 3px #2ecc71;
+    }
+    .snake-apple-s {
+      position: absolute; width: 7px; height: 7px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff4cc, #e5a950);
+      box-shadow: 0 0 4px var(--accent); top: 8px; right: 8px;
+    }
+
     .hah-mini-board {
-      width: 46px;
-      height: 30px;
-      position: relative;
-      background: #180f08;
-      border: 1.5px solid #4a3424;
-      border-radius: 8px;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.6);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 4px;
+      width: 46px; height: 30px; position: relative; background: #180f08; border: 1.5px solid #4a3424;
+      border-radius: 8px; box-shadow: 0 3px 6px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: space-between; padding: 0 4px;
     }
-    .hah-mini-hound-col {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-    .hah-dot {
-      width: 7.5px;
-      height: 7.5px;
-      border-radius: 50%;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.8);
-    }
-    .hah-dot.hound {
-      background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b);
-      border: 1px solid #ff9f43;
-    }
-    .hah-dot.hare {
-      width: 10px;
-      height: 10px;
-      background: radial-gradient(circle at 35% 30%, #ffffff, #dcdde1);
-      border: 1px solid #fff;
-      box-shadow: 0 0 5px rgba(255,255,255,0.7);
-    }
+    .hah-mini-hound-col { display: flex; flex-direction: column; gap: 3px; }
+    .hah-dot { width: 7.5px; height: 7.5px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+    .hah-dot.hound { background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b); border: 1px solid #ff9f43; }
+    .hah-dot.hare { width: 10px; height: 10px; background: radial-gradient(circle at 35% 30%, #ffffff, #dcdde1); border: 1px solid #fff; box-shadow: 0 0 5px rgba(255,255,255,0.7); }
 
-    /* === 16. マインスイーパー === */
-    .mines-icon-pair {
-      display: flex;
-      gap: 5px;
-      align-items: center;
-    }
-    .mine-mini-tile {
-      width: 28px;
-      height: 28px;
-      border-radius: 5px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.95rem;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.5);
-    }
-    .mine-tile-btn {
-      background: linear-gradient(145deg, #3c2718 0%, #22140b 100%);
-      border-top: 1px solid #6b4a30;
-      border-left: 1px solid #6b4a30;
-      border-right: 1.5px solid #140b06;
-      border-bottom: 2px solid #140b06;
-    }
-    .mine-tile-opened {
-      background: rgba(14, 28, 18, 0.9);
-      border: 1px solid #2e4d36;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.7);
-    }
+    .mines-icon-pair { display: flex; gap: 5px; align-items: center; }
+    .mine-mini-tile { width: 28px; height: 28px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; box-shadow: 0 3px 6px rgba(0,0,0,0.5); }
+    .mine-tile-btn { background: linear-gradient(145deg, #3c2718 0%, #22140b 100%); border-top: 1px solid #6b4a30; border-left: 1px solid #6b4a30; border-right: 1.5px solid #140b06; border-bottom: 2px solid #140b06; }
+    .mine-tile-opened { background: rgba(14, 28, 18, 0.9); border: 1px solid #2e4d36; box-shadow: inset 0 2px 4px rgba(0,0,0,0.7); }
 
-    /* === 17. 2048 === */
-    .mini-2048-pair {
-      display: flex;
-      gap: 5px;
-      align-items: center;
-    }
-    .mini-2048-tile {
-      width: 28px;
-      height: 28px;
-      border-radius: 5px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.76rem;
-      font-weight: 900;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.5);
-    }
-    .tile-gold {
-      background: linear-gradient(145deg, #e8be5d, #b58d2a);
-      color: #fff;
-      border: 1px solid #fff3b0;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    }
-    .tile-brown {
-      background: linear-gradient(145deg, #eedbc5, #d9be9f);
-      color: #432815;
-      border: 1px solid #fff;
-    }
+    .mini-2048-pair { display: flex; gap: 5px; align-items: center; }
+    .mini-2048-tile { width: 28px; height: 28px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.76rem; font-weight: 900; box-shadow: 0 3px 6px rgba(0,0,0,0.5); }
+    .tile-gold { background: linear-gradient(145deg, #e8be5d, #b58d2a); color: #fff; border: 1px solid #fff3b0; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    .tile-brown { background: linear-gradient(145deg, #eedbc5, #d9be9f); color: #432815; border: 1px solid #fff; }
 
-    /* === 18. ライツアウト === */
-    .lights-icon-pair {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-    .mini-lamp-bulb {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.55);
-    }
-    .mini-lamp-bulb.on {
-      background: radial-gradient(circle at 35% 30%, #fff7d6 0%, #ffc83b 45%, #e67e22 85%, #b33939 100%);
-      border: 1px solid #fff5cc;
-      box-shadow: 0 0 10px rgba(255, 195, 18, 0.9), inset 0 1px 1px #fff;
-    }
-    .mini-lamp-bulb.off {
-      background: radial-gradient(circle at 35% 30%, #3a2a1d 0%, #1a120c 75%, #080503 100%);
-      border: 1px solid #2f2014;
-      box-shadow: inset 0 1.5px 3px rgba(0,0,0,0.8);
-      opacity: 0.8;
-    }
+    .lights-icon-pair { display: flex; gap: 6px; align-items: center; }
+    .mini-lamp-bulb { width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 3px 6px rgba(0,0,0,0.55); }
+    .mini-lamp-bulb.on { background: radial-gradient(circle at 35% 30%, #fff7d6 0%, #ffc83b 45%, #e67e22 85%, #b33939 100%); border: 1px solid #fff5cc; box-shadow: 0 0 10px rgba(255, 195, 18, 0.9), inset 0 1px 1px #fff; }
+    .mini-lamp-bulb.off { background: radial-gradient(circle at 35% 30%, #3a2a1d 0%, #1a120c 75%, #080503 100%); border: 1px solid #2f2014; box-shadow: inset 0 1.5px 3px rgba(0,0,0,0.8); opacity: 0.8; }
 
-    /* === 19. ヒット＆ブロー === */
-    .hnb-icon-unit {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      background: #1b120c;
-      border: 1.5px solid #4a3424;
-      border-radius: 12px;
-      padding: 5px 7px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.1);
-    }
-    .hnb-icon-pegs-row {
-      display: flex;
-      gap: 3.5px;
-      align-items: center;
-    }
-    .hnb-icon-peg {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      box-shadow: inset -1px -1px 2px rgba(0,0,0,0.6), inset 1px 1px 1.5px rgba(255,255,255,0.7), 0 1.5px 2px rgba(0,0,0,0.5);
-    }
+    .hnb-icon-unit { display: flex; align-items: center; gap: 5px; background: #1b120c; border: 1.5px solid #4a3424; border-radius: 12px; padding: 5px 7px; box-shadow: 0 3px 8px rgba(0,0,0,0.65); }
+    .hnb-icon-pegs-row { display: flex; gap: 3.5px; align-items: center; }
+    .hnb-icon-peg { width: 12px; height: 12px; border-radius: 50%; }
     .peg-red { background: radial-gradient(circle at 35% 30%, #ff6b6b, #c0392b); }
     .peg-yellow { background: radial-gradient(circle at 35% 30%, #feca57, #e67e22); }
     .peg-blue { background: radial-gradient(circle at 35% 30%, #54a0ff, #2980b9); }
-    
-    .hnb-icon-divider {
-      width: 1px;
-      height: 18px;
-      background: rgba(229, 169, 80, 0.25);
-    }
-    .hnb-icon-pins-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 6.5px);
-      grid-template-rows: repeat(2, 6.5px);
-      gap: 2px;
-      padding: 2px;
-      background: #0d0704;
-      border-radius: 4px;
-      box-shadow: inset 0 1.5px 2px rgba(0,0,0,0.9);
-    }
-    .hnb-icon-pin {
-      width: 6.5px;
-      height: 6.5px;
-      border-radius: 50%;
-    }
-    .hnb-pin-hit {
-      background: radial-gradient(circle at 35% 35%, #ff4d4d, #b30000);
-      box-shadow: 0 0 3px rgba(255, 60, 60, 0.9);
-    }
-    .hnb-pin-blow {
-      background: radial-gradient(circle at 35% 35%, #ffffff, #a4b0be);
-      box-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
-    }
+    .hnb-icon-divider { width: 1px; height: 18px; background: rgba(229, 169, 80, 0.25); }
+    .hnb-icon-pins-grid { display: grid; grid-template-columns: repeat(2, 6.5px); grid-template-rows: repeat(2, 6.5px); gap: 2px; padding: 2px; background: #0d0704; border-radius: 4px; }
+    .hnb-icon-pin { width: 6.5px; height: 6.5px; border-radius: 50%; }
+    .hnb-pin-hit { background: radial-gradient(circle at 35% 35%, #ff4d4d, #b30000); box-shadow: 0 0 3px rgba(255, 60, 60, 0.9); }
+    .hnb-pin-blow { background: radial-gradient(circle at 35% 35%, #ffffff, #a4b0be); box-shadow: 0 0 3px rgba(255, 255, 255, 0.8); }
 
     .card-title {
-      font-weight: 700;
-      font-size: 0.98rem;
-      color: #fff;
-      margin-bottom: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      width: 100%;
+      font-weight: 700; font-size: 0.98rem; color: #fff; margin-bottom: 4px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
     }
     .card-genre {
-      font-size: 0.68rem;
-      background: rgba(0,0,0,0.3);
-      padding: 2px 6px;
-      border-radius: 8px;
-      color: #c0b7af;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
+      font-size: 0.68rem; background: rgba(0,0,0,0.3); padding: 2px 6px;
+      border-radius: 8px; color: #c0b7af; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; max-width: 100%;
     }
 
     /* ゲーム＆サブメニュー画面 */
     .game-viewport {
       display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      height: 100dvh;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh; height: 100dvh;
       background: var(--bg-dark);
       z-index: 1000;
       overflow: hidden;
@@ -974,10 +575,8 @@
     }
 
     .game-frame {
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
+      width: 100%; height: 100%;
+      border: none; display: block;
     }
 
     .global-back-btn {
@@ -991,12 +590,8 @@
       border: 1.5px solid #5a483a;
       padding: 8px 14px;
       border-radius: 20px;
-      font-size: 0.82rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 5px;
+      font-size: 0.82rem; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; gap: 5px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.6);
       transition: transform 0.1s ease;
     }
@@ -1023,7 +618,7 @@
     </div>
 
     <!-- RPG・クエストへのリンク -->
-    <div class="drawer-item" onclick="launchFromDrawer('rpg')">
+    <div class="drawer-item" onclick="launchFromDrawer('rpg', 'rpg.html')">
       <div class="drawer-item-icon">⚔️</div>
       <div>
         <div class="drawer-item-title">Oh LOVE QUEST</div>
@@ -1060,7 +655,7 @@
         <div class="card-genre">6ゲーム収録</div>
       </div>
 
-      <!-- 麻雀 (全3作本稼働) -->
+      <!-- 麻雀 (全3作) -->
       <div class="game-card" onclick="openSubMenu('mahjong')">
         <div class="card-icon">
           <div class="mj-icon-pair">
@@ -1072,7 +667,7 @@
         <div class="card-genre">四人麻雀 / 上海</div>
       </div>
 
-      <!-- ダイス (全3作本稼働) -->
+      <!-- ダイス (全3作) -->
       <div class="game-card" onclick="openSubMenu('dice')">
         <div class="card-icon">
           <div class="dice-icon-pair">
@@ -1099,7 +694,7 @@
     <div class="section-label">POPULAR GAMES</div>
     <div class="games-grid">
       <!-- 1位：数独 -->
-      <div class="game-card" onclick="launchGame('sudoku')">
+      <div class="game-card" onclick="launchGame('sudoku', 'sudoku.html')">
         <div class="card-icon">
           <div class="sudoku-mini-board">
             <div class="sudoku-mini-cell">5</div>
@@ -1118,7 +713,7 @@
       </div>
 
       <!-- 2位：五目並べ -->
-      <div class="game-card" onclick="launchGame('gomoku')">
+      <div class="game-card" onclick="launchGame('gomoku', 'gomoku.html')">
         <div class="card-icon">
           <div class="gomoku-mini-board">
             <div class="gomoku-grid-lines"></div>
@@ -1133,7 +728,7 @@
       </div>
 
       <!-- 3位：ピクロス -->
-      <div class="game-card" onclick="launchGame('picross')">
+      <div class="game-card" onclick="launchGame('picross', 'picross.html')">
         <div class="card-icon">
           <div class="picross-mini-board">
             <div class="pic-cell"></div>
@@ -1159,7 +754,7 @@
       </div>
 
       <!-- 4位：倉庫番 -->
-      <div class="game-card" onclick="launchGame('sokoban')">
+      <div class="game-card" onclick="launchGame('sokoban', 'sokoban.html')">
         <div class="card-icon">
           <div class="sokoban-mini-board">
             <div class="soko-mini-box">✖</div>
@@ -1171,7 +766,7 @@
       </div>
 
       <!-- 5位：リバーシ -->
-      <div class="game-card" onclick="launchGame('reversi')">
+      <div class="game-card" onclick="launchGame('reversi', 'reversi.html')">
         <div class="card-icon">
           <div class="reversi-icon-pair">
             <div class="mini-reversi-disc black"></div>
@@ -1183,7 +778,7 @@
       </div>
 
       <!-- 6位：マンカラ -->
-      <div class="game-card" onclick="launchGame('mancala')">
+      <div class="game-card" onclick="launchGame('mancala', 'mancala.html')">
         <div class="card-icon">
           <div class="mancala-mini-board">
             <div class="m-mini-store">
@@ -1206,34 +801,27 @@
         <div class="card-genre">古代ボード / 2人対戦</div>
       </div>
 
-      <!-- 7位：チェッカー (新規) -->
-      <div class="game-card" onclick="launchGame('checkers')">
+      <!-- 7位：チェッカー -->
+      <div class="game-card" onclick="launchGame('checkers', 'checkers.html')">
         <div class="card-icon">
           <div class="checkers-mini-board">
-            <div class="chk-sq-light"></div>
-            <div class="chk-sq-dark"><div class="chk-piece-red"></div></div>
-            <div class="chk-sq-light"></div>
-            <div class="chk-sq-dark"><div class="chk-piece-red"></div></div>
-            <div class="chk-sq-dark"><div class="chk-piece-red"></div></div>
-            <div class="chk-sq-light"></div>
-            <div class="chk-sq-dark"><div class="chk-piece-red"></div></div>
-            <div class="chk-sq-light"></div>
-            <div class="chk-sq-light"></div>
-            <div class="chk-sq-dark"><div class="chk-piece-white"></div></div>
-            <div class="chk-sq-light"></div>
-            <div class="chk-sq-dark"><div class="chk-piece-white"></div></div>
-            <div class="chk-sq-dark"><div class="chk-piece-white"></div></div>
-            <div class="chk-sq-light"></div>
-            <div class="chk-sq-dark"><div class="chk-piece-white"></div></div>
-            <div class="chk-sq-light"></div>
+            <div class="chk-cell-dark"><div class="chk-cell-p-red"></div></div>
+            <div class="chk-cell-light"></div>
+            <div class="chk-cell-dark"></div>
+            <div class="chk-cell-light"></div>
+            <div class="chk-cell-dark"></div>
+            <div class="chk-cell-light"></div>
+            <div class="chk-cell-dark"></div>
+            <div class="chk-cell-light"></div>
+            <div class="chk-cell-dark"><div class="chk-cell-p-white"></div></div>
           </div>
         </div>
         <div class="card-title">チェッカー</div>
-        <div class="card-genre">西洋跳駒 / 2人対戦</div>
+        <div class="card-genre">飛び越え捕獲 / 2人可</div>
       </div>
 
       <!-- 8位：バックギャモン -->
-      <div class="game-card" onclick="launchGame('backgammon')">
+      <div class="game-card" onclick="launchGame('backgammon', 'backgammon.html')">
         <div class="card-icon">
           <div class="bg-mini-icon">
             <div class="bg-icon-triangles"></div>
@@ -1247,7 +835,7 @@
       </div>
 
       <!-- 9位：コネクトフォー -->
-      <div class="game-card" onclick="launchGame('connect4')">
+      <div class="game-card" onclick="launchGame('connect4', 'connect4.html')">
         <div class="card-icon">
           <div class="connect-icon-pair">
             <div class="mini-connect-coin red"></div>
@@ -1258,25 +846,22 @@
         <div class="card-genre">四目並べ / 2人対戦</div>
       </div>
 
-      <!-- 10位：スネーク (新規) -->
-      <div class="game-card" onclick="launchGame('snake')">
+      <!-- 10位：スネーク -->
+      <div class="game-card" onclick="launchGame('snake', 'snake.html')">
         <div class="card-icon">
           <div class="snake-mini-board">
-            <div class="snake-grid-bg"></div>
-            <div class="snake-body-chain">
-              <div class="snake-joint"></div>
-              <div class="snake-joint"></div>
-              <div class="snake-joint head"></div>
-            </div>
-            <div class="snake-golden-apple"></div>
+            <div class="snake-body-s" style="left:8px; top:16px;"></div>
+            <div class="snake-body-s" style="left:16px; top:16px;"></div>
+            <div class="snake-body-s" style="left:16px; top:10px;"></div>
+            <div class="snake-apple-s"></div>
           </div>
         </div>
         <div class="card-title">スネーク</div>
-        <div class="card-genre">アーケード / 育成</div>
+        <div class="card-genre">木工アーケード</div>
       </div>
 
       <!-- 11位：ドット＆ボックス -->
-      <div class="game-card" onclick="launchGame('dotsandboxes')">
+      <div class="game-card" onclick="launchGame('dotsandboxes', 'dotsandboxes.html')">
         <div class="card-icon">
           <svg class="dnb-svg-icon" viewBox="0 0 40 40">
             <defs>
@@ -1304,7 +889,7 @@
       </div>
 
       <!-- 12位：ウサギと猟犬 -->
-      <div class="game-card" onclick="launchGame('hare-and-hounds')">
+      <div class="game-card" onclick="launchGame('hare-and-hounds', 'hare-and-hounds.html')">
         <div class="card-icon">
           <div class="hah-mini-board">
             <div class="hah-mini-hound-col">
@@ -1320,7 +905,7 @@
       </div>
 
       <!-- 13位：マインスイーパー -->
-      <div class="game-card" onclick="launchGame('minesweeper')">
+      <div class="game-card" onclick="launchGame('minesweeper', 'minesweeper.html')">
         <div class="card-icon">
           <div class="mines-icon-pair">
             <div class="mine-mini-tile mine-tile-btn">🚩</div>
@@ -1332,7 +917,7 @@
       </div>
 
       <!-- 14位：2048 -->
-      <div class="game-card" onclick="launchGame('2048')">
+      <div class="game-card" onclick="launchGame('2048', '2048.html')">
         <div class="card-icon">
           <div class="mini-2048-pair">
             <div class="mini-2048-tile tile-brown">2</div>
@@ -1344,7 +929,7 @@
       </div>
 
       <!-- 15位：ライツアウト -->
-      <div class="game-card" onclick="launchGame('lightsout')">
+      <div class="game-card" onclick="launchGame('lightsout', 'lightsout.html')">
         <div class="card-icon">
           <div class="lights-icon-pair">
             <div class="mini-lamp-bulb on"></div>
@@ -1356,7 +941,7 @@
       </div>
 
       <!-- 16位：ヒット＆ブロー -->
-      <div class="game-card" onclick="launchGame('hit-and-blow')">
+      <div class="game-card" onclick="launchGame('hit-and-blow', 'hit-and-blow.html')">
         <div class="card-icon">
           <div class="hnb-icon-unit">
             <div class="hnb-icon-pegs-row">
@@ -1379,7 +964,7 @@
     </div>
   </div>
 
-  <!-- 2. トランプ サブメニュー画面（知名度順・トランプ絵柄左配置） -->
+  <!-- 2. トランプ サブメニュー画面 -->
   <div id="screen-trump" class="screen-container" style="display: none;">
     <button class="global-back-btn" onclick="backToMainFromSub()">◀ メインメニュー</button>
     <div class="logo-container" style="margin-top: 24px;">
@@ -1388,43 +973,32 @@
     </div>
 
     <div class="games-grid">
-      <!-- 1位：クロンダイク（王道ソリティア） -->
-      <div class="game-card" onclick="launchGame('klondike')">
+      <div class="game-card" onclick="launchGame('klondike', 'klondike.html')">
         <div class="card-icon" style="font-size: 36px;">🃏👑</div>
         <div class="card-title">クロンダイク</div>
         <div class="card-genre">王道ソリティア</div>
       </div>
-
-      <!-- 2位：スパイダー -->
-      <div class="game-card" onclick="launchGame('spider')">
+      <div class="game-card" onclick="launchGame('spider', 'spider.html')">
         <div class="card-icon" style="font-size: 36px;">🃏🕷️</div>
         <div class="card-title">スパイダー</div>
         <div class="card-genre">連鎖ソリティア</div>
       </div>
-
-      <!-- 3位：フリーセル -->
-      <div class="game-card" onclick="launchGame('freecell')">
-        <div class="card-icon" style="font-size: 36px;">🃏♣️️</div>
+      <div class="game-card" onclick="launchGame('freecell', 'freecell.html')">
+        <div class="card-icon" style="font-size: 36px;">🃏♣️</div>
         <div class="card-title">フリーセル</div>
         <div class="card-genre">思考ソリティア</div>
       </div>
-
-      <!-- 4位：ブラックジャック -->
-      <div class="game-card" onclick="launchGame('blackjack')">
+      <div class="game-card" onclick="launchGame('blackjack', 'blackjack.html')">
         <div class="card-icon" style="font-size: 36px;">🃏🎰</div>
         <div class="card-title">ブラックジャック</div>
         <div class="card-genre">カジノ / 21</div>
       </div>
-
-      <!-- 5位：スピード -->
-      <div class="game-card" onclick="launchGame('speed')">
+      <div class="game-card" onclick="launchGame('speed', 'speed.html')">
         <div class="card-icon" style="font-size: 36px;">🃏⚡</div>
         <div class="card-title">スピード</div>
         <div class="card-genre">リアルタイム対戦 / 2人可</div>
       </div>
-
-      <!-- 6位：ゴルフ -->
-      <div class="game-card" onclick="launchGame('golf')">
+      <div class="game-card" onclick="launchGame('golf', 'golf.html')">
         <div class="card-icon" style="font-size: 36px;">🃏⛳</div>
         <div class="card-title">ゴルフ</div>
         <div class="card-genre">スピード連鎖</div>
@@ -1432,7 +1006,7 @@
     </div>
   </div>
 
-  <!-- 3. 麻雀 サブメニュー画面（知名度順・本稼働） -->
+  <!-- 3. 麻雀 サブメニュー画面 -->
   <div id="screen-mahjong" class="screen-container" style="display: none;">
     <button class="global-back-btn" onclick="backToMainFromSub()">◀ メインメニュー</button>
     <div class="logo-container" style="margin-top: 24px;">
@@ -1441,22 +1015,17 @@
     </div>
 
     <div class="games-grid">
-      <!-- 1位：四人麻雀 -->
-      <div class="game-card" onclick="launchGame('mahjong4p')">
+      <div class="game-card" onclick="launchGame('mahjong4p', 'mahjong4p.html')">
         <div class="card-icon" style="font-size: 36px;">🀄👥</div>
         <div class="card-title">四人麻雀</div>
         <div class="card-genre">CPU東風戦</div>
       </div>
-
-      <!-- 2位：上海 -->
-      <div class="game-card" onclick="launchGame('shanghai')">
-        <div class="card-icon" style="font-size: 36px;">🀄🏔️️</div>
+      <div class="game-card" onclick="launchGame('shanghai', 'shanghai.html')">
+        <div class="card-icon" style="font-size: 36px;">🀄🏔️</div>
         <div class="card-title">上海</div>
         <div class="card-genre">ピラミッド牌</div>
       </div>
-
-      <!-- 3位：四川省 -->
-      <div class="game-card" onclick="launchGame('shisen')">
+      <div class="game-card" onclick="launchGame('shisen', 'shisen.html')">
         <div class="card-icon">
           <div class="mj-icon-pair">
             <div class="mj-mini-tile"><span class="mj-mini-text color-chun">中</span></div>
@@ -1469,7 +1038,7 @@
     </div>
   </div>
 
-  <!-- 4. ダイス サブメニュー画面（知名度順・本稼働） -->
+  <!-- 4. ダイス サブメニュー画面 -->
   <div id="screen-dice" class="screen-container" style="display: none;">
     <button class="global-back-btn" onclick="backToMainFromSub()">◀ メインメニュー</button>
     <div class="logo-container" style="margin-top: 24px;">
@@ -1478,8 +1047,7 @@
     </div>
 
     <div class="games-grid">
-      <!-- 1位：ヨット -->
-      <div class="game-card" onclick="launchGame('yacht')">
+      <div class="game-card" onclick="launchGame('yacht', 'yacht.html')">
         <div class="card-icon">
           <div class="dice-icon-pair">
             <div class="mini-die">
@@ -1499,16 +1067,12 @@
         <div class="card-title">ヨット</div>
         <div class="card-genre">ダイス / 2人対戦可</div>
       </div>
-
-      <!-- 2位：ゾンビダイス -->
-      <div class="game-card" onclick="launchGame('zombiedice')">
+      <div class="game-card" onclick="launchGame('zombiedice', 'zombiedice.html')">
         <div class="card-icon" style="font-size: 36px;">🎲🧟</div>
         <div class="card-title">ゾンビダイス</div>
         <div class="card-genre">脳みそ争奪サバイバル</div>
       </div>
-
-      <!-- 3位：ファークル -->
-      <div class="game-card" onclick="launchGame('farkle')">
+      <div class="game-card" onclick="launchGame('farkle', 'farkle.html')">
         <div class="card-icon" style="font-size: 36px;">🎲🔥</div>
         <div class="card-title">ファークル</div>
         <div class="card-genre">スリル / 2人対戦可</div>
@@ -1516,150 +1080,10 @@
     </div>
   </div>
 
-  <!-- 5. ゲーム表示フレーム (iframe群) -->
-  <div id="view-checkers" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-checkers" src="checkers.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-snake" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-snake" src="snake.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-gomoku" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-gomoku" src="gomoku.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-backgammon" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-backgammon" src="backgammon.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-mahjong4p" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-mahjong4p" src="mahjong4p.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-zombiedice" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-zombiedice" src="zombiedice.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-speed" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-speed" src="speed.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-hare-and-hounds" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-hare-and-hounds" src="hare-and-hounds.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-sokoban" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-sokoban" src="sokoban.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-farkle" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-farkle" src="farkle.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-golf" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-golf" src="golf.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-dotsandboxes" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-dotsandboxes" src="dotsandboxes.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-picross" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-picross" src="picross.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-mancala" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-mancala" src="mancala.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-blackjack" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-blackjack" src="blackjack.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-lightsout" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-lightsout" src="lightsout.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-connect4" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-connect4" src="connect4.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-reversi" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-reversi" src="reversi.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-rpg" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-rpg" src="rpg.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-shanghai" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-shanghai" src="shanghai.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-shisen" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-shisen" src="shisen.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-sudoku" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-sudoku" src="sudoku.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-minesweeper" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-minesweeper" src="minesweeper.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-2048" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-2048" src="2048.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-hit-and-blow" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-hit-and-blow" src="hit-and-blow.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-yacht" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-yacht" src="yacht.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-spider" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-spider" src="spider.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-freecell" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-freecell" src="freecell.html" class="game-frame" allow="autoplay"></iframe>
-  </div>
-
-  <div id="view-klondike" class="game-viewport">
-    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
-    <iframe id="frame-klondike" src="klondike.html" class="game-frame" allow="autoplay"></iframe>
+  <!-- 5. 単一オンデマンド iframe ビューポート -->
+  <div id="game-viewport-container" class="game-viewport">
+    <button class="global-back-btn" onclick="closeActiveGame()">◀ メニュー</button>
+    <iframe id="global-game-frame" src="" class="game-frame" allow="autoplay"></iframe>
   </div>
 
   <script>
@@ -1718,9 +1142,9 @@
     }
 
     /* ドロワーからゲーム起動 */
-    function launchFromDrawer(gameId) {
+    function launchFromDrawer(gameId, fileSrc) {
       toggleDrawer(false);
-      launchGame(gameId);
+      launchGame(gameId, fileSrc);
     }
 
     /* サブメニューの切り替え表示 */
@@ -1746,25 +1170,31 @@
       window.scrollTo(0, 0);
     }
 
-    /* ゲームの起動 */
-    function launchGame(gameId) {
+    /* ゲームのオンデマンド遅延起動（タップされたときだけsrcをセット） */
+    function launchGame(gameId, fileSrc) {
       playMenuPop(false);
 
       document.querySelectorAll('.screen-container').forEach(sc => sc.style.display = 'none');
       document.body.style.overflow = 'hidden';
 
-      document.querySelectorAll('.game-viewport').forEach(v => v.classList.remove('active'));
-      const targetView = document.getElementById('view-' + gameId);
-      if (targetView) {
-        targetView.classList.add('active');
-      }
+      const frame = document.getElementById('global-game-frame');
+      const viewport = document.getElementById('game-viewport-container');
+
+      // ここで初めてファイルを読み込む！
+      frame.src = fileSrc;
+      viewport.classList.add('active');
     }
 
-    /* ゲーム画面から戻る */
-    function backToCurrentMenu() {
+    /* ゲーム終了（メニューへ戻り、srcを空にして完全に停止・解放する） */
+    function closeActiveGame() {
       playMenuPop(true);
 
-      document.querySelectorAll('.game-viewport').forEach(v => v.classList.remove('active'));
+      const frame = document.getElementById('global-game-frame');
+      const viewport = document.getElementById('game-viewport-container');
+
+      // srcを空にして裏での実行を完全にストップ＆メモリ解放！
+      frame.src = 'about:blank';
+      viewport.classList.remove('active');
       document.body.style.overflow = 'auto';
 
       document.querySelectorAll('.screen-container').forEach(sc => sc.style.display = 'none');
