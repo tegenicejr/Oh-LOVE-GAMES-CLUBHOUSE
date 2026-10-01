@@ -156,7 +156,7 @@
       min-height: 22px;
     }
 
-    /* 投入ガイドゾーン（ボード上部） */
+    /* 投入ガイドゾーン */
     .drop-guide-zone {
       display: grid;
       grid-template-columns: repeat(7, var(--cell-size));
@@ -181,7 +181,7 @@
       transform: translateY(3px);
     }
 
-    /* 7列×6行 立体木製コネクトフォーボード */
+    /* 7列×6行 立体木製ボード */
     .connect-board-frame {
       position: relative;
       background: linear-gradient(180deg, #3d2516 0%, #29180c 100%);
@@ -218,7 +218,7 @@
       position: relative;
     }
 
-    /* ボードの丸穴（彫り込み表現） */
+    /* ボードの丸穴 */
     .hole-mask {
       width: var(--hole-size);
       height: var(--hole-size);
@@ -232,7 +232,7 @@
       overflow: hidden;
     }
 
-    /* コイン（立体メダル） */
+    /* コイン */
     .coin {
       width: calc(var(--hole-size) - 2px);
       height: calc(var(--hole-size) - 2px);
@@ -397,11 +397,11 @@
         <div class="score-banner">
           <div class="player-badge turn-active" id="badge-red">
             <div class="mini-disc red"></div>
-            <span>あなた</span>
+            <span id="label-player-1">あなた</span>
           </div>
           <div class="player-badge" id="badge-yellow">
             <div class="mini-disc yellow"></div>
-            <span>COM</span>
+            <span id="label-player-2">COM</span>
           </div>
         </div>
         <div class="diff-badge" id="stat-diff-badge">COM: 中級</div>
@@ -460,10 +460,15 @@
         <br>
         <b style="color:var(--brass-gold);">【基本ルール】</b>
         <ul style="padding-left:18px; margin:6px 0;">
-          <li>あなたは<b>先手（赤）</b>、COMが<b>後手（黄）</b>です。</li>
-          <li>コインを落としたい列をタップすると、一番下の空いているマスまでストンと落ちます。</li>
+          <li><b>赤が先手</b>、<b>黄が後手</b>です。</li>
+          <li>コインを落としたい列をタップすると、一番下の空いているマスまで落ちます。</li>
           <li>満杯になった列には落とせません。</li>
           <li>タテ・ヨコ・ナナメのいずれかで4つ直線に揃えた瞬間に勝利となります。</li>
+        </ul>
+        <br>
+        <b style="color:var(--brass-gold);">【プレイモード】</b>
+        <ul style="padding-left:18px; margin:6px 0;">
+          <li>右上の⚙️設定から<b>「1人プレイ (vs COM)」</b>または<b>「2人プレイ (1台で対戦)」</b>を自由に切り替えられます。</li>
         </ul>
       </div>
       <button class="modal-close-btn" onclick="toggleRulesModal(false)">閉じる</button>
@@ -476,6 +481,13 @@
       <div class="modal-title">⚙ 設定</div>
       <div class="modal-body">
         <div class="setting-item">
+          <span>対戦モード</span>
+          <select id="mode-selector" class="theme-select" onchange="changeGameMode(this.value)">
+            <option value="pve" selected>1人プレイ (vs COM)</option>
+            <option value="pvp">2人プレイ (1台で対戦)</option>
+          </select>
+        </div>
+        <div class="setting-item" id="setting-com-diff">
           <span>COMの強さ</span>
           <select id="diff-selector" class="theme-select" onchange="changeDifficulty(this.value)">
             <option value="easy">初級 (気まぐれ)</option>
@@ -551,9 +563,10 @@
 
     const ROWS = 6;
     const COLS = 7;
-    // 0: 空, 1: プレイヤー (Red), 2: COM (Yellow)
+    // 0: 空, 1: 1P(赤), 2: 2P/COM(黄)
     let grid = [];
     let currentTurn = 1;
+    let gameMode = 'pve'; // 'pve' | 'pvp'
     let isGameOver = false;
     let isComThinking = false;
     let difficulty = 'medium';
@@ -585,15 +598,23 @@
     }
 
     function undoMove() {
-      if (isComThinking || historyStack.length < 2 || isGameOver) return;
-      // プレイヤーの手番に戻すため2手戻す
-      historyStack.pop();
-      const last = historyStack.pop();
-      grid = last.grid;
-      currentTurn = 1;
+      if (isComThinking || isGameOver) return;
+
+      if (gameMode === 'pve') {
+        if (historyStack.length < 2) return;
+        historyStack.pop();
+        const last = historyStack.pop();
+        grid = last.grid;
+        currentTurn = 1;
+      } else {
+        if (historyStack.length === 0) return;
+        const last = historyStack.pop();
+        grid = last.grid;
+        currentTurn = last.turn;
+      }
+
       winCells = [];
       isGameOver = false;
-
       updateUI();
       renderBoard();
       playDropSound();
@@ -629,25 +650,25 @@
     }
 
     function handleColumnClick(col) {
-      if (currentTurn !== 1 || isGameOver || isComThinking) return;
+      if (isGameOver || isComThinking) return;
+      if (gameMode === 'pve' && currentTurn !== 1) return;
+
       const targetRow = getLowestEmptyRow(grid, col);
       if (targetRow === -1) return; // 列満杯
 
       saveState();
       playDropSound();
-      grid[targetRow][col] = 1;
+      grid[targetRow][col] = currentTurn;
 
       setTimeout(playLandSound, 280);
 
-      const winningLine = checkWin(grid, 1);
+      const winningLine = checkWin(grid, currentTurn);
       if (winningLine) {
         winCells = winningLine;
         isGameOver = true;
         renderBoard();
         updateUI();
-        recordMatch(true);
-        playFanfareSound();
-        setTimeout(() => alert('🎉 あなたの勝利です！見事な4連！'), 350);
+        finishGame(currentTurn);
         return;
       }
 
@@ -659,12 +680,16 @@
         return;
       }
 
-      currentTurn = 2;
-      updateUI();
-      renderBoard();
-
-      // COMのターン
-      setTimeout(handleComTurn, 550);
+      if (gameMode === 'pvp') {
+        currentTurn = (currentTurn === 1) ? 2 : 1;
+        updateUI();
+        renderBoard();
+      } else {
+        currentTurn = 2;
+        updateUI();
+        renderBoard();
+        setTimeout(handleComTurn, 550);
+      }
     }
 
     function getLowestEmptyRow(g, col) {
@@ -675,7 +700,7 @@
     }
 
     function handleComTurn() {
-      if (isGameOver || currentTurn !== 2) return;
+      if (isGameOver || currentTurn !== 2 || gameMode !== 'pve') return;
       isComThinking = true;
       document.getElementById('turn-announcer').textContent = 'COMが思考中...';
 
@@ -715,6 +740,18 @@
       renderBoard();
     }
 
+    function finishGame(winner) {
+      if (gameMode === 'pvp') {
+        playFanfareSound();
+        const winnerName = (winner === 1) ? '1P (赤)' : '2P (黄)';
+        setTimeout(() => alert(`🎉 ${winnerName}の勝利です！見事な4連！`), 350);
+      } else {
+        recordMatch(true);
+        playFanfareSound();
+        setTimeout(() => alert('🎉 あなたの勝利です！見事な4連！'), 350);
+      }
+    }
+
     /* COM思考ルーチン */
     function pickComMove() {
       const validCols = [];
@@ -723,12 +760,11 @@
       }
       if (validCols.length === 0) return -1;
 
-      // 初級: ほぼランダム
       if (difficulty === 'easy') {
         return validCols[Math.floor(Math.random() * validCols.length)];
       }
 
-      // 中級・上級共通: 1手で勝てる手があれば打つ
+      // 1手で勝てる手
       for (const c of validCols) {
         const r = getLowestEmptyRow(grid, c);
         grid[r][c] = 2;
@@ -737,7 +773,7 @@
         if (win) return c;
       }
 
-      // 中級・上級共通: プレイヤーの勝ち手を即ブロック
+      // プレイヤーの勝ち手をブロック
       for (const c of validCols) {
         const r = getLowestEmptyRow(grid, c);
         grid[r][c] = 1;
@@ -747,17 +783,15 @@
       }
 
       if (difficulty === 'medium') {
-        // 中央に近い列を優先しつつランダム
         validCols.sort((a, b) => Math.abs(a - 3) - Math.abs(b - 3));
         return validCols[0];
       }
 
-      // 上級: 相手に勝ち手を与える列を避け、中央列を重視
+      // 上級: 相手に勝ち手を与えるマスを回避し中央重視
       const safeCols = [];
       for (const c of validCols) {
         const r = getLowestEmptyRow(grid, c);
         grid[r][c] = 2;
-        // 次にプレイヤーがその真上に落として勝てないか確認
         let givesOpponentWin = false;
         if (r - 1 >= 0) {
           grid[r - 1][c] = 1;
@@ -769,7 +803,6 @@
       }
 
       const pool = safeCols.length > 0 ? safeCols : validCols;
-      // 中央（col 3）に近い列を最優先
       pool.sort((a, b) => Math.abs(a - 3) - Math.abs(b - 3));
       return pool[0];
     }
@@ -818,14 +851,34 @@
       document.getElementById('badge-red').classList.toggle('turn-active', currentTurn === 1 && !isGameOver);
       document.getElementById('badge-yellow').classList.toggle('turn-active', currentTurn === 2 && !isGameOver);
 
+      const label1 = document.getElementById('label-player-1');
+      const label2 = document.getElementById('label-player-2');
+      const diffBadge = document.getElementById('stat-diff-badge');
+
+      if (gameMode === 'pvp') {
+        label1.textContent = '1P';
+        label2.textContent = '2P';
+        diffBadge.textContent = '2人プレイ (対戦)';
+      } else {
+        label1.textContent = 'あなた';
+        label2.textContent = 'COM';
+        const names = { easy: '初級', medium: '中級', hard: '上級' };
+        diffBadge.textContent = `COM: ${names[difficulty]}`;
+      }
+
       if (isGameOver) {
         document.getElementById('turn-announcer').textContent = 'ゲーム終了';
       } else if (!isComThinking) {
-        document.getElementById('turn-announcer').textContent = currentTurn === 1 ? 'あなたの番です (赤)' : 'COMの番です (黄)';
+        if (gameMode === 'pvp') {
+          document.getElementById('turn-announcer').textContent = (currentTurn === 1) ? '1Pの番です (赤)' : '2Pの番です (黄)';
+        } else {
+          document.getElementById('turn-announcer').textContent = (currentTurn === 1) ? 'あなたの番です (赤)' : 'COMの番です (黄)';
+        }
       }
     }
 
     function recordMatch(isWin) {
+      if (gameMode !== 'pve') return;
       let stats = { wins: 0, losses: 0 };
       try {
         stats = JSON.parse(localStorage.getItem('connect4_stats')) || stats;
@@ -859,13 +912,20 @@
     function toggleSettingsModal(show) {
       document.getElementById('modal-settings').classList.toggle('active', show);
     }
-    function changeDifficulty(val) {
-      difficulty = val;
-      const names = { easy: '初級', medium: '中級', hard: '上級' };
-      document.getElementById('stat-diff-badge').textContent = `COM: ${names[val]}`;
+
+    function changeGameMode(val) {
+      gameMode = val;
+      document.getElementById('setting-com-diff').style.display = (val === 'pve') ? 'flex' : 'none';
       toggleSettingsModal(false);
       restartGame();
     }
+
+    function changeDifficulty(val) {
+      difficulty = val;
+      toggleSettingsModal(false);
+      restartGame();
+    }
+
     function restartGame() {
       if (confirm('盤面をリセットして新しく始めますか？')) initGame();
     }
