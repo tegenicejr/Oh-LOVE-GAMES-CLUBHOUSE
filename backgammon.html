@@ -71,10 +71,10 @@
       display: flex; flex-direction: column; align-items: center; gap: 8px;
     }
     .turn-announcer {
-      font-size: 0.88rem; font-weight: 800; color: #ede2d5; min-height: 20px; text-align: center;
+      font-size: 0.86rem; font-weight: 800; color: #ede2d5; min-height: 22px; text-align: center;
+      display: flex; align-items: center; justify-content: center;
     }
 
-    /* バックギャモンボードSVGコンテナ */
     .bg-board-frame {
       width: 100%; aspect-ratio: 1.25;
       background: #190f09;
@@ -88,13 +88,17 @@
     .pt-tri-dark { fill: #4a2810; }
     .pt-tri-light { fill: #cba36b; }
     .pt-tri.highlight { fill: #2ecc71 !important; opacity: 0.85; filter: drop-shadow(0 0 6px #2ecc71); }
+    .pt-tri.cpu-from { fill: #e5a950 !important; opacity: 0.9; filter: drop-shadow(0 0 8px #e5a950); }
+    .pt-tri.cpu-to { fill: #2ecc71 !important; opacity: 0.9; filter: drop-shadow(0 0 8px #2ecc71); }
+
     .bar-highlight { fill: rgba(46, 204, 113, 0.4) !important; stroke: #2ecc71; stroke-width: 2; }
+    .bar-cpu-from { fill: rgba(229, 169, 80, 0.5) !important; stroke: #e5a950; stroke-width: 2; }
     .pt-hit { fill: transparent; cursor: pointer; }
     .bar-line { fill: #2c160c; stroke: #583920; stroke-width: 1.5; }
     .bear-off-zone { fill: #120b06; stroke: #422814; stroke-width: 1; }
     .bear-off-zone.highlight { stroke: #2ecc71; stroke-width: 2; fill: rgba(46,204,113,0.3); }
+    .bear-off-zone.cpu-to { stroke: #2ecc71; stroke-width: 2.5; fill: rgba(46,204,113,0.45); }
 
-    /* ダイス＆操作コントロール */
     .controls-bar {
       display: flex; justify-content: space-between; align-items: center;
       width: 100%; padding: 0 4px;
@@ -107,8 +111,14 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 1.1rem; font-weight: 900; color: #222;
       box-shadow: 0 3px 6px rgba(0,0,0,0.6);
+      transition: all 0.2s;
     }
-    .bg-die.used { opacity: 0.25; border-color: #555; }
+    .bg-die.active-die {
+      border-color: var(--brass-gold);
+      box-shadow: 0 0 10px var(--brass-glow);
+      transform: scale(1.08);
+    }
+    .bg-die.used { opacity: 0.25; border-color: #555; transform: none; }
     .roll-btn {
       background: linear-gradient(180deg, #d4a359, #aa782e);
       border: none; border-radius: 12px;
@@ -117,17 +127,14 @@
     }
     .roll-btn:disabled { background: #3a2e26; color: #635245; cursor: not-allowed; }
 
-    /* スタート設定オーバーレイ */
     .screen-overlay {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(18, 11, 7, 0.92);
+      background: rgba(18, 11, 7, 0.94);
       backdrop-filter: blur(4px);
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      gap: 12px;
-      z-index: 50;
-      padding: 16px;
+      gap: 12px; z-index: 50; padding: 16px;
     }
     .screen-overlay.hidden { display: none; }
     .overlay-title {
@@ -138,8 +145,7 @@
     .config-box {
       width: 100%; max-width: 280px;
       display: flex; flex-direction: column; gap: 10px;
-      background: rgba(0,0,0,0.4);
-      padding: 12px; border-radius: 12px;
+      background: rgba(0,0,0,0.4); padding: 12px; border-radius: 12px;
       border: 1px solid #4a3424;
     }
     .config-row {
@@ -160,7 +166,50 @@
     }
     .start-btn:active { transform: scale(0.95); }
 
-    /* ルールモーダル */
+    .duel-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(10, 6, 4, 0.9);
+      backdrop-filter: blur(5px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px; z-index: 60;
+    }
+    .duel-overlay.hidden { display: none; }
+    .duel-title {
+      font-size: 1.15rem; font-weight: 900;
+      color: var(--brass-gold); letter-spacing: 2px;
+    }
+    .duel-arena {
+      display: flex; align-items: center; justify-content: center; gap: 24px;
+    }
+    .duel-fighter { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .duel-name { font-size: 0.85rem; font-weight: 800; color: #ede2d5; }
+    .duel-die {
+      width: 54px; height: 54px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem; font-weight: 900;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.8);
+    }
+    .duel-die.white {
+      background: linear-gradient(145deg, #ffffff 0%, #ebebeb 70%, #cccccc 100%);
+      color: #1a1a1a; border: 2px solid #ffffff;
+    }
+    .duel-die.red {
+      background: linear-gradient(145deg, #ff7675 0%, #d63031 70%, #962d22 100%);
+      color: #ffffff; border: 2px solid #ff9f43;
+    }
+    .duel-die.rolling { animation: dieTumble 0.15s infinite linear; }
+    @keyframes dieTumble {
+      0% { transform: rotate(0deg) scale(0.92); }
+      50% { transform: rotate(180deg) scale(1.05); }
+      100% { transform: rotate(360deg) scale(0.92); }
+    }
+    .duel-result-text {
+      font-size: 1rem; font-weight: 900; color: #fff; min-height: 24px;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+    }
+
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0,0,0,0.82); z-index: 99999;
@@ -237,6 +286,23 @@
           </div>
           <button class="start-btn" onclick="startNewGame()">START</button>
         </div>
+
+        <!-- 先攻後攻ダイス対決カットイン -->
+        <div id="duel-overlay" class="duel-overlay hidden">
+          <div class="duel-title">🎲 OPENING ROLL 🎲</div>
+          <div class="duel-arena">
+            <div class="duel-fighter">
+              <div class="duel-name" id="duel-name-w">白 (YOU)</div>
+              <div class="duel-die white" id="duel-die-w">⚀</div>
+            </div>
+            <div style="font-weight:900; font-size:1.2rem; color:var(--brass-gold);">VS</div>
+            <div class="duel-fighter">
+              <div class="duel-name" id="duel-name-r">赤 (CPU)</div>
+              <div class="duel-die red" id="duel-die-r">⚀</div>
+            </div>
+          </div>
+          <div class="duel-result-text" id="duel-result-text">先攻後攻を決定中...</div>
+        </div>
       </div>
 
       <div class="controls-bar">
@@ -249,7 +315,6 @@
     </div>
   </div>
 
-  <!-- ルールモーダル -->
   <div id="modal-rules" class="modal-overlay">
     <div class="modal-sheet">
       <h3 style="color:var(--brass-gold); text-align:center; margin-bottom:12px;">📖 バックギャモンのあそびかた</h3>
@@ -291,21 +356,35 @@
       } catch(e) {}
     }
 
-    /* ゲーム状態定義:
-       'TITLE': スタート画面待機
-       'OPENING': 先攻後攻ダイスロール中
-       'WAIT_ROLL': サイコロ待ち
-       'MOVING': 移動中
-       'CPU_THINKING': CPU行動中
-    */
+    function playFanfare() {
+      try {
+        const ctx = getAudio();
+        [523.25, 659.25, 783.99].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.08 + 0.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.08);
+          osc.stop(ctx.currentTime + idx * 0.08 + 0.22);
+        });
+      } catch(e) {}
+    }
+
+    const DIE_CHARS = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+
     let gameState = 'TITLE';
-    let gameMode = 'cpu'; // 'cpu' | 'pvp'
+    let gameMode = 'cpu';
     let cpuDifficulty = 'medium';
 
     let points = Array(24).fill(null).map(() => ({ player: null, count: 0 }));
     let bar = { W: 0, R: 0 };
     let off = { W: 0, R: 0 };
-    let currentTurn = 'W'; // 'W' or 'R'
+    let currentTurn = 'W';
+    let dice = [];
     let movesLeft = [];
     let selectedFrom = null;
 
@@ -325,6 +404,7 @@
       selectedFrom = null;
       clearHighlights();
       document.getElementById('btn-roll').disabled = true;
+      document.getElementById('duel-overlay').classList.add('hidden');
       document.getElementById('start-overlay').classList.remove('hidden');
       document.getElementById('announcer').textContent = 'スタートを押してください';
       updateUI();
@@ -351,53 +431,81 @@
       document.getElementById('name-w').innerHTML = `白: 残<b id="rem-w">15</b>`;
       document.getElementById('name-r').innerHTML = `${gameMode === 'cpu' ? 'CPU' : '赤'}: 残<b id="rem-r">15</b>`;
 
-      // 先攻後攻オープニングロール
-      runOpeningRoll();
+      document.getElementById('duel-name-w').textContent = '白 (YOU)';
+      document.getElementById('duel-name-r').textContent = gameMode === 'cpu' ? '赤 (CPU)' : '赤 (2P)';
+
+      triggerOpeningDuel();
     }
 
-    /* 先攻後攻ダイス対決 */
-    function runOpeningRoll() {
-      gameState = 'OPENING';
-      document.getElementById('announcer').textContent = '🎲 先攻後攻のダイス対決中...';
-      document.getElementById('btn-roll').disabled = true;
+    function triggerOpeningDuel() {
+      gameState = 'DUEL';
+      const duelOverlay = document.getElementById('duel-overlay');
+      const dieW = document.getElementById('duel-die-w');
+      const dieR = document.getElementById('duel-die-r');
+      const resultText = document.getElementById('duel-result-text');
 
-      playSound(340, 100);
-      let dW = Math.floor(Math.random() * 6) + 1;
-      let dR = Math.floor(Math.random() * 6) + 1;
+      duelOverlay.classList.remove('hidden');
+      resultText.textContent = 'ダイスを振って先攻を決定中...';
+      dieW.classList.add('rolling');
+      dieR.classList.add('rolling');
 
-      // 同点なら振り直し
-      while (dW === dR) {
-        dR = Math.floor(Math.random() * 6) + 1;
-      }
-
-      document.getElementById('die-1').textContent = dW;
-      document.getElementById('die-2').textContent = dR;
-      document.getElementById('die-1').classList.remove('used');
-      document.getElementById('die-2').classList.remove('used');
+      let rollCount = 0;
+      const rollSoundTimer = setInterval(() => {
+        playSound(280 + Math.random() * 80, 100);
+        rollCount++;
+        if (rollCount >= 5) clearInterval(rollSoundTimer);
+      }, 140);
 
       setTimeout(() => {
-        if (dW > dR) {
-          currentTurn = 'W';
-          document.getElementById('announcer').textContent = `🎉 白が勝利！白の先攻です（出目: ${dW}, ${dR}）`;
-          movesLeft = [dW, dR];
-          gameState = 'MOVING';
-          updateUI();
-        } else {
-          currentTurn = 'R';
-          document.getElementById('announcer').textContent = `🎉 ${gameMode === 'cpu' ? 'CPU' : '赤'}が勝利！先攻です（出目: ${dW}, ${dR}）`;
-          movesLeft = [dW, dR];
-          updateUI();
-          if (gameMode === 'cpu') {
-            gameState = 'CPU_THINKING';
-            setTimeout(executeCpuTurn, 800);
-          } else {
-            gameState = 'MOVING';
-          }
+        let dW = Math.floor(Math.random() * 6) + 1;
+        let dR = Math.floor(Math.random() * 6) + 1;
+
+        if (dW === dR) {
+          dieW.classList.remove('rolling');
+          dieR.classList.remove('rolling');
+          dieW.textContent = DIE_CHARS[dW];
+          dieR.textContent = DIE_CHARS[dR];
+          resultText.textContent = `両者 [${dW}] の同点！振り直します...`;
+          setTimeout(triggerOpeningDuel, 1200);
+          return;
         }
+
+        dieW.classList.remove('rolling');
+        dieR.classList.remove('rolling');
+        dieW.textContent = DIE_CHARS[dW];
+        dieR.textContent = DIE_CHARS[dR];
+
+        const winner = dW > dR ? 'W' : 'R';
+        const winnerName = (winner === 'W') ? '白' : (gameMode === 'cpu' ? 'CPU(赤)' : '赤');
+
+        playFanfare();
+        resultText.innerHTML = `🎉 <b style="color:var(--brass-gold);">${winnerName}</b> の勝利！先攻です！`;
+
+        document.getElementById('die-1').textContent = dW;
+        document.getElementById('die-2').textContent = dR;
+        document.getElementById('die-1').classList.remove('used');
+        document.getElementById('die-2').classList.remove('used');
+
+        setTimeout(() => {
+          duelOverlay.classList.add('hidden');
+          movesLeft = [dW, dR];
+          currentTurn = winner;
+          updateUI();
+
+          if (winner === 'W' || gameMode === 'pvp') {
+            gameState = 'MOVING';
+            document.getElementById('announcer').textContent =
+              `${winner === 'W' ? '白' : '赤'}の先攻！出目 [${dW}, ${dR}] で駒を動かしてください`;
+          } else {
+            gameState = 'CPU_THINKING';
+            document.getElementById('announcer').textContent =
+              `CPU(赤)の先攻！出目 [${dW}, ${dR}]`;
+            setTimeout(executeCpuTurnStepByStep, 900);
+          }
+        }, 1600);
       }, 1000);
     }
 
-    /* 手番開始時の処理 */
     function startTurn(player) {
       currentTurn = player;
       movesLeft = [];
@@ -412,15 +520,13 @@
         document.getElementById('btn-roll').disabled = false;
         document.getElementById('announcer').textContent = `${player === 'W' ? '白' : '赤'}の手番：サイコロを振ってください`;
       } else {
-        // CPUの手番
         gameState = 'CPU_THINKING';
         document.getElementById('btn-roll').disabled = true;
         document.getElementById('announcer').textContent = 'CPU(赤)がサイコロを振っています...';
-        setTimeout(cpuRollAndAct, 800);
+        setTimeout(cpuRollAndAct, 900);
       }
     }
 
-    /* プレイヤーのサイコロボタン押下 */
     function playerRollClick() {
       if (gameState !== 'WAIT_ROLL') return;
       playSound(340, 100);
@@ -439,7 +545,6 @@
       document.getElementById('announcer').textContent =
         `${currentTurn === 'W' ? '白' : '赤'}の出目 [${movesLeft.join(', ')}]：駒を選んでください`;
 
-      // 合法手がない場合はパス
       if (!hasAnyLegalMoves(currentTurn)) {
         setTimeout(() => {
           alert(`${currentTurn === 'W' ? '白' : '赤'}は動かせる駒がありません。パスします。`);
@@ -448,7 +553,6 @@
       }
     }
 
-    /* CPUのサイコロ振りと行動 */
     function cpuRollAndAct() {
       if (gameState !== 'CPU_THINKING' || currentTurn !== 'R') return;
       playSound(340, 100);
@@ -461,39 +565,50 @@
       document.getElementById('die-2').textContent = d2;
       document.getElementById('die-1').classList.remove('used');
       document.getElementById('die-2').classList.remove('used');
-      document.getElementById('announcer').textContent = `CPU(赤)の出目 [${movesLeft.join(', ')}]：移動中...`;
+      document.getElementById('announcer').textContent = `CPU(赤)の出目 [${movesLeft.join(', ')}]：思考中...`;
 
-      setTimeout(executeCpuTurn, 600);
+      setTimeout(executeCpuTurnStepByStep, 900);
     }
 
-    function executeCpuTurn() {
+    /* === CPUの動作を人間らしいテンポで1手ずつ見せる処理 === */
+    function executeCpuTurnStepByStep() {
       if (movesLeft.length === 0 || !hasAnyLegalMoves('R')) {
-        endTurn();
+        document.getElementById('announcer').textContent = 'CPUの行動が終了しました';
+        setTimeout(endTurn, 700);
         return;
       }
 
-      let acted = false;
-      // 1. バーからの復帰最優先
+      let chosenMove = null;
+
+      // 1. バーからの復帰
       if (bar.R > 0) {
         for (const d of movesLeft) {
           const target = 24 - d;
           if (points[target].player !== 'W' || points[target].count < 2) {
-            tryExecuteMove('bar', target, 'R');
-            acted = true;
+            chosenMove = { from: 'bar', to: target, die: d, type: 'reenter' };
             break;
           }
         }
       } else {
-        // 2. ベアオフ優先
+        // 2. ベアオフ
         if (canBearOff('R')) {
           for (let i = 0; i <= 5; i++) {
             if (points[i].player === 'R') {
-              if (tryExecuteBearOff(i, 'R')) { acted = true; break; }
+              const dist = i + 1;
+              let moveIdx = movesLeft.indexOf(dist);
+              if (moveIdx === -1 && movesLeft.some(d => d > dist)) {
+                const isFurthest = points.slice(i + 1, 6).every(pt => pt.player !== 'R');
+                if (isFurthest) moveIdx = movesLeft.indexOf(Math.max(...movesLeft));
+              }
+              if (moveIdx !== -1) {
+                chosenMove = { from: i, to: 'off', die: movesLeft[moveIdx], type: 'bearoff' };
+                break;
+              }
             }
           }
         }
-        // 3. 通常前進（ヒット優先）
-        if (!acted) {
+        // 3. 通常前進
+        if (!chosenMove) {
           let candidateMoves = [];
           for (let i = 23; i >= 0; i--) {
             if (points[i].player === 'R') {
@@ -501,32 +616,63 @@
                 const target = i - d;
                 if (target >= 0 && (points[target].player !== 'W' || points[target].count < 2)) {
                   const isHit = (points[target].player === 'W' && points[target].count === 1);
-                  candidateMoves.push({ from: i, to: target, isHit });
+                  candidateMoves.push({ from: i, to: target, die: d, isHit, type: isHit ? 'hit' : 'move' });
                 }
               }
             }
           }
           if (candidateMoves.length > 0) {
             candidateMoves.sort((a, b) => (b.isHit ? 1 : 0) - (a.isHit ? 1 : 0));
-            tryExecuteMove(candidateMoves[0].from, candidateMoves[0].to, 'R');
-            acted = true;
+            chosenMove = candidateMoves[0];
           }
         }
       }
 
-      if (acted && movesLeft.length > 0 && hasAnyLegalMoves('R')) {
-        setTimeout(executeCpuTurn, 500);
-      } else {
-        setTimeout(endTurn, 400);
+      if (!chosenMove) {
+        setTimeout(endTurn, 600);
+        return;
       }
+
+      // === 移動前の「予告ハイライト」表示 ===
+      clearHighlights();
+      if (chosenMove.from === 'bar') {
+        document.getElementById('bar-svg-rect').classList.add('bar-cpu-from');
+        document.getElementById('announcer').innerHTML = `CPU: 出目[${chosenMove.die}] で <b style="color:#e5a950;">バー</b> から復帰準備...`;
+      } else {
+        const triFrom = document.getElementById(`tri-${chosenMove.from}`);
+        if (triFrom) triFrom.classList.add('cpu-from');
+        document.getElementById('announcer').innerHTML = `CPU: 出目[${chosenMove.die}] で <b style="color:#e5a950;">${chosenMove.from + 1}番</b> の駒を選択...`;
+      }
+
+      if (chosenMove.to === 'off') {
+        document.getElementById('off-svg-zone').classList.add('cpu-to');
+      } else {
+        const triTo = document.getElementById(`tri-${chosenMove.to}`);
+        if (triTo) triTo.classList.add('cpu-to');
+      }
+
+      // 650ms 相手の手を見せてから駒を実際に動かす
+      setTimeout(() => {
+        if (chosenMove.type === 'bearoff') {
+          tryExecuteBearOff(chosenMove.from, 'R');
+          document.getElementById('announcer').innerHTML = `CPU: 出目[${chosenMove.die}] で脱出（ベアオフ）！`;
+        } else {
+          tryExecuteMove(chosenMove.from, chosenMove.to, 'R');
+          const hitText = chosenMove.type === 'hit' ? ' <b style="color:#ff7675;">(白をヒット！)</b>' : '';
+          document.getElementById('announcer').innerHTML = `CPU: 出目[${chosenMove.die}] で移動完了${hitText}`;
+        }
+
+        // 次の手に進む前に800msの余韻
+        setTimeout(executeCpuTurnStepByStep, 800);
+      }, 650);
     }
 
     function endTurn() {
+      clearHighlights();
       const nextPlayer = (currentTurn === 'W') ? 'R' : 'W';
       startTurn(nextPlayer);
     }
 
-    /* プレイヤーのタッチ操作 */
     function handleBarClick() {
       if (gameState !== 'MOVING') return;
       if (currentTurn === 'W' && bar.W > 0) {
@@ -542,8 +688,6 @@
       if (gameState !== 'MOVING') return;
 
       const player = currentTurn;
-      const opp = player === 'W' ? 'R' : 'W';
-
       if (bar[player] > 0 && selectedFrom !== 'bar') {
         alert('バーに駒があります！まずバーから復帰させてください。');
         selectedFrom = 'bar';
@@ -741,9 +885,15 @@
     }
 
     function clearHighlights() {
-      document.querySelectorAll('.pt-tri').forEach(t => t.classList.remove('highlight'));
+      document.querySelectorAll('.pt-tri').forEach(t => {
+        t.classList.remove('highlight');
+        t.classList.remove('cpu-from');
+        t.classList.remove('cpu-to');
+      });
       document.getElementById('bar-svg-rect').classList.remove('bar-highlight');
+      document.getElementById('bar-svg-rect').classList.remove('bar-cpu-from');
       document.getElementById('off-svg-zone').classList.remove('highlight');
+      document.getElementById('off-svg-zone').classList.remove('cpu-to');
     }
 
     function buildSvgBoard() {
@@ -853,8 +1003,9 @@
     }
 
     function updateUI() {
-      document.getElementById('badge-w').classList.toggle('turn-active', currentTurn === 'W' && gameState !== 'TITLE');
-      document.getElementById('badge-r').classList.toggle('turn-active', currentTurn === 'R' && gameState !== 'TITLE');
+      const active = (gameState !== 'TITLE' && gameState !== 'DUEL');
+      document.getElementById('badge-w').classList.toggle('turn-active', currentTurn === 'W' && active);
+      document.getElementById('badge-r').classList.toggle('turn-active', currentTurn === 'R' && active);
       document.getElementById('rem-w').textContent = 15 - off.W;
       document.getElementById('rem-r').textContent = 15 - off.R;
     }
