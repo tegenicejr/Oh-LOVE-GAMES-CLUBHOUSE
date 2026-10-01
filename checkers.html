@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>チェッカー (Checkers)</title>
+  <style>
+    :root {
+      --bg-desk: #110c08;
+      --felt-dark: #122c19;
+      --felt-light: #1c4528;
+      --board-rim: #362214;
+      --sq-light: #dfa561;
+      --sq-dark: #3a1e0f;
+      --brass-gold: #d4a359;
+      --brass-glow: rgba(212, 163, 89, 0.45);
+    }
+    * {
+      box-sizing: border-box; margin: 0; padding: 0;
+      user-select: none; -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg-desk);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      color: #fff;
+      overflow-x: hidden; overflow-y: auto;
+    }
+    .viewport {
+      width: 100%; min-height: 100%;
+      padding: calc(12px + env(safe-area-inset-top)) 8px calc(60px + env(safe-area-inset-bottom));
+      display: flex; flex-direction: column; align-items: center;
+      background: radial-gradient(circle at 50% 20%, #2b1a10 0%, var(--bg-desk) 100%);
+    }
+    .topbar {
+      width: 100%; max-width: 440px;
+      display: flex; flex-direction: column; gap: 8px;
+      margin-bottom: 8px; padding: 0 4px;
+    }
+    .topbar-upper {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .topbar-title {
+      font-size: 1.05rem;
+      font-weight: 900;
+      color: var(--brass-gold);
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tool-group {
+      display: flex;
+      gap: 8px;
+    }
+    .tool-btn {
+      background: linear-gradient(145deg, #2c1c12 0%, #1c1109 100%);
+      border: 1.5px solid #4d3320;
+      color: var(--brass-gold);
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+    }
+    .tool-btn:active { transform: scale(0.92); }
+    .topbar-lower {
+      display: flex; justify-content: space-between; align-items: center; padding: 0 2px;
+    }
+    .player-badges { display: flex; gap: 8px; }
+    .role-badge {
+      background: rgba(0, 0, 0, 0.7);
+      border: 1.5px solid #442d1c;
+      border-radius: 14px;
+      padding: 5px 12px;
+      font-size: 0.82rem; font-weight: 800; color: #d1c1b2;
+      display: flex; align-items: center; gap: 6px;
+      transition: all 0.25s;
+    }
+    .role-badge.turn-active {
+      border-color: var(--brass-gold);
+      box-shadow: 0 0 12px var(--brass-glow);
+      background: rgba(45, 28, 16, 0.85);
+    }
+    .chk-icon { width: 14px; height: 14px; border-radius: 50%; }
+    .chk-icon.red { background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b); border: 1px solid #ff9f43; }
+    .chk-icon.white { background: radial-gradient(circle at 35% 30%, #fff, #bbb); border: 1px solid #fff; }
+    .diff-badge {
+      background: rgba(0,0,0,0.6);
+      border: 1.5px solid #442d1c;
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 0.78rem; color: var(--brass-gold); font-weight: 800;
+    }
+    .table-felt {
+      position: relative;
+      width: 100%; max-width: 440px;
+      background: radial-gradient(circle at 50% 35%, var(--felt-light) 0%, var(--felt-dark) 100%);
+      border: 6px solid var(--board-rim);
+      border-radius: 20px;
+      padding: 14px 10px 18px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.95);
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      overflow: hidden;
+    }
+    .turn-announcer {
+      font-size: 0.88rem; font-weight: 800; color: #ede2d5; min-height: 24px; text-align: center;
+      background: rgba(0,0,0,0.35); padding: 3px 12px; border-radius: 8px; width: 95%;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* 8×8 チェッカー盤 */
+    .checker-board-frame {
+      width: 100%; max-width: 360px; aspect-ratio: 1;
+      background: #24130a;
+      border: 4px solid #583920;
+      border-radius: 14px;
+      box-shadow: 0 14px 30px rgba(0,0,0,0.85);
+      padding: 6px;
+    }
+    #board-svg { width: 100%; height: 100%; display: block; }
+    .sq-light { fill: #dfa561; }
+    .sq-dark { fill: #3a1e0f; }
+    .sq-highlight { fill: #2ecc71 !important; opacity: 0.75; cursor: pointer; }
+    .sq-cpu-from { fill: #e5a950 !important; opacity: 0.85; filter: drop-shadow(0 0 6px #e5a950); }
+    .sq-cpu-to { fill: #2ecc71 !important; opacity: 0.85; filter: drop-shadow(0 0 6px #2ecc71); }
+
+    .piece { cursor: pointer; transition: transform 0.12s ease; }
+    .piece.selected {
+      transform: scale(1.12);
+      filter: drop-shadow(0 0 8px var(--brass-gold));
+    }
+    .crown-mark {
+      font-size: 16px; font-weight: 900;
+      fill: #ffd32a; text-anchor: middle; dominant-baseline: central;
+      pointer-events: none;
+    }
+
+    /* 行動履歴ログエリア（画面下部・次の手番終了まで残る） */
+    .log-panel {
+      width: 100%; max-width: 440px; margin-top: 10px;
+      background: rgba(22, 14, 9, 0.92);
+      border: 2px solid #3d2919;
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+    }
+    .log-header {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1.5px solid #4a3422;
+      padding-bottom: 5px; margin-bottom: 6px;
+    }
+    .log-title {
+      font-size: 0.82rem; font-weight: 800; color: var(--brass-gold);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .log-sub { font-size: 0.7rem; color: #8c7664; }
+    .log-list {
+      display: flex; flex-direction: column; gap: 4px;
+      max-height: 85px; overflow-y: auto; font-size: 0.78rem;
+    }
+    .log-entry {
+      background: rgba(0,0,0,0.35); padding: 4px 8px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: space-between;
+      color: #d1c1b2; font-feature-settings: "tnum";
+    }
+    .log-entry.actor-red { border-left: 3px solid #ff7675; }
+    .log-entry.actor-white { border-left: 3px solid #ffffff; }
+    .log-entry.jump-event { background: rgba(192, 57, 43, 0.25); color: #ffadad; }
+
+    /* スタート画面オーバーレイ（全面リニューアル） */
+    .screen-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(18, 11, 7, 0.96);
+      backdrop-filter: blur(8px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px; z-index: 50; padding: 18px;
+    }
+    .screen-overlay.hidden { display: none; }
+    .overlay-title {
+      font-size: 1.55rem; font-weight: 900;
+      color: var(--brass-gold);
+      letter-spacing: 4px; text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .overlay-subtitle {
+      font-size: 0.72rem; letter-spacing: 2px;
+      color: #a89482; text-transform: uppercase; margin-top: -10px;
+    }
+
+    /* モード選択タブ */
+    .mode-tab-group {
+      display: flex; width: 100%; max-width: 320px;
+      background: rgba(0,0,0,0.5); border: 1.5px solid #4a3424;
+      border-radius: 12px; padding: 3px; gap: 4px;
+    }
+    .mode-tab-btn {
+      flex: 1; padding: 8px 0; border: none; background: transparent;
+      color: #9c8978; font-size: 0.85rem; font-weight: 800; border-radius: 8px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .mode-tab-btn.active {
+      background: linear-gradient(180deg, #3d2919 0%, #26160c 100%);
+      color: var(--brass-gold); border: 1px solid var(--brass-gold);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    }
+
+    .config-card {
+      width: 100%; max-width: 320px;
+      background: rgba(0,0,0,0.45); padding: 14px; border-radius: 12px;
+      border: 1px solid #4a3424; display: flex; flex-direction: column; gap: 12px;
+    }
+    .config-row {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.84rem; font-weight: 800; color: #d5c3b1;
+    }
+    .theme-select {
+      background: #2c1a10; color: #fff; border: 1.5px solid var(--brass-gold);
+      padding: 6px 10px; border-radius: 8px; font-weight: 700; outline: none;
+      font-size: 0.84rem; min-width: 130px;
+    }
+    .start-btn {
+      background: linear-gradient(180deg, #e4b56c 0%, #aa782e 100%);
+      color: #140c06; font-size: 1.05rem; font-weight: 900;
+      border: 2px solid #fff; border-radius: 22px;
+      padding: 10px 42px; cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.8), 0 0 14px var(--brass-glow);
+      letter-spacing: 1.5px; margin-top: 4px;
+    }
+    .start-btn:active { transform: scale(0.96); }
+
+    /* ダイス先攻後攻抽選オーバーレイ（ダイス固定） */
+    .duel-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(10, 6, 4, 0.95);
+      backdrop-filter: blur(6px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px; z-index: 60;
+    }
+    .duel-overlay.hidden { display: none; }
+    .duel-title {
+      font-size: 1.15rem; font-weight: 900;
+      color: var(--brass-gold); letter-spacing: 2px;
+    }
+    .dice-container {
+      display: flex; gap: 36px; align-items: center;
+    }
+    .dice-box {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .dice-label {
+      font-size: 0.84rem; font-weight: 800; color: #d5c3b1;
+    }
+    .dice {
+      width: 64px; height: 64px; background: #fdfbf7;
+      border-radius: 12px; border: 2px solid #d4a359;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem; color: #222; font-weight: 900;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.8);
+    }
+    .dice.rolling {
+      animation: diceRollAnim 0.15s infinite linear;
+    }
+    @keyframes diceRollAnim {
+      0% { transform: rotate(0deg) scale(0.95); }
+      50% { transform: rotate(180deg) scale(1.08); }
+      100% { transform: rotate(360deg) scale(0.95); }
+    }
+    .duel-result-text {
+      font-size: 0.96rem; font-weight: 900; color: #fff; min-height: 38px;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.9); text-align: center; padding: 0 16px;
+      line-height: 1.4;
+    }
+
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.82); z-index: 99999;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-sheet {
+      background: #20140c; border: 3px solid #4d3320;
+      border-radius: 20px; padding: 22px; width: 88%; max-width: 440px; color: #ede2d5;
+    }
+    .modal-title {
+      text-align: center; color: var(--brass-gold);
+      font-size: 1.25rem; font-weight: 800; margin-bottom: 14px;
+    }
+    .modal-close-btn {
+      width: 100%; padding: 12px;
+      background: linear-gradient(180deg, #d4a359, #aa782e);
+      border: none; border-radius: 12px; color: #140c06;
+      font-weight: 900; font-size: 0.95rem; cursor: pointer; margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="viewport">
+    <div class="topbar">
+      <div class="topbar-upper">
+        <div class="topbar-title">♟ CHECKERS CLUB</div>
+        <div class="tool-group">
+          <div class="tool-btn" onclick="openStartModal()" title="タイトル / モード変更">🔄</div>
+          <div class="tool-btn" onclick="undoMove()" title="1手戻す">↩️</div>
+          <div class="tool-btn" onclick="toggleRules(true)" title="あそびかた">📖</div>
+        </div>
+      </div>
+      <div class="topbar-lower">
+        <div class="player-badges">
+          <div class="role-badge" id="badge-red">
+            <div class="chk-icon red"></div>
+            <span id="label-red">赤: 12</span>
+          </div>
+          <div class="role-badge" id="badge-white">
+            <div class="chk-icon white"></div>
+            <span id="label-white">白: 12</span>
+          </div>
+        </div>
+        <div class="diff-badge" id="diff-badge">COM: 中級</div>
+      </div>
+    </div>
+
+    <div class="table-felt">
+      <!-- スタート画面オーバーレイ（全面リニューアル・新デザイン） -->
+      <div id="start-overlay" class="screen-overlay">
+        <div class="overlay-title">♟ CHECKERS</div>
+        <div class="overlay-subtitle">Classic Board Game</div>
+
+        <!-- モード切替タブ -->
+        <div class="mode-tab-group">
+          <button class="mode-tab-btn active" id="tab-solo" onclick="switchModeTab('solo')">● ひとりで遊ぶ</button>
+          <button class="mode-tab-btn" id="tab-multi" onclick="switchModeTab('multi')">○ みんなで遊ぶ</button>
+        </div>
+
+        <!-- ひとりで遊ぶ用パネル -->
+        <div class="config-card" id="card-solo">
+          <div class="config-row">
+            <span>あなた（プレイヤー）</span>
+            <span style="color:var(--brass-gold);">1人</span>
+          </div>
+          <div class="config-row">
+            <span>相手 (CPU) の人数</span>
+            <select id="solo-cpu-count" class="theme-select" onchange="handleCpuCountChange(this.value)">
+              <option value="1" selected>1人</option>
+              <option value="0">なし (観戦/練習)</option>
+            </select>
+          </div>
+          <div class="config-row" id="solo-diff-row">
+            <span>CPUのつよさ</span>
+            <select id="solo-diff-sel" class="theme-select">
+              <option value="easy">初級</option>
+              <option value="medium" selected>中級</option>
+              <option value="hard">上級</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- みんなで遊ぶ用パネル (2人対戦固定) -->
+        <div class="config-card" id="card-multi" style="display:none;">
+          <div class="config-row">
+            <span>遊ぶ人数 (プレイヤー)</span>
+            <select id="multi-player-count" class="theme-select" disabled>
+              <option value="2" selected>2人 (1台で対戦)</option>
+            </select>
+          </div>
+          <div style="font-size:0.75rem; color:#8e7c6e; line-height:1.4;">
+            ※チェッカーは盤面2人専用ゲームです。1台の端末を交互に操作して対戦します。
+          </div>
+        </div>
+
+        <button class="start-btn" onclick="startNewSession()">ゲーム開始</button>
+      </div>
+
+      <!-- 先攻後攻ダイス抽選オーバーレイ（ダイス固定） -->
+      <div id="duel-overlay" class="duel-overlay hidden">
+        <div class="duel-title">🎲 先攻・後攻ダイス勝負 🎲</div>
+        <div class="dice-container">
+          <div class="dice-box">
+            <span class="dice-label" id="dice-p1-label">あなた</span>
+            <div class="dice rolling" id="dice-p1">⚀</div>
+          </div>
+          <div style="font-size:1.4rem; font-weight:900; color:var(--brass-gold);">VS</div>
+          <div class="dice-box">
+            <span class="dice-label" id="dice-p2-label">COM</span>
+            <div class="dice rolling" id="dice-p2">⚀</div>
+          </div>
+        </div>
+        <div class="duel-result-text" id="duel-result-text">ダイスを振って出目を競っています...</div>
+      </div>
+
+      <div class="turn-announcer" id="announcer">スタート画面で設定を選んでください</div>
+      <div class="checker-board-frame">
+        <svg id="board-svg" viewBox="0 0 320 320">
+          <defs>
+            <radialGradient id="chkRedGrad" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#ff7675"/>
+              <stop offset="70%" stop-color="#d63031"/>
+              <stop offset="100%" stop-color="#7e1212"/>
+            </radialGradient>
+            <radialGradient id="chkWhiteGrad" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="70%" stop-color="#e0e0e0"/>
+              <stop offset="100%" stop-color="#b0b0b0"/>
+            </radialGradient>
+          </defs>
+          <g id="squares-layer"></g>
+          <g id="highlights-layer"></g>
+          <g id="pieces-layer"></g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 行動履歴ログエリア（直前の手番の履歴が次の手番終了まで残る） -->
+    <div class="log-panel">
+      <div class="log-header">
+        <div class="log-title">📜 行動履歴 (Action Log)</div>
+        <div class="log-sub">次の手番終了まで保持されます</div>
+      </div>
+      <div class="log-list" id="log-list">
+        <div class="log-entry" style="justify-content:center; color:#7d6b5c;">まだ行動履歴がありません</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-rules" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">📖 チェッカーのあそびかた</div>
+      <div style="font-size:0.86rem; line-height:1.6; color:#c9b9aa;">
+        <p>斜めマスを進み、相手の駒を飛び越えて奪い合う古典ボードゲームです。</p>
+        <br>
+        <ul style="padding-left:18px;">
+          <li><b>先手・後手</b>：赤駒が常に先手、白駒が後手となります。</li>
+          <li><b>通常移動</b>：斜め前方へ1マス進めます。</li>
+          <li><b>ジャンプ捕獲</b>：斜め前にある相手の駒を飛び越えて空きマスに着地すると、飛び越えた相手の駒を獲得（除去）します。</li>
+          <li><b>連続ジャンプ</b>：着地後さらに飛び越えられる場合は連続ジャンプ可能です。</li>
+          <li><b>キング（王）</b>：相手陣地の最奥列に達すると王冠が付き、前後両方向に斜め移動＆ジャンプできるようになります！</li>
+        </ul>
+      </div>
+      <button class="modal-close-btn" onclick="toggleRules(false)">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    window.addEventListener('pointerdown', () => getAudio(), { once: true });
+
+    function playSound(f1, f2) {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.setValueAtTime(f1, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(f2, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.06);
+      } catch(e) {}
+    }
+
+    function playFanfare() {
+      try {
+        const ctx = getAudio();
+        [523.25, 659.25, 783.99].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.08 + 0.2);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.08);
+          osc.stop(ctx.currentTime + idx * 0.08 + 0.22);
+        });
+      } catch(e) {}
+    }
+
+    const BOARD_SIZE = 8;
+    const SQ_SIZE = 40;
+    const COL_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+    const DICE_ICONS = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+
+    let gameState = 'TITLE'; // 'TITLE', 'DUEL', 'PLAYING', 'CPU_MOVING', 'GAMEOVER'
+    let board = [];
+    let currentTurn = 'red'; // 赤が常に先攻
+    let playerColor = 'red'; // PVE時、プレイヤーが操作する色 ('red' または 'white')
+    let activeModeTab = 'solo'; // 'solo' or 'multi'
+    let cpuCount = 1;
+    let difficulty = 'medium';
+    let isGameOver = false;
+    let selectedCell = null;
+    let validMovesForSelected = [];
+    let historyStack = [];
+
+    // 行動履歴管理用（直前のターンログを保持）
+    let previousTurnLogs = [];
+    let currentTurnLogs = [];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      buildBoardSvg();
+      openStartModal();
+    });
+
+    function switchModeTab(tab) {
+      activeModeTab = tab;
+      const tabSolo = document.getElementById('tab-solo');
+      const tabMulti = document.getElementById('tab-multi');
+      const cardSolo = document.getElementById('card-solo');
+      const cardMulti = document.getElementById('card-multi');
+
+      if (tab === 'solo') {
+        tabSolo.classList.add('active');
+        tabSolo.textContent = '● ひとりで遊ぶ';
+        tabMulti.classList.remove('active');
+        tabMulti.textContent = '○ みんなで遊ぶ';
+        cardSolo.style.display = 'flex';
+        cardMulti.style.display = 'none';
+      } else {
+        tabMulti.classList.add('active');
+        tabMulti.textContent = '● みんなで遊ぶ';
+        tabSolo.classList.remove('active');
+        tabSolo.textContent = '○ ひとりで遊ぶ';
+        cardSolo.style.display = 'none';
+        cardMulti.style.display = 'flex';
+      }
+    }
+
+    function handleCpuCountChange(val) {
+      cpuCount = parseInt(val, 10);
+      document.getElementById('solo-diff-row').style.display = (cpuCount > 0) ? 'flex' : 'none';
+    }
+
+    function coordName(r, c) {
+      return `${COL_LETTERS[c]}${8 - r}`;
+    }
+
+    function getPlayerLabel(color) {
+      if (activeModeTab === 'multi' || (activeModeTab === 'solo' && cpuCount === 0)) {
+        return color === 'red' ? '赤 (1P)' : '白 (2P)';
+      }
+      return color === playerColor ? (color === 'red' ? '赤 (あなた)' : '白 (あなた)') : (color === 'red' ? '赤 (COM)' : '白 (COM)');
+    }
+
+    function logAction(actorColor, text, isJump = false) {
+      const entry = {
+        color: actorColor,
+        text,
+        isJump,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      };
+      currentTurnLogs.push(entry);
+      renderLogs();
+    }
+
+    function renderLogs() {
+      const list = document.getElementById('log-list');
+      list.innerHTML = '';
+      const combined = [...previousTurnLogs, ...currentTurnLogs];
+      if (combined.length === 0) {
+        list.innerHTML = '<div class="log-entry" style="justify-content:center; color:#7d6b5c;">まだ行動履歴がありません</div>';
+        return;
+      }
+      combined.slice(-6).reverse().forEach(log => {
+        const item = document.createElement('div');
+        item.className = `log-entry actor-${log.color} ${log.isJump ? 'jump-event' : ''}`;
+        const name = log.color === 'red' ? '赤' : '白';
+        item.innerHTML = `<span><b>[${name}]</b> ${log.text}</span><span style="font-size:0.68rem; opacity:0.65;">${log.time}</span>`;
+        list.appendChild(item);
+      });
+    }
+
+    function openStartModal() {
+      gameState = 'TITLE';
+      document.getElementById('start-overlay').classList.remove('hidden');
+      document.getElementById('duel-overlay').classList.add('hidden');
+      document.getElementById('announcer').textContent = 'スタート画面で設定を選んでください';
+      initBoardData();
+      updateUI();
+    }
+
+    function startNewSession() {
+      difficulty = document.getElementById('solo-diff-sel').value;
+      const isCpu = (activeModeTab === 'solo' && cpuCount === 1);
+
+      document.getElementById('diff-badge').textContent = isCpu ? `COM: ${difficulty === 'easy' ? '初級' : (difficulty === 'hard' ? '上級' : '中級')}` : '2人対戦';
+      document.getElementById('start-overlay').classList.add('hidden');
+
+      previousTurnLogs = [];
+      currentTurnLogs = [];
+      renderLogs();
+      initBoardData();
+
+      // 先攻後攻の決定演出（ダイス固定）へ移行
+      triggerDiceDuel(isCpu);
+    }
+
+    /* 先攻後攻ダイス抽選演出（固定演出） */
+    function triggerDiceDuel(isCpu) {
+      gameState = 'DUEL';
+      const duelOverlay = document.getElementById('duel-overlay');
+      const diceP1 = document.getElementById('dice-p1');
+      const diceP2 = document.getElementById('dice-p2');
+      const labelP1 = document.getElementById('dice-p1-label');
+      const labelP2 = document.getElementById('dice-p2-label');
+      const resText = document.getElementById('duel-result-text');
+
+      labelP1.textContent = isCpu ? 'あなた' : 'プレイヤー1';
+      labelP2.textContent = isCpu ? 'COM' : 'プレイヤー2';
+
+      duelOverlay.classList.remove('hidden');
+      diceP1.className = 'dice rolling';
+      diceP2.className = 'dice rolling';
+      resText.textContent = 'ダイスを振って出目を競っています...';
+
+      let rollCount = 0;
+      const rollInterval = setInterval(() => {
+        playSound(280 + Math.random() * 120, 80);
+        diceP1.textContent = DICE_ICONS[Math.floor(Math.random() * 6)];
+        diceP2.textContent = DICE_ICONS[Math.floor(Math.random() * 6)];
+        rollCount++;
+        if (rollCount >= 10) {
+          clearInterval(rollInterval);
+          finalizeDiceDuel(isCpu);
+        }
+      }, 100);
+    }
+
+    function finalizeDiceDuel(isCpu) {
+      const diceP1 = document.getElementById('dice-p1');
+      const diceP2 = document.getElementById('dice-p2');
+      const resText = document.getElementById('duel-result-text');
+
+      diceP1.classList.remove('rolling');
+      diceP2.classList.remove('rolling');
+
+      // 同点の場合は再抽選させずどちらかを勝たせる
+      let v1 = Math.floor(Math.random() * 6) + 1;
+      let v2 = Math.floor(Math.random() * 6) + 1;
+      while (v1 === v2) {
+        v2 = Math.floor(Math.random() * 6) + 1;
+      }
+
+      diceP1.textContent = DICE_ICONS[v1 - 1];
+      diceP2.textContent = DICE_ICONS[v2 - 1];
+
+      playFanfare();
+
+      const p1Wins = v1 > v2;
+      playerColor = p1Wins ? 'red' : 'white';
+
+      const p1Name = isCpu ? 'あなた' : 'プレイヤー1';
+      const p2Name = isCpu ? 'COM' : 'プレイヤー2';
+
+      if (p1Wins) {
+        resText.innerHTML = `🎲 出目: ${v1} vs ${v2}<br>🎉 <b>${p1Name}</b> の勝ち！【赤（先攻）】でスタート！`;
+      } else {
+        resText.innerHTML = `🎲 出目: ${v1} vs ${v2}<br><b>${p2Name}</b> の勝ち！【赤（先攻）】でスタート！<br><span style="font-size:0.75rem; color:#bbb;">(${p1Name}は白・後攻)</span>`;
+      }
+
+      setTimeout(() => {
+        document.getElementById('duel-overlay').classList.add('hidden');
+        startGameLoop();
+      }, 2000);
+    }
+
+    function startGameLoop() {
+      gameState = 'PLAYING';
+      currentTurn = 'red';
+      updateUI();
+      logAction('red', `ゲーム開始（赤が先手）`);
+
+      const isCpu = (activeModeTab === 'solo' && cpuCount === 1);
+      if (isCpu && playerColor === 'white') {
+        setTimeout(handleComTurnStepByStep, 900);
+      }
+    }
+
+    function initBoardData() {
+      board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
+      currentTurn = 'red';
+      isGameOver = false;
+      selectedCell = null;
+      validMovesForSelected = [];
+      historyStack = [];
+
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+          if ((r + c) % 2 === 1) {
+            if (r < 3) board[r][c] = { player: 'white', isKing: false };
+            else if (r > 4) board[r][c] = { player: 'red', isKing: false };
+          }
+        }
+      }
+      renderPieces();
+      clearHighlights();
+    }
+
+    function buildBoardSvg() {
+      const squaresLayer = document.getElementById('squares-layer');
+      squaresLayer.innerHTML = '';
+
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          rect.setAttribute('x', c * SQ_SIZE);
+          rect.setAttribute('y', r * SQ_SIZE);
+          rect.setAttribute('width', SQ_SIZE);
+          rect.setAttribute('height', SQ_SIZE);
+          rect.setAttribute('class', (r + c) % 2 === 1 ? 'sq-dark' : 'sq-light');
+          rect.setAttribute('id', `sq-${r}-${c}`);
+          squaresLayer.appendChild(rect);
+        }
+      }
+    }
+
+    function handleCellClick(r, c) {
+      if (gameState !== 'PLAYING' || isGameOver) return;
+      const isCpu = (activeModeTab === 'solo' && cpuCount === 1);
+      if (isCpu && currentTurn !== playerColor) return;
+
+      const piece = board[r][c];
+
+      if (selectedCell) {
+        const move = validMovesForSelected.find(m => m.r === r && m.c === c);
+        if (move) {
+          executeMove(selectedCell, move);
+          return;
+        }
+      }
+
+      if (piece && piece.player === currentTurn) {
+        selectedCell = { r, c };
+        validMovesForSelected = getMovesForPiece(r, c);
+        renderPieces();
+        renderHighlights();
+      } else {
+        selectedCell = null;
+        validMovesForSelected = [];
+        renderPieces();
+        renderHighlights();
+      }
+    }
+
+    function getMovesForPiece(r, c) {
+      const piece = board[r][c];
+      if (!piece) return [];
+      const moves = [];
+      const isKing = piece.isKing;
+      const player = piece.player;
+
+      const rowDirs = isKing ? [-1, 1] : (player === 'red' ? [-1] : [1]);
+      const colDirs = [-1, 1];
+
+      // 通常移動
+      for (const dr of rowDirs) {
+        for (const dc of colDirs) {
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
+            if (board[nr][nc] === null) {
+              moves.push({ r: nr, c: nc, isJump: false });
+            }
+          }
+        }
+      }
+
+      // ジャンプ捕獲
+      for (const dr of rowDirs) {
+        for (const dc of colDirs) {
+          const midR = r + dr, midC = c + dc;
+          const jumpR = r + dr * 2, jumpC = c + dc * 2;
+          if (jumpR >= 0 && jumpR < BOARD_SIZE && jumpC >= 0 && jumpC < BOARD_SIZE) {
+            const midPiece = board[midR][midC];
+            if (midPiece && midPiece.player !== player && board[jumpR][jumpC] === null) {
+              moves.push({ r: jumpR, c: jumpC, isJump: true, midR, midC });
+            }
+          }
+        }
+      }
+
+      return moves;
+    }
+
+    function executeMove(from, toMove) {
+      saveState();
+      const piece = board[from.r][from.c];
+      board[from.r][from.c] = null;
+      board[toMove.r][toMove.c] = piece;
+
+      const fromName = coordName(from.r, from.c);
+      const toName = coordName(toMove.r, toMove.c);
+
+      let logText = `${fromName} → ${toName}`;
+
+      if (toMove.isJump) {
+        board[toMove.midR][toMove.midC] = null;
+        playSound(550, 220);
+        logText += ` (ジャンプ捕獲！ [${coordName(toMove.midR, toMove.midC)}] を除去)`;
+      } else {
+        playSound(380, 140);
+      }
+
+      let becameKing = false;
+      if (!piece.isKing) {
+        if (piece.player === 'red' && toMove.r === 0) {
+          piece.isKing = true;
+          becameKing = true;
+        } else if (piece.player === 'white' && toMove.r === BOARD_SIZE - 1) {
+          piece.isKing = true;
+          becameKing = true;
+        }
+      }
+      if (becameKing) logText += ' 👑キング昇格！';
+
+      logAction(piece.player, logText, toMove.isJump);
+
+      // 連続ジャンプ判定
+      if (toMove.isJump) {
+        const nextJumps = getMovesForPiece(toMove.r, toMove.c).filter(m => m.isJump);
+        if (nextJumps.length > 0) {
+          selectedCell = { r: toMove.r, c: toMove.c };
+          validMovesForSelected = nextJumps;
+          renderPieces();
+          renderHighlights();
+
+          const isCpu = (activeModeTab === 'solo' && cpuCount === 1);
+          if (isCpu && currentTurn !== playerColor) {
+            setTimeout(() => {
+              executeMove(selectedCell, nextJumps[0]);
+            }, 700);
+          }
+          return;
+        }
+      }
+
+      // 手番終了：直前の手番のログを previousTurnLogs に退避し、次のプレイヤーのターン中も保持する
+      previousTurnLogs = [...currentTurnLogs];
+      currentTurnLogs = [];
+      renderLogs();
+
+      selectedCell = null;
+      validMovesForSelected = [];
+      clearHighlights();
+      currentTurn = (currentTurn === 'red') ? 'white' : 'red';
+
+      renderPieces();
+      updateUI();
+
+      if (checkVictory()) return;
+
+      const isCpu = (activeModeTab === 'solo' && cpuCount === 1);
+      if (isCpu && currentTurn !== playerColor) {
+        setTimeout(handleComTurnStepByStep, 800);
+      }
+    }
+
+    /* CPU行動：視認性を高めるため、選んだ駒と着地先をハイライト表示してから実行 */
+    function handleComTurnStepByStep() {
+      if (isGameOver || currentTurn === playerColor) return;
+      gameState = 'CPU_MOVING';
+
+      const comColor = currentTurn;
+      const allMoves = [];
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+          if (board[r][c] && board[r][c].player === comColor) {
+            const moves = getMovesForPiece(r, c);
+            moves.forEach(m => allMoves.push({ from: { r, c }, to: m }));
+          }
+        }
+      }
+
+      if (allMoves.length === 0) {
+        checkVictory();
+        return;
+      }
+
+      if (difficulty === 'easy') {
+        allMoves.sort(() => Math.random() - 0.5);
+      } else {
+        allMoves.sort((a, b) => {
+          if (a.to.isJump !== b.to.isJump) return b.to.isJump ? 1 : -1;
+          const advanceA = comColor === 'red' ? (a.from.r - a.to.r) : (a.to.r - a.from.r);
+          const advanceB = comColor === 'red' ? (b.from.r - b.to.r) : (b.to.r - b.from.r);
+          return advanceB - advanceA;
+        });
+      }
+
+      const chosen = allMoves[0];
+
+      // 移動前の予告ハイライト（黄色：移動元、緑色：着地先）
+      clearHighlights();
+      const sqFrom = document.getElementById(`sq-${chosen.from.r}-${chosen.from.c}`);
+      const sqTo = document.getElementById(`sq-${chosen.to.r}-${chosen.to.c}`);
+      if (sqFrom) sqFrom.classList.add('sq-cpu-from');
+      if (sqTo) sqTo.classList.add('sq-cpu-to');
+
+      document.getElementById('announcer').innerHTML = `CPUが [${coordName(chosen.from.r, chosen.from.c)}] から考慮中...`;
+
+      setTimeout(() => {
+        executeMove(chosen.from, chosen.to);
+        gameState = 'PLAYING';
+      }, 750);
+    }
+
+    function checkVictory() {
+      let redCount = 0, whiteCount = 0;
+      let redCanMove = false, whiteCanMove = false;
+
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+          const p = board[r][c];
+          if (p) {
+            if (p.player === 'red') {
+              redCount++;
+              if (getMovesForPiece(r, c).length > 0) redCanMove = true;
+            } else {
+              whiteCount++;
+              if (getMovesForPiece(r, c).length > 0) whiteCanMove = true;
+            }
+          }
+        }
+      }
+
+      if (redCount === 0 || !redCanMove) {
+        isGameOver = true;
+        playFanfare();
+        const winner = getPlayerLabel('white');
+        logAction('white', `完全勝利！相手の駒全滅または行動不能`, true);
+        setTimeout(() => alert(`🎉 ${winner} の完全勝利です！`), 250);
+        return true;
+      }
+      if (whiteCount === 0 || !whiteCanMove) {
+        isGameOver = true;
+        playFanfare();
+        const winner = getPlayerLabel('red');
+        logAction('red', `完全勝利！相手の駒全滅または行動不能`, true);
+        setTimeout(() => alert(`🎉 ${winner} の完全勝利です！`), 250);
+        return true;
+      }
+      return false;
+    }
+
+    function renderPieces() {
+      const layer = document.getElementById('pieces-layer');
+      layer.innerHTML = '';
+
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+          const p = board[r][c];
+          if (p) {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            const isSel = selectedCell && selectedCell.r === r && selectedCell.c === c;
+            g.setAttribute('class', 'piece' + (isSel ? ' selected' : ''));
+            g.onclick = () => handleCellClick(r, c);
+
+            const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circ.setAttribute('cx', c * SQ_SIZE + SQ_SIZE / 2);
+            circ.setAttribute('cy', r * SQ_SIZE + SQ_SIZE / 2);
+            circ.setAttribute('r', SQ_SIZE * 0.38);
+            circ.setAttribute('fill', p.player === 'red' ? 'url(#chkRedGrad)' : 'url(#chkWhiteGrad)');
+            circ.setAttribute('stroke', p.player === 'red' ? '#ff9f43' : '#fff');
+            circ.setAttribute('stroke-width', '1.5');
+            g.appendChild(circ);
+
+            if (p.isKing) {
+              const crown = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+              crown.setAttribute('x', c * SQ_SIZE + SQ_SIZE / 2);
+              crown.setAttribute('y', r * SQ_SIZE + SQ_SIZE / 2 + 1);
+              crown.setAttribute('class', 'crown-mark');
+              crown.textContent = '👑';
+              g.appendChild(crown);
+            }
+            layer.appendChild(g);
+          }
+        }
+      }
+    }
+
+    function renderHighlights() {
+      const layer = document.getElementById('highlights-layer');
+      layer.innerHTML = '';
+
+      validMovesForSelected.forEach(m => {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', m.c * SQ_SIZE);
+        rect.setAttribute('y', m.r * SQ_SIZE);
+        rect.setAttribute('width', SQ_SIZE);
+        rect.setAttribute('height', SQ_SIZE);
+        rect.setAttribute('class', 'sq-highlight');
+        rect.onclick = () => handleCellClick(m.r, m.c);
+        layer.appendChild(rect);
+      });
+    }
+
+    function clearHighlights() {
+      document.getElementById('highlights-layer').innerHTML = '';
+      document.querySelectorAll('.sq-dark').forEach(sq => {
+        sq.classList.remove('sq-cpu-from');
+        sq.classList.remove('sq-cpu-to');
+      });
+    }
+
+    function saveState() {
+      historyStack.push({
+        board: board.map(row => row.map(cell => cell ? { ...cell } : null)),
+        turn: currentTurn
+      });
+      if (historyStack.length > 20) historyStack.shift();
+    }
+
+    function undoMove() {
+      const isCpu = (activeModeTab === 'solo' && cpuCount === 1);
+      if (gameState !== 'PLAYING' || historyStack.length === 0 || isGameOver) return;
+      const steps = (isCpu && historyStack.length >= 2) ? 2 : 1;
+      let last;
+      for (let i = 0; i < steps; i++) last = historyStack.pop();
+      board = last.board;
+      currentTurn = last.turn;
+      selectedCell = null;
+      validMovesForSelected = [];
+      clearHighlights();
+      renderPieces();
+      updateUI();
+      logAction(currentTurn, `1手戻しました`);
+    }
+
+    function updateUI() {
+      let rCount = 0, wCount = 0;
+      board.forEach(row => row.forEach(cell => {
+        if (cell) {
+          if (cell.player === 'red') rCount++;
+          else wCount++;
+        }
+      }));
+
+      const isCpu = (activeModeTab === 'solo' && cpuCount === 1);
+      const rLabel = isCpu ? (playerColor === 'red' ? '赤(あなた)' : '赤(COM)') : '赤(1P)';
+      const wLabel = isCpu ? (playerColor === 'white' ? '白(あなた)' : '白(COM)') : '白(2P)';
+
+      document.getElementById('label-red').textContent = `${rLabel}: ${rCount}`;
+      document.getElementById('label-white').textContent = `${wLabel}: ${wCount}`;
+      document.getElementById('badge-red').classList.toggle('turn-active', currentTurn === 'red' && !isGameOver);
+      document.getElementById('badge-white').classList.toggle('turn-active', currentTurn === 'white' && !isGameOver);
+
+      if (!isGameOver) {
+        document.getElementById('announcer').textContent = `${getPlayerLabel(currentTurn)} の手番です`;
+      }
+    }
+
+    function toggleRules(show) { document.getElementById('modal-rules').classList.toggle('active', show); }
+  </script>
+</body>
+</html>
