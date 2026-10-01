@@ -25,6 +25,7 @@
     :root {
       --hnb-wood-bevel: rgba(255, 255, 255, 0.08);
       --hnb-brass: #e5a950;
+      --hnb-brass-glow: rgba(229, 169, 80, 0.45);
     }
 
     .hnb-wrapper {
@@ -43,8 +44,22 @@
       width: 100%;
       max-width: 420px;
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 12px;
+    }
+    .hnb-player-indicator {
+      background: #25170d;
+      border: 1.5px solid var(--hnb-brass);
+      color: var(--hnb-brass);
+      padding: 5px 12px;
+      border-radius: 14px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      box-shadow: 0 0 10px var(--hnb-brass-glow);
+    }
+    .hnb-tools-group {
+      display: flex;
       gap: 10px;
     }
     .hnb-icon-btn {
@@ -345,8 +360,19 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 14px 0;
-      font-size: 0.95rem;
+      padding: 12px 0;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #3d2b1f;
+    }
+    .hnb-theme-select {
+      background: #20140c;
+      color: #fff;
+      border: 1.5px solid var(--hnb-brass);
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      outline: none;
     }
     .hnb-switch {
       position: relative;
@@ -381,7 +407,7 @@
       transform: translateX(22px);
     }
     .hnb-modal-close {
-      margin-top: 10px;
+      margin-top: 14px;
       width: 100%;
       padding: 11px;
       background: var(--hnb-brass);
@@ -392,23 +418,39 @@
       font-size: 0.95rem;
       cursor: pointer;
     }
+
+    /* 手渡し（Pass & Play）モーダル */
+    .pass-title {
+      font-size: 1.25rem;
+      color: var(--hnb-brass);
+      margin-bottom: 8px;
+    }
+    .pass-desc {
+      font-size: 0.9rem;
+      color: #c9b9aa;
+      line-height: 1.5;
+      margin: 12px 0 20px;
+    }
   </style>
 </head>
 <body>
 
   <div class="hnb-wrapper">
     <div class="hnb-topbar">
-      <!-- 説明書ボタン -->
-      <div class="hnb-icon-btn" onclick="hnbToggleRulesModal(true)" title="あそびかた">📖</div>
-      <div class="hnb-icon-btn" onclick="hnbGiveUpAndReveal()" title="正解を見る（ギブアップ）">👁️</div>
-      <div class="hnb-icon-btn" onclick="hnbRestartGame()" title="もう一度遊ぶ">🔄</div>
-      <div class="hnb-icon-btn" onclick="hnbToggleModal(true)" title="設定">⚙️</div>
+      <!-- 2人プレイ時の手番インジケーター -->
+      <div id="hnb-player-indicator" class="hnb-player-indicator" style="display:none;">1Pの推理番</div>
+      <div class="hnb-tools-group">
+        <div class="hnb-icon-btn" onclick="hnbToggleRulesModal(true)" title="あそびかた">📖</div>
+        <div class="hnb-icon-btn" onclick="hnbGiveUpAndReveal()" title="正解を見る（ギブアップ）">👁️</div>
+        <div class="hnb-icon-btn" onclick="hnbRestartGame()" title="もう一度遊ぶ">🔄</div>
+        <div class="hnb-icon-btn" onclick="hnbToggleModal(true)" title="設定">⚙️</div>
+      </div>
     </div>
 
     <div class="hnb-table-board">
       <div class="hnb-secret-container">
         <div id="hnb-shutter" class="hnb-shutter">
-          <span>🔒</span><span>SECRET CODE</span>
+          <span>🔒</span><span id="hnb-shutter-text">SECRET CODE</span>
         </div>
         <div class="hnb-socket"><div id="hnb-sec-0" class="hnb-sphere"></div></div>
         <div class="hnb-socket"><div id="hnb-sec-1" class="hnb-sphere"></div></div>
@@ -439,13 +481,20 @@
     <div class="hnb-modal-window">
       <h3>⚙️ ゲーム設定</h3>
       <div class="hnb-setting-row">
-        <span>正解の色の重複を許可</span>
+        <span>対戦モード</span>
+        <select id="hnb-mode-selector" class="hnb-theme-select" onchange="hnbChangeMode(this.value)">
+          <option value="1p" selected>1人プレイ (vs COM)</option>
+          <option value="2p">2人プレイ (1台で対戦)</option>
+        </select>
+      </div>
+      <div class="hnb-setting-row" id="row-dup-setting">
+        <span>色の重複を許可</span>
         <label class="hnb-switch">
           <input type="checkbox" id="hnb-allow-duplicates-toggle" onchange="hnbToggleDuplicateSetting(this.checked)">
           <span class="hnb-slider"></span>
         </label>
       </div>
-      <p style="font-size:0.75rem; color:#bfa693; margin-top:6px; text-align:left;">
+      <p id="dup-setting-note" style="font-size:0.75rem; color:#bfa693; margin-top:8px; text-align:left;">
         ※ONにすると同じ色が複数入る上級者ルールになります。
       </p>
       <button class="hnb-modal-close" onclick="hnbToggleModal(false)">閉じる</button>
@@ -466,16 +515,26 @@
           <li><span class="hnb-rules-pin-badge badge-hit"></span><b>ヒット（赤ピン）</b>：<br>「<b>色も位置も</b>合っている」数</li>
           <li><span class="hnb-rules-pin-badge badge-blow"></span><b>ブロー（白ピン）</b>：<br>「<b>色は合っているが位置が違う</b>」数</li>
         </ul>
-        <p style="font-size:0.78rem; color:#bfa693;">※ピンの並び順は、どの位置が当たっているかを示していません（合計数のみ表します）。</p>
+        <p style="font-size:0.78rem; color:#bfa693;">※ピンの並び順は、どの位置が当たっているかを示していません。</p>
 
-        <div class="hnb-rules-section-title">💡 攻略のヒント</div>
+        <div class="hnb-rules-section-title">👥 2人対戦ルール</div>
+        <p>1台のスマホで交互に相手の暗号を当てる対戦ができます：</p>
         <ol style="padding-left:18px; margin: 6px 0;">
-          <li><b>使われている色を探す</b>：最初はバラバラの色を選び、どの色が含まれているかを絞り込みましょう。</li>
-          <li><b>位置を入れ替える</b>：ブローが多いときは、色の並び順を入れ替えてヒットを探します。</li>
-          <li><b>重複ルール</b>：設定で「色の重複を許可」をONにすると、同じ色が2つ以上含まれる難問モードになります。</li>
+          <li>まず<b>1P</b>と<b>2P</b>がそれぞれ秘密のコードを設定します（相手に見られないように設定）。</li>
+          <li>1Pが2Pのコードを予想し、次に2Pが1Pのコードを予想します。</li>
+          <li>先により少ないターン数で完全的中（4ヒット）させた方の勝ちです！</li>
         </ol>
       </div>
       <button class="hnb-modal-close" onclick="hnbToggleRulesModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <!-- 📱 パス＆プレイ用 手渡しモーダル -->
+  <div id="hnb-pass-modal" class="hnb-modal-overlay">
+    <div class="hnb-modal-window">
+      <h3 class="pass-title" id="pass-title">📱 端末を手渡してください</h3>
+      <p class="pass-desc" id="pass-desc">次は 2P の番です。<br>相手に見られないよう画面を隠して手渡してください。</p>
+      <button class="hnb-modal-close" id="pass-btn-ready" onclick="hnbConfirmPassReady()">準備完了 (開く)</button>
     </div>
   </div>
 
@@ -569,7 +628,20 @@
 
     const MAX_TURNS = 8;
     const COLOR_CLASSES = ['', 'c-red', 'c-blue', 'c-green', 'c-yellow', 'c-white', 'c-purple'];
+    let hnbMode = '1p'; // '1p' | '2p'
     let hnbAllowDuplicates = false;
+
+    // ゲーム進行ステート
+    // 1P時: 通常通り
+    // 2P時: phase: 'setup-p1' -> 'setup-p2' -> 'battle'
+    let pvpPhase = 'battle';
+    let pvpActivePlayer = 0; // 0: 1P, 1: 2P
+    let pvpCodes = [[], []]; // [1Pの秘密コード, 2Pの秘密コード]
+    let pvpHistoricAttempts = [[], []]; // [1Pの予想履歴, 2Pの予想履歴]
+    let pvpRoundTurns = [0, 0];
+    let pvpWinStatus = [false, false];
+
+    // 1P・単一セッション状態
     let hnbSecretCode = [];
     let hnbTurn = 0;
     let hnbCurrentInput = [0, 0, 0, 0];
@@ -582,7 +654,10 @@
     window.addEventListener('keydown', (e) => {
       const modal = document.getElementById('hnb-settings-modal');
       const rModal = document.getElementById('hnb-rules-modal');
-      if ((modal && modal.classList.contains('active')) || (rModal && rModal.classList.contains('active'))) return;
+      const pModal = document.getElementById('hnb-pass-modal');
+      if ((modal && modal.classList.contains('active')) || 
+          (rModal && rModal.classList.contains('active')) ||
+          (pModal && pModal.classList.contains('active'))) return;
 
       if (e.key >= '1' && e.key <= '6') {
         hnbInsertPeg(parseInt(e.key, 10));
@@ -599,7 +674,9 @@
       hnbTurn = 0;
       hnbCurrentInput = [0, 0, 0, 0];
 
+      const indicator = document.getElementById('hnb-player-indicator');
       const shutter = document.getElementById('hnb-shutter');
+      const shutterText = document.getElementById('hnb-shutter-text');
       shutter.classList.add('no-anim');
       shutter.classList.remove('open');
       shutter.offsetHeight;
@@ -610,25 +687,53 @@
         secSphere.className = 'hnb-sphere';
       }
 
-      hnbSecretCode = [];
-      if (hnbAllowDuplicates) {
-        for (let i = 0; i < 4; i++) {
-          hnbSecretCode.push(Math.floor(Math.random() * 6) + 1);
-        }
-      } else {
-        const candidates = [1, 2, 3, 4, 5, 6].sort(() => Math.random() - 0.5);
-        hnbSecretCode = candidates.slice(0, 4);
-      }
+      if (hnbMode === '2p') {
+        indicator.style.display = 'block';
+        pvpPhase = 'setup-p1';
+        pvpActivePlayer = 0;
+        pvpCodes = [[], []];
+        pvpHistoricAttempts = [[], []];
+        pvpRoundTurns = [0, 0];
+        pvpWinStatus = [false, false];
 
-      setTimeout(() => {
-        for (let i = 0; i < 4; i++) {
-          const secSphere = document.getElementById('hnb-sec-' + i);
-          secSphere.className = 'hnb-sphere ' + COLOR_CLASSES[hnbSecretCode[i]];
-          secSphere.style.display = 'block';
-        }
+        indicator.textContent = '1P: 秘密のコードを設定';
+        shutterText.textContent = '1P 暗号作成中';
+        document.getElementById('hnb-btn-check').textContent = '秘密コードを保存';
+
+        buildEmptyRack();
+        hnbRefreshCurrentRow();
         shutter.classList.remove('no-anim');
-      }, 50);
+      } else {
+        indicator.style.display = 'none';
+        shutterText.textContent = 'SECRET CODE';
+        document.getElementById('hnb-btn-check').textContent = '決定 (CHECK)';
 
+        // 1P: COMの正解作成
+        hnbSecretCode = [];
+        if (hnbAllowDuplicates) {
+          for (let i = 0; i < 4; i++) {
+            hnbSecretCode.push(Math.floor(Math.random() * 6) + 1);
+          }
+        } else {
+          const candidates = [1, 2, 3, 4, 5, 6].sort(() => Math.random() - 0.5);
+          hnbSecretCode = candidates.slice(0, 4);
+        }
+
+        setTimeout(() => {
+          for (let i = 0; i < 4; i++) {
+            const secSphere = document.getElementById('hnb-sec-' + i);
+            secSphere.className = 'hnb-sphere ' + COLOR_CLASSES[hnbSecretCode[i]];
+            secSphere.style.display = 'block';
+          }
+          shutter.classList.remove('no-anim');
+        }, 50);
+
+        buildEmptyRack();
+        hnbRefreshCurrentRow();
+      }
+    }
+
+    function buildEmptyRack() {
       const rackEl = document.getElementById('hnb-rack');
       rackEl.innerHTML = '';
       for (let r = 0; r < MAX_TURNS; r++) {
@@ -653,11 +758,10 @@
         `;
         rackEl.appendChild(row);
       }
-
-      hnbRefreshCurrentRow();
     }
 
     function hnbGiveUpAndReveal() {
+      if (hnbMode === '2p' && pvpPhase !== 'battle') return;
       if (hnbIsFinished) {
         document.getElementById('hnb-shutter').classList.add('open');
         return;
@@ -668,6 +772,17 @@
 
       hnbIsFinished = true;
       hnbPlayGiveUpSound();
+
+      if (hnbMode === '2p') {
+        const targetOpponent = pvpActivePlayer === 0 ? 1 : 0;
+        const oppCode = pvpCodes[targetOpponent];
+        for (let i = 0; i < 4; i++) {
+          const secSphere = document.getElementById('hnb-sec-' + i);
+          secSphere.className = 'hnb-sphere ' + COLOR_CLASSES[oppCode[i]];
+          secSphere.style.display = 'block';
+        }
+      }
+
       document.getElementById('hnb-shutter').classList.add('open');
       document.getElementById('hnb-btn-check').disabled = true;
 
@@ -677,6 +792,12 @@
 
     function hnbInsertPeg(colorIdx) {
       if (hnbIsFinished) return;
+
+      // 重複不許可の場合の重複チェック
+      if (!hnbAllowDuplicates && hnbCurrentInput.includes(colorIdx)) {
+        return; // 同じ色は追加できない
+      }
+
       const nextSlot = hnbCurrentInput.findIndex(val => val === 0);
       if (nextSlot !== -1) {
         hnbCurrentInput[nextSlot] = colorIdx;
@@ -709,6 +830,7 @@
     function hnbRefreshCurrentRow() {
       for (let col = 0; col < 4; col++) {
         const sphere = document.getElementById(`hnb-sp-${hnbTurn}-${col}`);
+        if (!sphere) continue;
         const color = hnbCurrentInput[col];
         if (color > 0) {
           sphere.className = 'hnb-sphere ' + COLOR_CLASSES[color];
@@ -721,12 +843,33 @@
       document.getElementById('hnb-btn-check').disabled = !isReady || hnbIsFinished;
     }
 
+    /* 判定・サブミット処理 */
     function hnbCheckAttempt() {
       if (hnbIsFinished) return;
 
+      // 2人プレイ初期設定フェーズ
+      if (hnbMode === '2p' && pvpPhase === 'setup-p1') {
+        pvpCodes[0] = [...hnbCurrentInput];
+        pvpPhase = 'setup-p2';
+        hnbCurrentInput = [0, 0, 0, 0];
+        hnbShowPassModal('2P', '1Pの暗号を保存しました。\n画面を隠して 2P に渡してください。');
+        return;
+      }
+      if (hnbMode === '2p' && pvpPhase === 'setup-p2') {
+        pvpCodes[1] = [...hnbCurrentInput];
+        pvpPhase = 'battle';
+        pvpActivePlayer = 0; // 1Pから推理スタート
+        hnbCurrentInput = [0, 0, 0, 0];
+        hnbShowPassModal('1P', '両者の暗号がセットされました！\n1P に端末を渡して推理を開始します。');
+        return;
+      }
+
+      // 通常推理・対戦推理フェーズ
+      const targetSecret = (hnbMode === '2p') ? pvpCodes[pvpActivePlayer === 0 ? 1 : 0] : hnbSecretCode;
+
       let hits = 0;
       let blows = 0;
-      const secretCopy = [...hnbSecretCode];
+      const secretCopy = [...targetSecret];
       const inputCopy = [...hnbCurrentInput];
 
       for (let i = 0; i < 4; i++) {
@@ -768,11 +911,44 @@
 
       const totalDelay = (hits + blows) * 140 + 200;
 
+      // 2人対戦時の処理
+      if (hnbMode === '2p') {
+        pvpHistoricAttempts[pvpActivePlayer].push({
+          input: [...hnbCurrentInput],
+          hits,
+          blows
+        });
+        pvpRoundTurns[pvpActivePlayer]++;
+
+        if (hits === 4) {
+          pvpWinStatus[pvpActivePlayer] = true;
+        }
+
+        setTimeout(() => {
+          // 1Pの番が終わった時 -> 2Pへ
+          if (pvpActivePlayer === 0) {
+            pvpActivePlayer = 1;
+            hnbShowPassModal('2P', `1Pの予想: ${hits}HIT / ${blows}BLOW\n端末を 2P に手渡してください。`);
+          } else {
+            // 2Pの番が終わった時 -> ラウンド終了判定
+            if (pvpWinStatus[0] || pvpWinStatus[1] || pvpRoundTurns[0] >= MAX_TURNS) {
+              hnbResolvePvpWinner();
+            } else {
+              pvpActivePlayer = 0;
+              hnbShowPassModal('1P', `2Pの予想: ${hits}HIT / ${blows}BLOW\n端末を 1P に手渡してください。`);
+            }
+          }
+        }, totalDelay);
+        return;
+      }
+
+      // 1人プレイ (vs COM)
       if (hits === 4) {
         hnbIsFinished = true;
         setTimeout(() => {
           hnbPlayVictorySound();
           document.getElementById('hnb-shutter').classList.add('open');
+          setTimeout(() => alert(`🎉 正解です！\n${hnbTurn + 1}ターンでクリアしました！`), 200);
         }, totalDelay);
         return;
       }
@@ -784,6 +960,7 @@
         if (hnbTurn >= MAX_TURNS) {
           hnbIsFinished = true;
           document.getElementById('hnb-shutter').classList.add('open');
+          setTimeout(() => alert('💀 規定ターン内に当てられませんでした！'), 200);
           return;
         }
 
@@ -791,6 +968,92 @@
         document.getElementById(`hnb-r-${hnbTurn}`).classList.add('active');
         hnbRefreshCurrentRow();
       }, totalDelay);
+    }
+
+    /* 2人対戦：パス＆プレイ モーダル表示 */
+    function hnbShowPassModal(nextPlayerName, desc) {
+      document.getElementById('pass-title').textContent = `📱 ${nextPlayerName} に手渡してください`;
+      document.getElementById('pass-desc').innerText = desc;
+      document.getElementById('hnb-pass-modal').classList.add('active');
+    }
+
+    function hnbConfirmPassReady() {
+      document.getElementById('hnb-pass-modal').classList.remove('active');
+      const indicator = document.getElementById('hnb-player-indicator');
+      const shutterText = document.getElementById('hnb-shutter-text');
+      const btnCheck = document.getElementById('hnb-btn-check');
+
+      if (pvpPhase === 'setup-p2') {
+        indicator.textContent = '2P: 秘密のコードを設定';
+        shutterText.textContent = '2P 暗号作成中';
+        btnCheck.textContent = '秘密コードを保存';
+        buildEmptyRack();
+        hnbTurn = 0;
+        hnbCurrentInput = [0, 0, 0, 0];
+        hnbRefreshCurrentRow();
+      } else if (pvpPhase === 'battle') {
+        const pName = pvpActivePlayer === 0 ? '1P' : '2P';
+        indicator.textContent = `${pName}: 推理の番 (${pvpRoundTurns[pvpActivePlayer] + 1}/${MAX_TURNS})`;
+        shutterText.textContent = `${pvpActivePlayer === 0 ? '2P' : '1P'}の暗号`;
+        btnCheck.textContent = '決定 (CHECK)';
+
+        // 該当プレイヤーの過去ログをラックに再構築
+        hnbRestorePlayerRack(pvpActivePlayer);
+      }
+    }
+
+    function hnbRestorePlayerRack(playerIdx) {
+      buildEmptyRack();
+      const history = pvpHistoricAttempts[playerIdx];
+      history.forEach((rec, turnIdx) => {
+        const row = document.getElementById(`hnb-r-${turnIdx}`);
+        row.classList.remove('active');
+        for (let col = 0; col < 4; col++) {
+          const sp = document.getElementById(`hnb-sp-${turnIdx}-${col}`);
+          sp.className = 'hnb-sphere ' + COLOR_CLASSES[rec.input[col]];
+          sp.style.display = 'block';
+        }
+        const pinEls = document.getElementById(`hnb-pins-${turnIdx}`).querySelectorAll('.hnb-pin');
+        let p = 0;
+        for (let i = 0; i < rec.hits; i++) pinEls[p++].className = 'hnb-pin hit';
+        for (let i = 0; i < rec.blows; i++) pinEls[p++].className = 'hnb-pin blow';
+      });
+
+      hnbTurn = history.length;
+      hnbCurrentInput = [0, 0, 0, 0];
+      const activeRow = document.getElementById(`hnb-r-${hnbTurn}`);
+      if (activeRow) activeRow.classList.add('active');
+      hnbRefreshCurrentRow();
+    }
+
+    function hnbResolvePvpWinner() {
+      hnbIsFinished = true;
+      hnbPlayVictorySound();
+
+      // 両者の暗号を表示
+      const shutter = document.getElementById('hnb-shutter');
+      shutter.classList.add('open');
+
+      let resultMsg = '';
+      if (pvpWinStatus[0] && pvpWinStatus[1]) {
+        resultMsg = '🤝 同時的中！引き分けです！';
+      } else if (pvpWinStatus[0]) {
+        resultMsg = '🏆 1P の勝利！見事に暗号を解読しました！';
+      } else if (pvpWinStatus[1]) {
+        resultMsg = '🏆 2P の勝利！見事に暗号を解読しました！';
+      } else {
+        resultMsg = '両者とも時間切れ！引き分けです。';
+      }
+
+      setTimeout(() => alert(resultMsg), 300);
+    }
+
+    function hnbChangeMode(val) {
+      hnbMode = val;
+      document.getElementById('row-dup-setting').style.display = (val === '1p') ? 'flex' : 'none';
+      document.getElementById('dup-setting-note').style.display = (val === '1p') ? 'block' : 'none';
+      hnbToggleModal(false);
+      hnbRestartGame();
     }
 
     function hnbRestartGame() {
