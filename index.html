@@ -429,66 +429,133 @@
       border: 1px solid #ddd;
     }
 
-    /* === 6. マンカラ（新デザイン：高級感ある彫刻木製盤＆ガラス石） === */
-    .mancala-deluxe-board {
-      width: 66px;
+    /* === 6. マンカラ（木製彫り込み盤面ミニチュア） === */
+    .mancala-mini-board {
+      width: 60px;
       height: 32px;
-      background: radial-gradient(ellipse at 50% 50%, #3e2617 0%, #1e1108 100%);
-      border: 1.5px solid var(--accent);
-      border-radius: 16px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 1px 2px rgba(255,255,255,0.25);
+      background: linear-gradient(180deg, #3d2414 0%, #1f1108 100%);
+      border: 1.5px solid #5d381f;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.2);
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 3px 4px;
-      position: relative;
+      gap: 3px;
     }
-    .m-deluxe-store {
-      width: 10px;
+    .m-mini-store {
+      width: 9px;
       height: 24px;
-      background: radial-gradient(ellipse at 50% 50%, #0a0503 0%, #170d07 100%);
+      background: #0d0704;
       border-radius: 6px;
-      box-shadow: inset 0 2px 5px rgba(0,0,0,0.95), 0 0.5px 1px rgba(255,255,255,0.1);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.95);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 2px;
-      padding: 2px 0;
     }
-    .m-deluxe-pits {
+    .m-mini-pits-grid {
       flex: 1;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-template-rows: repeat(2, 1fr);
-      gap: 2px 3px;
-      padding: 0 3px;
+      gap: 2.5px 3px;
       align-items: center;
       justify-items: center;
     }
-    .m-deluxe-pit {
+    .m-mini-pit {
       width: 9.5px;
       height: 9.5px;
-      background: radial-gradient(circle at 50% 50%, #0a0503 0%, #180e08 100%);
+      background: #0d0704;
       border-radius: 50%;
       box-shadow: inset 0 1.5px 3px rgba(0,0,0,0.95);
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    .m-glass-gem {
-      width: 5.5px;
-      height: 5.5px;
+    .m-mini-gem {
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
-      box-shadow: inset 1px 1px 1px rgba(255,255,255,0.85), 0 1px 2px rgba(0,0,0,0.7);
-      flex-shrink: 0;
+      box-shadow: inset 0.8px 0.8px 1px rgba(255,255,255,0.8), 0 1px 1.5px rgba(0,0,0,0.6);
     }
-    .gem-turquoise { background: radial-gradient(circle at 35% 30%, #55efc4, #00b894); }
-    .gem-ruby { background: radial-gradient(circle at 35% 30%, #ff7675, #d63031); }
-    .gem-amber { background: radial-gradient(circle at 35% 30%, #ffeaa7, #f39c12); }
-    .gem-lapis { background: radial-gradient(circle at 35% 30%, #74b9ff, #0984e3); }
+    .m-gem-cyan { background: radial-gradient(circle at 35% 30%, #55efc4, #00b894); }
+    .m-gem-coral { background: radial-gradient(circle at 35% 30%, #ff7675, #d63031); }
+    .m-gem-gold { background: radial-gradient(circle at 35% 30%, #ffeaa7, #fdcb6e); }
+    .m-gem-purple { background: radial-gradient(circle at 35% 30%, #d980fa, #8854d0); }
 
-    /* === 7. コネクトフォー === */
+    /* === 7. ピクロス（木彫りタイルアート） === */
+    .picross-mini-board {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 1.5px;
+      background: #180f08;
+      padding: 2.5px;
+      border-radius: 6px;
+      border: 1.5px solid #4a3424;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+    }
+    .pic-cell {
+      border-radius: 1px;
+      background: #2c1d12;
+    }
+    .pic-cell.filled {
+      background: linear-gradient(135deg, #e5a950 0%, #aa782e 100%);
+      box-shadow: 0 0 4px rgba(229, 169, 80, 0.6);
+    }
+
+    /* === 8. ドット＆ボックス（真鍮鋲とネオンライン） === */
+    .dnb-mini-board {
+      width: 38px;
+      height: 38px;
+      position: relative;
+      background: #180f08;
+      border: 1.5px solid #4a3424;
+      border-radius: 7px;
+      padding: 3px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+    }
+    .dnb-mini-grid {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    .dnb-mini-box {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 13px;
+      height: 13px;
+      background: rgba(46, 204, 113, 0.35);
+      border: 1.5px solid #2ecc71;
+      border-radius: 2px;
+      box-shadow: 0 0 5px rgba(46, 204, 113, 0.4);
+    }
+    .dnb-mini-box-2 {
+      position: absolute;
+      bottom: 3px;
+      right: 3px;
+      width: 13px;
+      height: 13px;
+      background: rgba(231, 76, 60, 0.35);
+      border: 1.5px solid #e74c3c;
+      border-radius: 2px;
+      box-shadow: 0 0 5px rgba(231, 76, 60, 0.4);
+    }
+    .dnb-mini-dot {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: radial-gradient(circle at 35% 30%, #fff8db, #d4a359);
+      border-radius: 50%;
+      box-shadow: 0 0 3px rgba(212, 163, 89, 0.8);
+    }
+
+    /* === 9. コネクトフォー === */
     .connect-icon-pair {
       display: flex;
       gap: 6px;
@@ -502,14 +569,14 @@
     }
     .mini-connect-coin.red {
       background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b 65%, #7f1d1d 100%);
-      border: 1.5px solid #ff9f43;
+      border: 1px solid #ff9f43;
     }
     .mini-connect-coin.yellow {
       background: radial-gradient(circle at 35% 30%, #fff2ac, #f39c12 65%, #d35400 100%);
-      border: 1.5px solid #f1c40f;
+      border: 1px solid #f1c40f;
     }
 
-    /* === 8. マインスイーパー === */
+    /* === 10. マインスイーパー === */
     .mines-icon-pair {
       display: flex;
       gap: 5px;
@@ -538,7 +605,7 @@
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.7);
     }
 
-    /* === 9. 2048 === */
+    /* === 11. 2048 === */
     .mini-2048-pair {
       display: flex;
       gap: 5px;
@@ -567,7 +634,7 @@
       border: 1px solid #fff;
     }
 
-    /* === 10. ライツアウト === */
+    /* === 12. ライツアウト === */
     .lights-icon-pair {
       display: flex;
       gap: 6px;
@@ -591,7 +658,7 @@
       opacity: 0.8;
     }
 
-    /* === 11. ヒット＆ブロー === */
+    /* === 13. ヒット＆ブロー === */
     .hnb-icon-unit {
       display: flex;
       align-items: center;
@@ -644,30 +711,6 @@
     .hnb-pin-blow {
       background: radial-gradient(circle at 35% 35%, #ffffff, #a4b0be);
       box-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
-    }
-
-    /* === 12. ピクロス（木彫りグリッド＆ハートドット絵） === */
-    .picross-icon-board {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(145deg, #2c1a10 0%, #170d07 100%);
-      border: 1.5px solid var(--accent);
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.2);
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(4, 1fr);
-      gap: 1.5px;
-      padding: 3px;
-    }
-    .picross-icon-tile {
-      background: #150b06;
-      border-radius: 1.5px;
-      box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
-    }
-    .picross-icon-tile.carved {
-      background: radial-gradient(circle at 35% 30%, #ffd479 0%, var(--accent) 70%, #996e2b 100%);
-      box-shadow: 0 0 5px var(--accent-glow), inset 0 1px 1px #fff;
     }
 
     .card-title {
@@ -783,7 +826,7 @@
     <!-- 上段：カテゴリー -->
     <div class="section-label">CATEGORIES</div>
     <div class="games-grid">
-      <!-- トランプ -->
+      <!-- トランプ (ゴルフ追加で5ゲームに更新) -->
       <div class="game-card" onclick="openSubMenu('trump')">
         <div class="card-icon">
           <div class="cards-icon-pair">
@@ -798,7 +841,7 @@
           </div>
         </div>
         <div class="card-title">トランプ</div>
-        <div class="card-genre">4ゲーム収録</div>
+        <div class="card-genre">5ゲーム収録</div>
       </div>
 
       <!-- 麻雀 -->
@@ -858,7 +901,33 @@
         <div class="card-genre">ナンプレ</div>
       </div>
 
-      <!-- 2位：リバーシ -->
+      <!-- 2位：ピクロス -->
+      <div class="game-card" onclick="launchGame('picross')">
+        <div class="card-icon">
+          <div class="picross-mini-board">
+            <div class="pic-cell"></div>
+            <div class="pic-cell filled"></div>
+            <div class="pic-cell filled"></div>
+            <div class="pic-cell"></div>
+            <div class="pic-cell filled"></div>
+            <div class="pic-cell filled"></div>
+            <div class="pic-cell filled"></div>
+            <div class="pic-cell filled"></div>
+            <div class="pic-cell"></div>
+            <div class="pic-cell filled"></div>
+            <div class="pic-cell filled"></div>
+            <div class="pic-cell"></div>
+            <div class="pic-cell"></div>
+            <div class="pic-cell"></div>
+            <div class="pic-cell filled"></div>
+            <div class="pic-cell"></div>
+          </div>
+        </div>
+        <div class="card-title">ピクロス</div>
+        <div class="card-genre">イラストロジック</div>
+      </div>
+
+      <!-- 3位：リバーシ -->
       <div class="game-card" onclick="launchGame('reversi')">
         <div class="card-icon">
           <div class="reversi-icon-pair">
@@ -870,51 +939,23 @@
         <div class="card-genre">対COM / 2人対戦</div>
       </div>
 
-      <!-- 3位：ピクロス（新規追加） -->
-      <div class="game-card" onclick="launchGame('picross')">
-        <div class="card-icon">
-          <div class="picross-icon-board">
-            <div class="picross-icon-tile"></div>
-            <div class="picross-icon-tile carved"></div>
-            <div class="picross-icon-tile carved"></div>
-            <div class="picross-icon-tile"></div>
-            <div class="picross-icon-tile carved"></div>
-            <div class="picross-icon-tile carved"></div>
-            <div class="picross-icon-tile carved"></div>
-            <div class="picross-icon-tile carved"></div>
-            <div class="picross-icon-tile carved"></div>
-            <div class="picross-icon-tile carved"></div>
-            <div class="picross-icon-tile carved"></div>
-            <div class="picross-icon-tile carved"></div>
-            <div class="picross-icon-tile"></div>
-            <div class="picross-icon-tile carved"></div>
-            <div class="picross-icon-tile carved"></div>
-            <div class="picross-icon-tile"></div>
-          </div>
-        </div>
-        <div class="card-title">ピクロス</div>
-        <div class="card-genre">イラストロジック</div>
-      </div>
-
-      <!-- 4位：マンカラ (新デザイン：木製彫り込み盤とガラス玉) -->
+      <!-- 4位：マンカラ -->
       <div class="game-card" onclick="launchGame('mancala')">
         <div class="card-icon">
-          <div class="mancala-deluxe-board">
-            <div class="m-deluxe-store">
-              <div class="m-glass-gem gem-ruby"></div>
-              <div class="m-glass-gem gem-amber"></div>
+          <div class="mancala-mini-board">
+            <div class="m-mini-store">
+              <div class="m-mini-gem m-gem-coral"></div>
             </div>
-            <div class="m-deluxe-pits">
-              <div class="m-deluxe-pit"><div class="m-glass-gem gem-turquoise"></div></div>
-              <div class="m-deluxe-pit"><div class="m-glass-gem gem-lapis"></div></div>
-              <div class="m-deluxe-pit"><div class="m-glass-gem gem-ruby"></div></div>
-              <div class="m-deluxe-pit"><div class="m-glass-gem gem-amber"></div></div>
-              <div class="m-deluxe-pit"><div class="m-glass-gem gem-turquoise"></div></div>
-              <div class="m-deluxe-pit"><div class="m-glass-gem gem-lapis"></div></div>
+            <div class="m-mini-pits-grid">
+              <div class="m-mini-pit"><div class="m-mini-gem m-gem-cyan"></div></div>
+              <div class="m-mini-pit"><div class="m-mini-gem m-gem-gold"></div></div>
+              <div class="m-mini-pit"><div class="m-mini-gem m-gem-purple"></div></div>
+              <div class="m-mini-pit"><div class="m-mini-gem m-gem-coral"></div></div>
+              <div class="m-mini-pit"><div class="m-mini-gem m-gem-cyan"></div></div>
+              <div class="m-mini-pit"><div class="m-mini-gem m-gem-gold"></div></div>
             </div>
-            <div class="m-deluxe-store">
-              <div class="m-glass-gem gem-turquoise"></div>
-              <div class="m-glass-gem gem-lapis"></div>
+            <div class="m-mini-store">
+              <div class="m-mini-gem m-gem-cyan"></div>
             </div>
           </div>
         </div>
@@ -934,7 +975,30 @@
         <div class="card-genre">四目並べ / 2人対戦</div>
       </div>
 
-      <!-- 6位：マインスイーパー -->
+      <!-- 6位：ドット＆ボックス (新規追加) -->
+      <div class="game-card" onclick="launchGame('dotsandboxes')">
+        <div class="card-icon">
+          <div class="dnb-mini-board">
+            <div class="dnb-mini-grid">
+              <div class="dnb-mini-box"></div>
+              <div class="dnb-mini-box-2"></div>
+              <div class="dnb-mini-dot" style="top:0; left:0;"></div>
+              <div class="dnb-mini-dot" style="top:0; left:14px;"></div>
+              <div class="dnb-mini-dot" style="top:0; right:0;"></div>
+              <div class="dnb-mini-dot" style="top:14px; left:0;"></div>
+              <div class="dnb-mini-dot" style="top:14px; left:14px;"></div>
+              <div class="dnb-mini-dot" style="top:14px; right:0;"></div>
+              <div class="dnb-mini-dot" style="bottom:0; left:0;"></div>
+              <div class="dnb-mini-dot" style="bottom:0; left:14px;"></div>
+              <div class="dnb-mini-dot" style="bottom:0; right:0;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card-title">ドット＆ボックス</div>
+        <div class="card-genre">陣取り / 2人対戦</div>
+      </div>
+
+      <!-- 7位：マインスイーパー -->
       <div class="game-card" onclick="launchGame('minesweeper')">
         <div class="card-icon">
           <div class="mines-icon-pair">
@@ -946,7 +1010,7 @@
         <div class="card-genre">地雷撤去</div>
       </div>
 
-      <!-- 7位：2048 -->
+      <!-- 8位：2048 -->
       <div class="game-card" onclick="launchGame('2048')">
         <div class="card-icon">
           <div class="mini-2048-pair">
@@ -958,7 +1022,7 @@
         <div class="card-genre">スライドパズル</div>
       </div>
 
-      <!-- 8位：ライツアウト -->
+      <!-- 9位：ライツアウト -->
       <div class="game-card" onclick="launchGame('lightsout')">
         <div class="card-icon">
           <div class="lights-icon-pair">
@@ -970,7 +1034,7 @@
         <div class="card-genre">電灯パズル</div>
       </div>
 
-      <!-- 9位：ヒット＆ブロー -->
+      <!-- 10位：ヒット＆ブロー -->
       <div class="game-card" onclick="launchGame('hit-and-blow')">
         <div class="card-icon">
           <div class="hnb-icon-unit">
@@ -994,7 +1058,7 @@
     </div>
   </div>
 
-  <!-- 2. トランプ サブメニュー画面 -->
+  <!-- 2. トランプ サブメニュー画面 (ゴルフ追加) -->
   <div id="screen-trump" class="screen-container" style="display: none;">
     <button class="global-back-btn" onclick="backToMainFromSub()">◀ メインメニュー</button>
     <div class="logo-container" style="margin-top: 24px;">
@@ -1003,6 +1067,12 @@
     </div>
 
     <div class="games-grid">
+      <!-- ゴルフ (新規追加) -->
+      <div class="game-card" onclick="launchGame('golf')">
+        <div class="card-icon" style="font-size: 38px;">⛳🃏</div>
+        <div class="card-title">ゴルフ</div>
+        <div class="card-genre">スピード連鎖</div>
+      </div>
       <div class="game-card" onclick="launchGame('blackjack')">
         <div class="card-icon" style="font-size: 38px;">🎰🃏</div>
         <div class="card-title">ブラックジャック</div>
@@ -1101,6 +1171,16 @@
   </div>
 
   <!-- 5. ゲーム表示フレーム (iframe群) -->
+  <div id="view-golf" class="game-viewport">
+    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
+    <iframe id="frame-golf" src="golf.html" class="game-frame" allow="autoplay"></iframe>
+  </div>
+
+  <div id="view-dotsandboxes" class="game-viewport">
+    <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
+    <iframe id="frame-dotsandboxes" src="dotsandboxes.html" class="game-frame" allow="autoplay"></iframe>
+  </div>
+
   <div id="view-picross" class="game-viewport">
     <button class="global-back-btn" onclick="backToCurrentMenu()">◀ メニュー</button>
     <iframe id="frame-picross" src="picross.html" class="game-frame" allow="autoplay"></iframe>
