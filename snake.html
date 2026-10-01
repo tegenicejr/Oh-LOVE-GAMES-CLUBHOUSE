@@ -69,18 +69,54 @@
     }
     /* キャンバスボード */
     .game-board-frame {
-      width: 100%; max-width: 360px; aspect-ratio: 1;
+      width: 100%; max-width: 340px; aspect-ratio: 1;
       background: var(--board-inner);
       border: 4px solid #583920;
       border-radius: 14px;
       box-shadow: 0 14px 30px rgba(0,0,0,0.85), inset 0 2px 6px rgba(0,0,0,0.9);
       display: flex; align-items: center; justify-content: center;
       position: relative;
+      overflow: hidden;
     }
     #snake-canvas {
       width: 100%; height: 100%; display: block;
       border-radius: 8px;
     }
+    /* スタート / ゲームオーバー オーバーレイ */
+    .screen-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(18, 11, 7, 0.88);
+      backdrop-filter: blur(3px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px;
+      z-index: 10;
+      transition: opacity 0.2s ease;
+    }
+    .screen-overlay.hidden {
+      display: none;
+    }
+    .overlay-title {
+      font-size: 1.35rem; font-weight: 900;
+      color: var(--brass-gold);
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      letter-spacing: 2px;
+    }
+    .overlay-sub {
+      font-size: 0.82rem; color: #d5c3b1;
+      text-align: center; line-height: 1.5;
+    }
+    .start-btn {
+      background: linear-gradient(180deg, #d4a359 0%, #aa782e 100%);
+      color: #140c06; font-size: 1.05rem; font-weight: 900;
+      border: 1.5px solid #fff; border-radius: 20px;
+      padding: 10px 28px; cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.8), 0 0 12px var(--brass-glow);
+      transition: transform 0.1s;
+    }
+    .start-btn:active { transform: scale(0.94); }
+
     /* 十字コントローラー */
     .dpad-container {
       display: grid;
@@ -135,14 +171,21 @@
         <div class="badge">最高: <b class="val-gold" id="best-val">0</b></div>
       </div>
       <div style="display:flex; gap:8px;">
-        <div class="tool-btn" onclick="initGame()">🔄</div>
+        <div class="tool-btn" onclick="resetToTitle()">🔄</div>
         <div class="tool-btn" onclick="toggleRules(true)">📖</div>
       </div>
     </div>
 
     <div class="table-felt">
       <div class="game-board-frame" id="canvas-container">
-        <canvas id="snake-canvas" width="360" height="360"></canvas>
+        <canvas id="snake-canvas" width="340" height="340"></canvas>
+
+        <!-- スタート＆リトライ用画面 -->
+        <div id="game-overlay" class="screen-overlay">
+          <div class="overlay-title" id="overlay-title">SNAKE CRAFT</div>
+          <div class="overlay-sub" id="overlay-sub">タップまたはボタンで<br>黄金のリンゴを追え！</div>
+          <button class="start-btn" id="start-btn" onclick="startGame()">START</button>
+        </div>
       </div>
 
       <!-- スマホ用タッチD-Pad -->
@@ -203,40 +246,54 @@
       } catch(e) {}
     }
 
-    const GRID_COUNT = 18; // 18×18マス
-    const CELL_SIZE = 20;  // 360px / 18
+    const GRID_COUNT = 17;
+    const CELL_SIZE = 20; // 17 * 20 = 340px
 
     let snake = [];
     let dir = { x: 1, y: 0 };
     let nextDir = { x: 1, y: 0 };
-    let apple = { x: 12, y: 9 };
+    let apple = { x: 12, y: 8 };
     let score = 0;
     let bestScore = 0;
     let gameLoop = null;
-    let isGameOver = false;
+    let isPlaying = false;
 
     window.addEventListener('DOMContentLoaded', () => {
       loadBestScore();
-      initGame();
+      setupInitialBoard();
       setupInputs();
     });
 
-    function initGame() {
-      if (gameLoop) clearInterval(gameLoop);
+    function setupInitialBoard() {
       snake = [
-        { x: 6, y: 9 },
-        { x: 5, y: 9 },
-        { x: 4, y: 9 }
+        { x: 6, y: 8 },
+        { x: 5, y: 8 },
+        { x: 4, y: 8 }
       ];
       dir = { x: 1, y: 0 };
       nextDir = { x: 1, y: 0 };
       score = 0;
-      isGameOver = false;
       document.getElementById('score-val').textContent = '0';
-      spawnApple();
+      apple = { x: 12, y: 8 };
       draw();
+    }
 
-      gameLoop = setInterval(update, 120);
+    function startGame() {
+      document.getElementById('game-overlay').classList.add('hidden');
+      setupInitialBoard();
+      isPlaying = true;
+      if (gameLoop) clearInterval(gameLoop);
+      gameLoop = setInterval(update, 125);
+    }
+
+    function resetToTitle() {
+      if (gameLoop) clearInterval(gameLoop);
+      isPlaying = false;
+      document.getElementById('overlay-title').textContent = 'SNAKE CRAFT';
+      document.getElementById('overlay-sub').innerHTML = 'タップまたはボタンで<br>黄金のリンゴを追え！';
+      document.getElementById('start-btn').textContent = 'START';
+      document.getElementById('game-overlay').classList.remove('hidden');
+      setupInitialBoard();
     }
 
     function spawnApple() {
@@ -249,7 +306,7 @@
     }
 
     function update() {
-      if (isGameOver) return;
+      if (!isPlaying) return;
       dir = { ...nextDir };
       const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
 
@@ -291,17 +348,17 @@
 
       // 背景クリア
       ctx.fillStyle = '#160d07';
-      ctx.fillRect(0, 0, 360, 360);
+      ctx.fillRect(0, 0, 340, 340);
 
       // グリッド線
       ctx.strokeStyle = 'rgba(74, 48, 23, 0.4)';
       ctx.lineWidth = 1;
       for (let i = 0; i <= GRID_COUNT; i++) {
         ctx.beginPath();
-        ctx.moveTo(i * CELL_SIZE, 0); ctx.lineTo(i * CELL_SIZE, 360);
+        ctx.moveTo(i * CELL_SIZE, 0); ctx.lineTo(i * CELL_SIZE, 340);
         ctx.stroke();
         ctx.beginPath();
-        ctx.moveTo(0, i * CELL_SIZE); ctx.lineTo(360, i * CELL_SIZE);
+        ctx.moveTo(0, i * CELL_SIZE); ctx.lineTo(340, i * CELL_SIZE);
         ctx.stroke();
       }
 
@@ -336,12 +393,10 @@
           ctx.fillStyle = (idx % 2 === 0) ? '#27ae60' : '#1e824c';
         }
 
-        // 丸みを帯びたブロック
         ctx.beginPath();
         ctx.roundRect(x + 1.5, y + 1.5, CELL_SIZE - 3, CELL_SIZE - 3, 5);
         ctx.fill();
 
-        // 頭の目
         if (isHead) {
           ctx.fillStyle = '#fff';
           ctx.beginPath();
@@ -353,20 +408,23 @@
     }
 
     function changeDir(dx, dy) {
+      if (!isPlaying) return;
       if (dir.x + dx === 0 && dir.y + dy === 0) return; // 逆走防止
       nextDir = { x: dx, y: dy };
     }
 
     function setupInputs() {
-      // キーボード
       window.addEventListener('keydown', (e) => {
+        if (!isPlaying && (e.key === ' ' || e.key === 'Enter')) {
+          startGame();
+          return;
+        }
         if (e.key === 'ArrowUp' || e.key === 'w') changeDir(0, -1);
         else if (e.key === 'ArrowDown' || e.key === 's') changeDir(0, 1);
         else if (e.key === 'ArrowLeft' || e.key === 'a') changeDir(-1, 0);
         else if (e.key === 'ArrowRight' || e.key === 'd') changeDir(1, 0);
       });
 
-      // スワイプ
       let startX = 0, startY = 0;
       const el = document.getElementById('canvas-container');
       el.addEventListener('touchstart', (e) => {
@@ -387,10 +445,14 @@
     }
 
     function handleGameOver() {
-      isGameOver = true;
+      isPlaying = false;
       clearInterval(gameLoop);
       playSound('hit');
-      setTimeout(() => alert(`💀 ゲームオーバー！\nスコア: ${score}`), 100);
+
+      document.getElementById('overlay-title').textContent = 'GAME OVER';
+      document.getElementById('overlay-sub').innerHTML = `スコア: <b>${score}</b><br>ハイスコア: <b>${bestScore}</b>`;
+      document.getElementById('start-btn').textContent = 'PLAY AGAIN';
+      document.getElementById('game-overlay').classList.remove('hidden');
     }
 
     function loadBestScore() {
