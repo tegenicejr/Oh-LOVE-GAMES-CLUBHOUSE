@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ピクロス (Picross / Nonogram)</title>
+  <style>
+    :root {
+      --bg-desk: #110c08;
+      --felt-dark: #122c19;
+      --felt-light: #1c4528;
+      --board-rim: #362214;
+      --board-wood: #26160d;
+      --tile-blank: #2d1e15;
+      --tile-carved: #d4a359;
+      --tile-chisel: #150d08;
+      --brass-gold: #d4a359;
+      --brass-glow: rgba(212, 163, 89, 0.45);
+      --brass-bright: #ffdf94;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-desk);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      color: #fff;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .viewport {
+      width: 100%;
+      min-height: 100%;
+      padding: calc(14px + env(safe-area-inset-top)) 8px calc(60px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: radial-gradient(circle at 50% 20%, #2b1a10 0%, var(--bg-desk) 100%);
+      position: relative;
+    }
+
+    .topbar {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding: 0 4px;
+    }
+
+    .topbar-upper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stage-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stage-name-badge {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--brass-gold);
+      letter-spacing: 0.5px;
+      text-shadow: 0 0 8px var(--brass-glow);
+    }
+
+    .stage-size-pill {
+      font-size: 0.72rem;
+      font-weight: 800;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid #5a3d28;
+      color: #cdb9a8;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .tools-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .tool-btn {
+      background: linear-gradient(145deg, #2c1c12 0%, #1c1109 100%);
+      border: 1.5px solid #4d3320;
+      color: var(--brass-gold);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.05rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.15);
+      transition: transform 0.12s, border-color 0.12s;
+    }
+    .tool-btn:hover { border-color: var(--brass-gold); transform: translateY(-2px); }
+    .tool-btn:active { transform: scale(0.92); }
+
+    .topbar-lower {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2px;
+      gap: 6px;
+    }
+
+    .stat-badge {
+      background: rgba(0, 0, 0, 0.65);
+      border: 1.5px solid #442d1c;
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: #d1c1b2;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+      font-feature-settings: "tnum";
+    }
+    .stat-badge span.val {
+      color: var(--brass-gold);
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    .table-felt {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      background: radial-gradient(circle at 50% 35%, var(--felt-light) 0%, var(--felt-dark) 100%);
+      border: 7px solid var(--board-rim);
+      border-radius: 20px;
+      padding: 14px 10px 18px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.95), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 0 35px rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      touch-action: manipulation;
+    }
+
+    .picross-board-wrapper {
+      background: linear-gradient(180deg, #321f14 0%, #1c1109 100%);
+      border: 3.5px solid #5a3d28;
+      border-radius: 16px;
+      padding: 8px;
+      box-shadow: 0 14px 28px rgba(0,0,0,0.85), inset 0 1px 3px rgba(255,255,255,0.12);
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .picross-grid-table {
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+    }
+
+    /* Top-left corner spacer */
+    .corner-cell {
+      background: transparent;
+    }
+
+    /* Column clues header */
+    .col-clue-cell {
+      vertical-align: bottom;
+      text-align: center;
+      padding-bottom: 4px;
+      border-bottom: 2px solid #5a3d28;
+    }
+    .col-clue-list {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 2px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #ede2d5;
+      font-feature-settings: "tnum";
+    }
+
+    /* Row clues header */
+    .row-clue-cell {
+      text-align: right;
+      padding-right: 6px;
+      border-right: 2px solid #5a3d28;
+      white-space: nowrap;
+    }
+    .row-clue-list {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #ede2d5;
+      font-feature-settings: "tnum";
+    }
+
+    .clue-num.completed {
+      color: #6d5b4e;
+      text-decoration: line-through;
+    }
+
+    /* Grid tiles */
+    .tile-cell {
+      position: relative;
+      background: var(--tile-blank);
+      border: 1px solid #3d281a;
+      transition: background 0.12s, transform 0.08s;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 1px 1px 1px rgba(255,255,255,0.06), inset -1px -1px 2px rgba(0,0,0,0.6);
+    }
+
+    /* 5-tile chunk borders for 10x10 */
+    .tile-cell.thick-border-right {
+      border-right: 2.5px solid #8c5d3b;
+    }
+    .tile-cell.thick-border-bottom {
+      border-bottom: 2.5px solid #8c5d3b;
+    }
+    .col-clue-cell.thick-border-right {
+      border-right: 2.5px solid #8c5d3b;
+    }
+    .row-clue-cell.thick-border-bottom {
+      border-bottom: 2.5px solid #8c5d3b;
+    }
+
+    /* 5x5 Size */
+    .size-5 .tile-cell {
+      width: 44px;
+      height: 44px;
+      border-radius: 4px;
+    }
+    .size-5 .col-clue-cell { width: 44px; height: 50px; }
+    .size-5 .row-clue-cell { width: 50px; height: 44px; }
+
+    /* 10x10 Size */
+    .size-10 .tile-cell {
+      width: 25px;
+      height: 25px;
+      border-radius: 2px;
+    }
+    .size-10 .col-clue-cell { width: 25px; height: 54px; }
+    .size-10 .row-clue-cell { width: 54px; height: 25px; font-size: 0.68rem; }
+    .size-10 .col-clue-list { font-size: 0.68rem; }
+    .size-10 .row-clue-list { font-size: 0.68rem; gap: 2px; }
+
+    /* Tile states */
+    .tile-cell.filled {
+      background: radial-gradient(circle at 35% 30%, #ffd479 0%, var(--tile-carved) 70%, #996e2b 100%);
+      box-shadow: 0 0 8px var(--brass-glow), inset 0 1px 1px rgba(255,255,255,0.7), inset -1px -1px 2px rgba(0,0,0,0.5);
+      border-color: #ffe39b;
+    }
+
+    .tile-cell.crossed {
+      background: #17100b;
+    }
+    .tile-cell.crossed::after {
+      content: '✕';
+      font-size: 1rem;
+      font-weight: 900;
+      color: #8c7664;
+      line-height: 1;
+    }
+    .size-10 .tile-cell.crossed::after {
+      font-size: 0.7rem;
+    }
+
+    .tile-cell.error-flash {
+      animation: flashRed 0.4s ease-out;
+    }
+    @keyframes flashRed {
+      0% { background: #e74c3c; }
+      100% { background: var(--tile-blank); }
+    }
+
+    .controls-panel {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .mode-toggle-group {
+      display: flex;
+      background: #190f09;
+      border: 1.5px solid #4a3424;
+      border-radius: 24px;
+      padding: 4px;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.8);
+    }
+
+    .mode-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: none;
+      background: transparent;
+      color: #9f8d7f;
+      font-weight: 800;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(180deg, #d4a359 0%, #aa782e 100%);
+      color: #140c06;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.6);
+    }
+
+    .mode-icon {
+      font-size: 1.05rem;
+    }
+
+    .action-sub-btn {
+      background: linear-gradient(145deg, #2c1c12 0%, #1c1109 100%);
+      border: 1.5px solid #5a3d28;
+      color: #ede2d5;
+      padding: 8px 14px;
+      border-radius: 14px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+      transition: transform 0.12s, border-color 0.12s;
+    }
+    .action-sub-btn:hover { border-color: var(--brass-gold); }
+    .action-sub-btn:active { transform: scale(0.94); }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.82);
+      backdrop-filter: blur(5px);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-sheet {
+      background: #20140c;
+      border: 3px solid #4d3320;
+      border-radius: 20px;
+      padding: 22px;
+      width: 90%;
+      max-width: 440px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.95);
+      color: #ede2d5;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-title {
+      text-align: center;
+      color: var(--brass-gold);
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    .modal-body {
+      overflow-y: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      color: #c9b9aa;
+      margin-bottom: 16px;
+      padding-right: 4px;
+    }
+
+    /* Stage picker grid */
+    .stage-section-title {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--brass-gold);
+      margin: 10px 0 6px;
+      border-bottom: 1px dashed rgba(212, 163, 89, 0.3);
+      padding-bottom: 3px;
+    }
+    .stage-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .stage-card-btn {
+      background: #2b1a10;
+      border: 1.5px solid #4d3320;
+      border-radius: 12px;
+      padding: 10px 8px;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.15s ease;
+    }
+    .stage-card-btn:hover {
+      border-color: var(--brass-gold);
+      background: #392417;
+    }
+    .stage-card-btn.active {
+      border-color: var(--brass-gold);
+      box-shadow: 0 0 10px var(--brass-glow);
+    }
+    .stage-card-info {
+      text-align: left;
+    }
+    .stage-card-name {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #f7ede2;
+    }
+    .stage-card-status {
+      font-size: 0.72rem;
+      color: #9f8d7f;
+    }
+    .stage-card-status.cleared {
+      color: #2ecc71;
+      font-weight: 800;
+    }
+
+    .modal-close-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(180deg, #d4a359, #aa782e);
+      border: none;
+      border-radius: 12px;
+      color: #140c06;
+      font-weight: 900;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    /* Completed celebration modal preview art */
+    .clear-art-container {
+      width: 120px;
+      height: 120px;
+      margin: 10px auto 16px;
+      background: #170e08;
+      border: 3px solid var(--brass-gold);
+      border-radius: 12px;
+      box-shadow: 0 0 20px var(--brass-glow);
+      display: grid;
+      padding: 4px;
+      gap: 1.5px;
+    }
+    .clear-art-pixel {
+      background: transparent;
+      border-radius: 1.5px;
+    }
+    .clear-art-pixel.filled {
+      background: var(--brass-gold);
+      box-shadow: inset 0 0 2px #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="viewport">
+    <div class="topbar">
+      <div class="topbar-upper">
+        <div class="stage-title-wrap">
+          <span class="stage-name-badge" id="current-stage-name">ハート</span>
+          <span class="stage-size-pill" id="current-stage-size">5×5</span>
+        </div>
+        <div class="tools-group">
+          <div class="tool-btn" onclick="openStageModal()" title="ステージ選択">📁</div>
+          <div class="tool-btn" onclick="restartStage()" title="やり直す">🔄</div>
+          <div class="tool-btn" onclick="undoAction()" title="1手戻す">↩️</div>
+          <div class="tool-btn" onclick="openRulesModal()" title="あそびかた">📖</div>
+        </div>
+      </div>
+
+      <div class="topbar-lower">
+        <div class="stat-badge">⏱️ <span class="val" id="timer-display">00:00</span></div>
+        <div class="stat-badge">残りマス <span class="val" id="remaining-count">0</span></div>
+        <div class="stat-badge" id="status-mode-badge" style="color:var(--brass-gold);">彫る・塗る</div>
+      </div>
+    </div>
+
+    <!-- Felt Gaming Table -->
+    <div class="table-felt">
+      <div class="picross-board-wrapper" id="picross-board-wrapper">
+        <table class="picross-grid-table" id="picross-table"></table>
+      </div>
+
+      <!-- Mode Switch and Action Buttons -->
+      <div class="controls-panel">
+        <div class="mode-toggle-group">
+          <button class="mode-btn active" id="btn-mode-paint" onclick="setMode('paint')">
+            <span class="mode-icon">⬛</span> 彫る / 塗る
+          </button>
+          <button class="mode-btn" id="btn-mode-cross" onclick="setMode('cross')">
+            <span class="mode-icon">✕</span> バツ / 仮置
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-stages" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">📁 ステージ選択</div>
+      <div class="modal-body">
+        <div class="stage-section-title">初級 (5×5) - サクッと遊べる</div>
+        <div class="stage-grid" id="stages-5x5-grid"></div>
+
+        <div class="stage-section-title">中級 (10×10) - 本格パズル</div>
+        <div class="stage-grid" id="stages-10x10-grid"></div>
+      </div>
+      <button class="modal-close-btn" onclick="closeStageModal()">閉じる</button>
+    </div>
+  </div>
+
+  <div id="modal-rules" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">📖 ピクロスのあそびかた</div>
+      <div class="modal-body">
+        <p>上と左に書かれた<b>数字のヒント</b>を手がかりに、盤面の正しいマスを削り出してドット絵を完成させるロジックパズルです。</p>
+        <br>
+        <b style="color:var(--brass-gold);">【数字ヒントの読み方】</b>
+        <ul style="padding-left:18px; margin:6px 0;">
+          <li>数字は、その列に<b>連続して塗るマスの数</b>を表しています。</li>
+          <li>数字が「<b>3</b>」なら、3マス連続して塗ります。</li>
+          <li>数字が「<b>1 2</b>」のように複数ある場合、<b>間に1マス以上の空きマス</b>を挟んで左（上）から順に「1マス」「2マス」と並びます。</li>
+        </ul>
+        <br>
+        <b style="color:var(--brass-gold);">【操作のコツ】</b>
+        <ul style="padding-left:18px; margin:6px 0;">
+          <li><b>彫る/塗るモード</b>：正解だと思うマスを削り出します。</li>
+          <li><b>バツ/仮置モード</b>：絶対に塗らないと分かったマスに「✕」を置いて推理を整理します。</li>
+        </ul>
+      </div>
+      <button class="modal-close-btn" onclick="closeRulesModal()">閉じる</button>
+    </div>
+  </div>
+
+  <div id="modal-cleared" class="modal-overlay">
+    <div class="modal-sheet" style="text-align: center;">
+      <div class="modal-title" style="font-size: 1.4rem;">🎉 完成！</div>
+      <div style="font-size: 1.05rem; font-weight: 800; color: #f7ede2; margin-bottom: 6px;" id="clear-item-name">ハート</div>
+      <div class="clear-art-container" id="clear-art-container"></div>
+      <div style="font-size: 0.88rem; color: #cdb9a8; margin-bottom: 16px;">
+        タイム: <span id="clear-time-val" style="color:var(--brass-gold); font-weight:800;">00:00</span>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="modal-close-btn" style="flex:1; background:#382214; color:#ede2d5;" onclick="openStageModalFromClear()">ステージ一覧</button>
+        <button class="modal-close-btn" style="flex:1;" onclick="nextStage()">次の問題へ</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ========================================================
+       Web Audio API サウンドシステム
+       ======================================================== */
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    window.addEventListener('pointerdown', () => getAudio(), { once: true });
+
+    function playChiselSound() {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(420 + Math.random() * 80, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.06);
+      } catch(e) {}
+    }
+
+    function playCrossSound() {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
+      } catch(e) {}
+    }
+
+    function playVictorySound() {
+      try {
+        const ctx = getAudio();
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.09);
+          gain.gain.setValueAtTime(0.22, ctx.currentTime + idx * 0.09);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.09 + 0.28);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.09);
+          osc.stop(ctx.currentTime + idx * 0.09 + 0.3);
+        });
+      } catch(e) {}
+    }
+
+    /* ========================================================
+       ステージ定義 (5x5: 6問, 10x10: 4問)
+       ======================================================== */
+    const STAGES = [
+      // 5x5 初級
+      {
+        id: 's5_heart', size: 5, name: 'ハート',
+        solution: [
+          [0, 1, 0, 1, 0],
+          [1, 1, 1, 1, 1],
+          [1, 1, 1, 1, 1],
+          [0, 1, 1, 1, 0],
+          [0, 0, 1, 0, 0]
+        ]
+      },
+      {
+        id: 's5_crown', size: 5, name: '王冠',
+        solution: [
+          [1, 0, 1, 0, 1],
+          [1, 0, 1, 0, 1],
+          [1, 1, 1, 1, 1],
+          [1, 1, 1, 1, 1],
+          [1, 1, 1, 1, 1]
+        ]
+      },
+      {
+        id: 's5_cup', size: 5, name: 'コーヒーカップ',
+        solution: [
+          [1, 1, 1, 1, 0],
+          [1, 1, 1, 1, 1],
+          [1, 1, 1, 1, 1],
+          [0, 1, 1, 0, 0],
+          [1, 1, 1, 1, 1]
+        ]
+      },
+      {
+        id: 's5_duck', size: 5, name: 'アヒル',
+        solution: [
+          [0, 0, 1, 1, 0],
+          [0, 0, 1, 1, 1],
+          [1, 0, 1, 1, 0],
+          [1, 1, 1, 1, 0],
+          [0, 1, 1, 0, 0]
+        ]
+      },
+      {
+        id: 's5_sword', size: 5, name: 'つるぎ',
+        solution: [
+          [0, 0, 0, 0, 1],
+          [0, 0, 0, 1, 0],
+          [0, 1, 1, 0, 0],
+          [1, 1, 0, 1, 0],
+          [1, 0, 0, 0, 0]
+        ]
+      },
+      {
+        id: 's5_cat', size: 5, name: '子猫',
+        solution: [
+          [1, 0, 0, 0, 1],
+          [1, 1, 1, 1, 1],
+          [1, 0, 1, 0, 1],
+          [1, 1, 1, 1, 1],
+          [0, 1, 1, 1, 0]
+        ]
+      },
+      // 10x10 中級
+      {
+        id: 's10_knight', size: 10, name: 'チェス・ナイト',
+        solution: [
+          [0, 0, 1, 1, 1, 0, 0, 0, 0, 0],
+          [0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+          [1, 1, 0, 1, 1, 1, 1, 0, 0, 0],
+          [1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+          [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
+          [0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+          [0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+          [0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+          [1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+          [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ]
+      },
+      {
+        id: 's10_skull', size: 10, name: 'スカル (ドクロ)',
+        solution: [
+          [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+          [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+          [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+          [1, 1, 0, 0, 1, 1, 0, 0, 1, 1],
+          [1, 1, 0, 0, 1, 1, 0, 0, 1, 1],
+          [1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+          [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+          [0, 0, 1, 0, 1, 1, 0, 1, 0, 0],
+          [0, 0, 1, 0, 1, 1, 0, 1, 0, 0],
+          [0, 0, 1, 1, 1, 1, 1, 1, 0, 0]
+        ]
+      },
+      {
+        id: 's10_key', size: 10, name: 'アンティークキー',
+        solution: [
+          [0, 0, 0, 0, 1, 1, 1, 1, 0, 0],
+          [0, 0, 0, 1, 1, 0, 0, 1, 1, 0],
+          [0, 0, 0, 1, 1, 0, 0, 1, 1, 0],
+          [0, 0, 0, 0, 1, 1, 1, 1, 0, 0],
+          [0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
+          [0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
+          [0, 0, 0, 0, 0, 1, 1, 1, 1, 0],
+          [0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
+          [0, 0, 0, 0, 0, 1, 1, 1, 1, 0],
+          [0, 0, 0, 0, 0, 1, 1, 0, 0, 0]
+        ]
+      },
+      {
+        id: 's10_anchor', size: 10, name: 'アンカー (錨)',
+        solution: [
+          [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+          [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+          [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+          [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+          [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+          [1, 0, 0, 0, 1, 1, 0, 0, 0, 1],
+          [1, 1, 0, 0, 1, 1, 0, 0, 1, 1],
+          [0, 1, 1, 0, 1, 1, 0, 1, 1, 0],
+          [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+          [0, 0, 0, 1, 1, 1, 1, 0, 0, 0]
+        ]
+      }
+    ];
+
+    let currentStageIndex = 0;
+    let gridState = []; // 0: blank, 1: filled, 2: crossed
+    let inputMode = 'paint'; // 'paint' | 'cross'
+    let historyStack = [];
+    let timerSeconds = 0;
+    let timerInterval = null;
+    let isStageCompleted = false;
+
+    // Helper: Calculate Nonogram clue array from a line
+    function calcClues(line) {
+      const clues = [];
+      let count = 0;
+      line.forEach(val => {
+        if (val === 1) {
+          count++;
+        } else if (count > 0) {
+          clues.push(count);
+          count = 0;
+        }
+      });
+      if (count > 0) clues.push(count);
+      return clues.length > 0 ? clues : [0];
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStage(0);
+      renderStagePicker();
+    });
+
+    function setMode(mode) {
+      inputMode = mode;
+      document.getElementById('btn-mode-paint').classList.toggle('active', mode === 'paint');
+      document.getElementById('btn-mode-cross').classList.toggle('active', mode === 'cross');
+      document.getElementById('status-mode-badge').textContent = mode === 'paint' ? '彫る・塗る' : 'バツ・仮置';
+      playCrossSound();
+    }
+
+    function startTimer() {
+      stopTimer();
+      timerSeconds = 0;
+      updateTimerUI();
+      timerInterval = setInterval(() => {
+        timerSeconds++;
+        updateTimerUI();
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    function updateTimerUI() {
+      const m = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+      const s = String(timerSeconds % 60).padStart(2, '0');
+      document.getElementById('timer-display').textContent = `${m}:${s}`;
+    }
+
+    function loadStage(index) {
+      currentStageIndex = index;
+      const stage = STAGES[index];
+      isStageCompleted = false;
+      historyStack = [];
+
+      document.getElementById('current-stage-name').textContent = stage.name;
+      document.getElementById('current-stage-size').textContent = `${stage.size}×${stage.size}`;
+
+      const wrapper = document.getElementById('picross-board-wrapper');
+      wrapper.className = `picross-board-wrapper size-${stage.size}`;
+
+      // Initialize empty state
+      gridState = Array(stage.size).fill(null).map(() => Array(stage.size).fill(0));
+
+      renderTable(stage);
+      updateRemainingCount();
+      startTimer();
+    }
+
+    function renderTable(stage) {
+      const size = stage.size;
+      const table = document.getElementById('picross-table');
+      table.innerHTML = '';
+
+      // Compute row and column clues
+      const rowClues = stage.solution.map(r => calcClues(r));
+      const colClues = [];
+      for (let c = 0; c < size; c++) {
+        const colLine = stage.solution.map(r => r[c]);
+        colClues.push(calcClues(colLine));
+      }
+
+      // 1. Column Clues Header Row
+      const headerRow = document.createElement('tr');
+      const cornerCell = document.createElement('th');
+      cornerCell.className = 'corner-cell';
+      headerRow.appendChild(cornerCell);
+
+      for (let c = 0; c < size; c++) {
+        const th = document.createElement('th');
+        th.className = 'col-clue-cell' + (c === 4 && size === 10 ? ' thick-border-right' : '');
+        th.id = `col-clue-${c}`;
+        const list = document.createElement('div');
+        list.className = 'col-clue-list';
+        colClues[c].forEach(num => {
+          const span = document.createElement('span');
+          span.className = 'clue-num';
+          span.textContent = num;
+          list.appendChild(span);
+        });
+        th.appendChild(list);
+        headerRow.appendChild(th);
+      }
+      table.appendChild(headerRow);
+
+      // 2. Data Rows with Row Clues
+      for (let r = 0; r < size; r++) {
+        const tr = document.createElement('tr');
+
+        // Row clue header
+        const rowHeader = document.createElement('th');
+        rowHeader.className = 'row-clue-cell' + (r === 4 && size === 10 ? ' thick-border-bottom' : '');
+        rowHeader.id = `row-clue-${r}`;
+        const rList = document.createElement('div');
+        rList.className = 'row-clue-list';
+        rowClues[r].forEach(num => {
+          const span = document.createElement('span');
+          span.className = 'clue-num';
+          span.textContent = num;
+          rList.appendChild(span);
+        });
+        rowHeader.appendChild(rList);
+        tr.appendChild(rowHeader);
+
+        // Grid tiles
+        for (let c = 0; c < size; c++) {
+          const td = document.createElement('td');
+          td.className = 'tile-cell';
+          if (c === 4 && size === 10) td.classList.add('thick-border-right');
+          if (r === 4 && size === 10) td.classList.add('thick-border-bottom');
+          td.id = `tile-${r}-${c}`;
+          td.onclick = () => onTileClick(r, c);
+          tr.appendChild(td);
+        }
+        table.appendChild(tr);
+      }
+    }
+
+    function onTileClick(r, c) {
+      if (isStageCompleted) return;
+
+      const stage = STAGES[currentStageIndex];
+      const prevVal = gridState[r][c];
+      saveHistory();
+
+      if (inputMode === 'paint') {
+        // Toggle filled (1) or blank (0)
+        gridState[r][c] = (prevVal === 1) ? 0 : 1;
+        if (gridState[r][c] === 1) playChiselSound();
+        else playCrossSound();
+      } else {
+        // Toggle crossed (2) or blank (0)
+        gridState[r][c] = (prevVal === 2) ? 0 : 2;
+        playCrossSound();
+      }
+
+      updateTileView(r, c);
+      updateLineCluesProgress();
+      updateRemainingCount();
+      checkStageCompletion();
+    }
+
+    function updateTileView(r, c) {
+      const el = document.getElementById(`tile-${r}-${c}`);
+      const val = gridState[r][c];
+      el.classList.remove('filled', 'crossed');
+      if (val === 1) el.classList.add('filled');
+      if (val === 2) el.classList.add('crossed');
+    }
+
+    function saveHistory() {
+      historyStack.push(JSON.parse(JSON.stringify(gridState)));
+      if (historyStack.length > 30) historyStack.shift();
+    }
+
+    function undoAction() {
+      if (historyStack.length === 0 || isStageCompleted) return;
+      gridState = historyStack.pop();
+      const stage = STAGES[currentStageIndex];
+      for (let r = 0; r < stage.size; r++) {
+        for (let c = 0; c < stage.size; c++) {
+          updateTileView(r, c);
+        }
+      }
+      updateLineCluesProgress();
+      updateRemainingCount();
+      playCrossSound();
+    }
+
+    /* Check if a given row/col currently matches the solution */
+    function updateLineCluesProgress() {
+      const stage = STAGES[currentStageIndex];
+      const size = stage.size;
+
+      // Check rows
+      for (let r = 0; r < size; r++) {
+        const isMatch = stage.solution[r].every((sol, c) => (gridState[r][c] === 1 ? 1 : 0) === sol);
+        const clueEl = document.getElementById(`row-clue-${r}`);
+        clueEl.querySelectorAll('.clue-num').forEach(span => {
+          span.classList.toggle('completed', isMatch);
+        });
+      }
+
+      // Check cols
+      for (let c = 0; c < size; c++) {
+        const isMatch = stage.solution.every((row, r) => (gridState[r][c] === 1 ? 1 : 0) === row[c]);
+        const clueEl = document.getElementById(`col-clue-${c}`);
+        clueEl.querySelectorAll('.clue-num').forEach(span => {
+          span.classList.toggle('completed', isMatch);
+        });
+      }
+    }
+
+    function updateRemainingCount() {
+      const stage = STAGES[currentStageIndex];
+      let needed = 0;
+      let filled = 0;
+      for (let r = 0; r < stage.size; r++) {
+        for (let c = 0; c < stage.size; c++) {
+          if (stage.solution[r][c] === 1) needed++;
+          if (gridState[r][c] === 1) filled++;
+        }
+      }
+      const diff = Math.max(0, needed - filled);
+      document.getElementById('remaining-count').textContent = diff;
+    }
+
+    function checkStageCompletion() {
+      const stage = STAGES[currentStageIndex];
+      let complete = true;
+      for (let r = 0; r < stage.size; r++) {
+        for (let c = 0; c < stage.size; c++) {
+          const isMarked = (gridState[r][c] === 1 ? 1 : 0);
+          if (isMarked !== stage.solution[r][c]) {
+            complete = false;
+            break;
+          }
+        }
+        if (!complete) break;
+      }
+
+      if (complete) {
+        isStageCompleted = true;
+        stopTimer();
+        playVictorySound();
+        markStageCleared(stage.id);
+        renderStagePicker();
+        showClearModal(stage);
+      }
+    }
+
+    function showClearModal(stage) {
+      document.getElementById('clear-item-name').textContent = stage.name;
+      const m = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+      const s = String(timerSeconds % 60).padStart(2, '0');
+      document.getElementById('clear-time-val').textContent = `${m}:${s}`;
+
+      // Build mini completed pixel art preview
+      const artContainer = document.getElementById('clear-art-container');
+      artContainer.style.gridTemplateColumns = `repeat(${stage.size}, 1fr)`;
+      artContainer.innerHTML = '';
+      for (let r = 0; r < stage.size; r++) {
+        for (let c = 0; c < stage.size; c++) {
+          const px = document.createElement('div');
+          px.className = 'clear-art-pixel' + (stage.solution[r][c] === 1 ? ' filled' : '');
+          artContainer.appendChild(px);
+        }
+      }
+
+      document.getElementById('modal-cleared').classList.add('active');
+    }
+
+    function nextStage() {
+      document.getElementById('modal-cleared').classList.remove('active');
+      const nextIdx = (currentStageIndex + 1) % STAGES.length;
+      loadStage(nextIdx);
+    }
+
+    function openStageModalFromClear() {
+      document.getElementById('modal-cleared').classList.remove('active');
+      openStageModal();
+    }
+
+    function getClearedStages() {
+      try {
+        return JSON.parse(localStorage.getItem('picross_cleared_stages')) || [];
+      } catch(e) {
+        return [];
+      }
+    }
+
+    function markStageCleared(stageId) {
+      const cleared = getClearedStages();
+      if (!cleared.includes(stageId)) {
+        cleared.push(stageId);
+        try {
+          localStorage.setItem('picross_cleared_stages', JSON.stringify(cleared));
+        } catch(e) {}
+      }
+    }
+
+    function renderStagePicker() {
+      const cleared = getClearedStages();
+      const g5 = document.getElementById('stages-5x5-grid');
+      const g10 = document.getElementById('stages-10x10-grid');
+      g5.innerHTML = '';
+      g10.innerHTML = '';
+
+      STAGES.forEach((st, idx) => {
+        const isClear = cleared.includes(st.id);
+        const card = document.createElement('div');
+        card.className = 'stage-card-btn' + (idx === currentStageIndex ? ' active' : '');
+        card.innerHTML = `
+          <div class="stage-card-info">
+            <div class="stage-card-name">${st.name}</div>
+            <div class="stage-card-status ${isClear ? 'cleared' : ''}">${isClear ? '✓ クリア済' : '未クリア'}</div>
+          </div>
+          <span style="color:var(--brass-gold); font-size:1.1rem;">${isClear ? '⭐' : '▶'}</span>
+        `;
+        card.onclick = () => {
+          closeStageModal();
+          loadStage(idx);
+        };
+
+        if (st.size === 5) g5.appendChild(card);
+        else g10.appendChild(card);
+      });
+    }
+
+    function restartStage() {
+      if (confirm('このステージを最初からやり直しますか？')) {
+        loadStage(currentStageIndex);
+      }
+    }
+
+    function openStageModal() {
+      renderStagePicker();
+      document.getElementById('modal-stages').classList.add('active');
+    }
+    function closeStageModal() {
+      document.getElementById('modal-stages').classList.remove('active');
+    }
+    function openRulesModal() {
+      document.getElementById('modal-rules').classList.add('active');
+    }
+    function closeRulesModal() {
+      document.getElementById('modal-rules').classList.remove('active');
+    }
+  </script>
+</body>
+</html>
