@@ -102,6 +102,7 @@
       gap: 8px;
       box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
       position: relative;
+      transition: all 0.2s;
     }
     .player-badge.turn-active {
       border-color: var(--brass-gold);
@@ -146,6 +147,7 @@
       align-items: center;
       gap: 12px;
       touch-action: manipulation;
+      overflow: hidden;
     }
 
     .turn-announcer {
@@ -175,10 +177,15 @@
       cursor: pointer;
       color: var(--brass-gold);
       font-size: 1.2rem;
-      transition: transform 0.12s;
+      transition: transform 0.12s, color 0.12s;
     }
     .guide-slot:hover {
       transform: translateY(3px);
+    }
+    .guide-slot.cpu-target {
+      color: #2ecc71;
+      transform: translateY(5px);
+      filter: drop-shadow(0 0 8px #2ecc71);
     }
 
     /* 7列×6行 立体木製ボード */
@@ -218,7 +225,6 @@
       position: relative;
     }
 
-    /* ボードの丸穴 */
     .hole-mask {
       width: var(--hole-size);
       height: var(--hole-size);
@@ -232,7 +238,6 @@
       overflow: hidden;
     }
 
-    /* コイン */
     .coin {
       width: calc(var(--hole-size) - 2px);
       height: calc(var(--hole-size) - 2px);
@@ -255,7 +260,6 @@
       to { transform: translateY(0); opacity: 1; }
     }
 
-    /* 勝利ラインハイライト */
     .coin.win-highlight {
       animation: pulseWin 0.75s infinite alternate ease-in-out;
       box-shadow: 0 0 14px #2ecc71, inset 0 0 0 2px #fff;
@@ -263,6 +267,110 @@
     @keyframes pulseWin {
       from { transform: scale(1); }
       to { transform: scale(1.12); }
+    }
+
+    /* スタート画面オーバーレイ */
+    .screen-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(18, 11, 7, 0.94);
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px; z-index: 50; padding: 16px;
+    }
+    .screen-overlay.hidden { display: none; }
+    .overlay-title {
+      font-size: 1.35rem; font-weight: 900;
+      color: var(--brass-gold);
+      letter-spacing: 2px; text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+    .config-box {
+      width: 100%; max-width: 280px;
+      background: rgba(0,0,0,0.4); padding: 12px; border-radius: 12px;
+      border: 1px solid #4a3424; display: flex; flex-direction: column; gap: 10px;
+    }
+    .config-row {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.85rem; font-weight: 800; color: #d5c3b1;
+    }
+    .theme-select {
+      background: #2c1a10; color: #fff; border: 1.5px solid var(--brass-gold);
+      padding: 5px 10px; border-radius: 8px; font-weight: 700; outline: none;
+      font-size: 0.85rem;
+    }
+    .start-btn {
+      background: linear-gradient(180deg, #d4a359 0%, #aa782e 100%);
+      color: #140c06; font-size: 1rem; font-weight: 900;
+      border: 1.5px solid #fff; border-radius: 20px;
+      padding: 10px 32px; cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.8), 0 0 12px var(--brass-glow);
+    }
+    .start-btn:active { transform: scale(0.95); }
+
+    /* コイントス抽選オーバーレイ */
+    .duel-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(10, 6, 4, 0.92);
+      backdrop-filter: blur(5px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px; z-index: 60;
+    }
+    .duel-overlay.hidden { display: none; }
+    .duel-title {
+      font-size: 1.15rem; font-weight: 900;
+      color: var(--brass-gold); letter-spacing: 2px;
+    }
+    .duel-coin {
+      width: 76px; height: 76px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; font-weight: 900;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+      border: 3px solid #fff;
+    }
+    .duel-coin.red {
+      background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b);
+      color: #fff; border-color: #ff9f43;
+    }
+    .duel-coin.yellow {
+      background: radial-gradient(circle at 35% 30%, #fff2ac, #f39c12);
+      color: #222; border-color: #f1c40f;
+    }
+    .duel-coin.flipping {
+      animation: coinFlipAnim 0.15s infinite linear;
+    }
+    @keyframes coinFlipAnim {
+      0% { transform: scaleX(1) scaleY(1); }
+      50% { transform: scaleX(0.1) scaleY(1.08); }
+      100% { transform: scaleX(1) scaleY(1); }
+    }
+    .duel-result-text {
+      font-size: 1rem; font-weight: 900; color: #fff; min-height: 24px;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.9); text-align: center;
+    }
+
+    /* 端末パスオーバーレイ */
+    .pass-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(12, 8, 5, 0.96);
+      backdrop-filter: blur(6px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px; z-index: 55; padding: 20px;
+    }
+    .pass-overlay.hidden { display: none; }
+    .pass-icon { font-size: 3rem; }
+    .pass-target-name {
+      font-size: 1.35rem; font-weight: 900;
+      color: var(--brass-gold); text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+    .pass-msg {
+      font-size: 0.88rem; color: #d5c3b1; text-align: center; line-height: 1.6;
     }
 
     .ranking-container {
@@ -352,23 +460,6 @@
       margin-bottom: 16px;
       padding-right: 6px;
     }
-    .setting-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid #332014;
-    }
-    .theme-select {
-      background: #2c1a10;
-      color: #fff;
-      border: 1.5px solid var(--brass-gold);
-      padding: 6px 12px;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      font-weight: 700;
-      outline: none;
-    }
     .modal-close-btn {
       width: 100%;
       padding: 12px;
@@ -387,21 +478,20 @@
   <div class="viewport">
     <div class="topbar">
       <div class="topbar-upper">
-        <div class="tool-btn" onclick="toggleSettingsModal(true)" title="設定">⚙️</div>
-        <div class="tool-btn" onclick="restartGame()" title="最初から">🔄</div>
+        <div class="tool-btn" onclick="openStartModal()" title="タイトル / モード変更">🔄</div>
         <div class="tool-btn" onclick="undoMove()" title="1手戻す">↩️</div>
         <div class="tool-btn" onclick="toggleRulesModal(true)" title="あそびかた">📖</div>
       </div>
 
       <div class="topbar-lower">
         <div class="score-banner">
-          <div class="player-badge turn-active" id="badge-red">
+          <div class="player-badge" id="badge-red">
             <div class="mini-disc red"></div>
-            <span id="label-player-1">あなた</span>
+            <span id="label-player-1">赤</span>
           </div>
           <div class="player-badge" id="badge-yellow">
             <div class="mini-disc yellow"></div>
-            <span id="label-player-2">COM</span>
+            <span id="label-player-2">黄</span>
           </div>
         </div>
         <div class="diff-badge" id="stat-diff-badge">COM: 中級</div>
@@ -410,17 +500,58 @@
 
     <!-- フェルト卓 -->
     <div class="table-felt">
-      <div class="turn-announcer" id="turn-announcer">あなたの番です (赤)</div>
+      <!-- スタート画面オーバーレイ -->
+      <div id="start-overlay" class="screen-overlay">
+        <div class="overlay-title">CONNECT 4 CLUB</div>
+        <div class="config-box">
+          <div class="config-row">
+            <span>対戦モード</span>
+            <select id="mode-sel" class="theme-select" onchange="handleModeChange(this.value)">
+              <option value="pve" selected>1人プレイ (vs COM)</option>
+              <option value="pvp">2人対戦 (1台で対戦)</option>
+            </select>
+          </div>
+          <div class="config-row" id="diff-row">
+            <span>COMの強さ</span>
+            <select id="diff-sel" class="theme-select">
+              <option value="easy">初級 (気まぐれ)</option>
+              <option value="medium" selected>中級 (標準)</option>
+              <option value="hard">上級 (先読み)</option>
+            </select>
+          </div>
+        </div>
+        <button class="start-btn" onclick="startNewSession()">START</button>
+      </div>
+
+      <!-- 先攻後攻コイントスオーバーレイ -->
+      <div id="duel-overlay" class="duel-overlay hidden">
+        <div class="duel-title">🎲 COIN TOSS 🎲</div>
+        <div class="duel-coin red flipping" id="duel-coin">赤</div>
+        <div class="duel-result-text" id="duel-result-text">先攻（赤コイン）を抽選中...</div>
+      </div>
+
+      <!-- 端末パスオーバーレイ (PASS SCREEN) -->
+      <div id="pass-overlay" class="pass-overlay hidden">
+        <div class="pass-icon">📱🤝</div>
+        <div class="pass-target-name" id="pass-target-name">黄の番です</div>
+        <div class="pass-msg">
+          画面を次のプレイヤーに渡してください。<br>
+          準備ができたらボタンを押して盤面を表示します。
+        </div>
+        <button class="start-btn" onclick="dismissPassScreen()">盤面を見る</button>
+      </div>
+
+      <div class="turn-announcer" id="turn-announcer">スタートを押してください</div>
 
       <!-- 投入ガイド矢印（7列） -->
       <div class="drop-guide-zone" id="drop-guide-zone">
-        <div class="guide-slot" onclick="handleColumnClick(0)">▼</div>
-        <div class="guide-slot" onclick="handleColumnClick(1)">▼</div>
-        <div class="guide-slot" onclick="handleColumnClick(2)">▼</div>
-        <div class="guide-slot" onclick="handleColumnClick(3)">▼</div>
-        <div class="guide-slot" onclick="handleColumnClick(4)">▼</div>
-        <div class="guide-slot" onclick="handleColumnClick(5)">▼</div>
-        <div class="guide-slot" onclick="handleColumnClick(6)">▼</div>
+        <div class="guide-slot" id="guide-0" onclick="handleColumnClick(0)">▼</div>
+        <div class="guide-slot" id="guide-1" onclick="handleColumnClick(1)">▼</div>
+        <div class="guide-slot" id="guide-2" onclick="handleColumnClick(2)">▼</div>
+        <div class="guide-slot" id="guide-3" onclick="handleColumnClick(3)">▼</div>
+        <div class="guide-slot" id="guide-4" onclick="handleColumnClick(4)">▼</div>
+        <div class="guide-slot" id="guide-5" onclick="handleColumnClick(5)">▼</div>
+        <div class="guide-slot" id="guide-6" onclick="handleColumnClick(6)">▼</div>
       </div>
 
       <!-- ボード本体 -->
@@ -460,43 +591,13 @@
         <br>
         <b style="color:var(--brass-gold);">【基本ルール】</b>
         <ul style="padding-left:18px; margin:6px 0;">
-          <li><b>赤が先手</b>、<b>黄が後手</b>です。</li>
-          <li>コインを落としたい列をタップすると、一番下の空いているマスまで落ちます。</li>
+          <li><b>赤が先手</b>、<b>黄が後手</b>です。開始時にコイントスで手番色が決定します。</li>
+          <li>落としたい列をタップすると、一番下の空いているマスまで落ちます。</li>
           <li>満杯になった列には落とせません。</li>
           <li>タテ・ヨコ・ナナメのいずれかで4つ直線に揃えた瞬間に勝利となります。</li>
         </ul>
-        <br>
-        <b style="color:var(--brass-gold);">【プレイモード】</b>
-        <ul style="padding-left:18px; margin:6px 0;">
-          <li>右上の⚙️設定から<b>「1人プレイ (vs COM)」</b>または<b>「2人プレイ (1台で対戦)」</b>を自由に切り替えられます。</li>
-        </ul>
       </div>
       <button class="modal-close-btn" onclick="toggleRulesModal(false)">閉じる</button>
-    </div>
-  </div>
-
-  <!-- 設定モーダル -->
-  <div id="modal-settings" class="modal-overlay">
-    <div class="modal-sheet">
-      <div class="modal-title">⚙ 設定</div>
-      <div class="modal-body">
-        <div class="setting-item">
-          <span>対戦モード</span>
-          <select id="mode-selector" class="theme-select" onchange="changeGameMode(this.value)">
-            <option value="pve" selected>1人プレイ (vs COM)</option>
-            <option value="pvp">2人プレイ (1台で対戦)</option>
-          </select>
-        </div>
-        <div class="setting-item" id="setting-com-diff">
-          <span>COMの強さ</span>
-          <select id="diff-selector" class="theme-select" onchange="changeDifficulty(this.value)">
-            <option value="easy">初級 (気まぐれ)</option>
-            <option value="medium" selected>中級 (標準・防御あり)</option>
-            <option value="hard">上級 (先読み・中央制圧)</option>
-          </select>
-        </div>
-      </div>
-      <button class="modal-close-btn" onclick="toggleSettingsModal(false)">閉じる</button>
     </div>
   </div>
 
@@ -563,31 +664,120 @@
 
     const ROWS = 6;
     const COLS = 7;
-    // 0: 空, 1: 1P(赤), 2: 2P/COM(黄)
+    // 0: 空, 1: 赤 (先攻), 2: 黄 (後攻)
     let grid = [];
     let currentTurn = 1;
-    let gameMode = 'pve'; // 'pve' | 'pvp'
-    let isGameOver = false;
-    let isComThinking = false;
+    let userPlayerNum = 1; // 1(赤) または 2(黄)
+    let gameMode = 'pve';
     let difficulty = 'medium';
+    let gameState = 'TITLE'; // 'TITLE', 'DUEL', 'PLAYING', 'CPU_THINKING'
+    let isGameOver = false;
     let historyStack = [];
     let winCells = [];
 
+    let pendingPassCallback = null;
+
     window.addEventListener('DOMContentLoaded', () => {
-      initGame();
       loadStats();
+      openStartModal();
     });
 
-    function initGame() {
+    function handleModeChange(val) {
+      gameMode = val;
+      document.getElementById('diff-row').style.display = (val === 'pve') ? 'flex' : 'none';
+    }
+
+    function openStartModal() {
+      gameState = 'TITLE';
+      document.getElementById('start-overlay').classList.remove('hidden');
+      document.getElementById('duel-overlay').classList.add('hidden');
+      document.getElementById('pass-overlay').classList.add('hidden');
+      document.getElementById('turn-announcer').textContent = 'スタートを押してください';
+      resetBoardData();
+      updateUI();
+    }
+
+    function startNewSession() {
+      gameMode = document.getElementById('mode-sel').value;
+      difficulty = document.getElementById('diff-sel').value;
+      document.getElementById('start-overlay').classList.add('hidden');
+
+      const names = { easy: '初級', medium: '中級', hard: '上級' };
+      document.getElementById('stat-diff-badge').textContent = (gameMode === 'pvp') ? '2人対戦' : `COM: ${names[difficulty]}`;
+
+      resetBoardData();
+      triggerCoinToss();
+    }
+
+    function resetBoardData() {
       grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
       currentTurn = 1;
       isGameOver = false;
-      isComThinking = false;
       historyStack = [];
       winCells = [];
-
-      updateUI();
       renderBoard();
+      clearGuideHighlights();
+    }
+
+    /* 先攻後攻コイントス演出 */
+    function triggerCoinToss() {
+      gameState = 'DUEL';
+      const duelOverlay = document.getElementById('duel-overlay');
+      const coin = document.getElementById('duel-coin');
+      const resText = document.getElementById('duel-result-text');
+
+      duelOverlay.classList.remove('hidden');
+      coin.className = 'duel-coin red flipping';
+      coin.textContent = '？';
+      resText.textContent = '先攻（赤コイン）を抽選中...';
+
+      let count = 0;
+      const flipTimer = setInterval(() => {
+        coin.className = (count % 2 === 0) ? 'duel-coin red flipping' : 'duel-coin yellow flipping';
+        count++;
+        if (count >= 6) {
+          clearInterval(flipTimer);
+          finalizeCoinToss();
+        }
+      }, 130);
+    }
+
+    function finalizeCoinToss() {
+      const coin = document.getElementById('duel-coin');
+      const resText = document.getElementById('duel-result-text');
+
+      coin.classList.remove('flipping');
+      const userIsRed = Math.random() < 0.5;
+      userPlayerNum = userIsRed ? 1 : 2;
+
+      playFanfareSound();
+
+      if (gameMode === 'pve') {
+        if (userIsRed) {
+          coin.className = 'duel-coin red';
+          coin.textContent = '赤';
+          resText.innerHTML = `🎉 あなたが <b style="color:#ff7675;">赤（先手）</b> に決定！`;
+        } else {
+          coin.className = 'duel-coin yellow';
+          coin.textContent = '黄';
+          resText.innerHTML = `COMが <b style="color:#ff7675;">赤（先手）</b> に決定！<br>(あなたは黄・後手)`;
+        }
+      } else {
+        coin.className = 'duel-coin red';
+        coin.textContent = '赤';
+        resText.innerHTML = `1Pが <b style="color:#ff7675;">赤（先手）</b>、2Pが <b style="color:#f1c40f;">黄（後手）</b> です！`;
+      }
+
+      setTimeout(() => {
+        document.getElementById('duel-overlay').classList.add('hidden');
+        gameState = 'PLAYING';
+        currentTurn = 1;
+        updateUI();
+
+        if (gameMode === 'pve' && userPlayerNum === 2) {
+          setTimeout(handleComTurnStepByStep, 700);
+        }
+      }, 1600);
     }
 
     function saveState() {
@@ -598,14 +788,14 @@
     }
 
     function undoMove() {
-      if (isComThinking || isGameOver) return;
+      if (gameState !== 'PLAYING' || isGameOver) return;
 
       if (gameMode === 'pve') {
         if (historyStack.length < 2) return;
         historyStack.pop();
         const last = historyStack.pop();
         grid = last.grid;
-        currentTurn = 1;
+        currentTurn = userPlayerNum;
       } else {
         if (historyStack.length === 0) return;
         const last = historyStack.pop();
@@ -615,6 +805,7 @@
 
       winCells = [];
       isGameOver = false;
+      clearGuideHighlights();
       updateUI();
       renderBoard();
       playDropSound();
@@ -650,16 +841,15 @@
     }
 
     function handleColumnClick(col) {
-      if (isGameOver || isComThinking) return;
-      if (gameMode === 'pve' && currentTurn !== 1) return;
+      if (gameState !== 'PLAYING' || isGameOver) return;
+      if (gameMode === 'pve' && currentTurn !== userPlayerNum) return;
 
       const targetRow = getLowestEmptyRow(grid, col);
-      if (targetRow === -1) return; // 列満杯
+      if (targetRow === -1) return;
 
       saveState();
       playDropSound();
       grid[targetRow][col] = currentTurn;
-
       setTimeout(playLandSound, 280);
 
       const winningLine = checkWin(grid, currentTurn);
@@ -684,12 +874,69 @@
         currentTurn = (currentTurn === 1) ? 2 : 1;
         updateUI();
         renderBoard();
+        const nextPlayerName = (currentTurn === 1) ? '1P (赤)' : '2P (黄)';
+        showPassScreen(nextPlayerName, () => {
+          updateUI();
+        });
       } else {
-        currentTurn = 2;
+        currentTurn = (currentTurn === 1) ? 2 : 1;
         updateUI();
         renderBoard();
-        setTimeout(handleComTurn, 550);
+        setTimeout(handleComTurnStepByStep, 600);
       }
+    }
+
+    /* COM思考ステップの可視化 */
+    function handleComTurnStepByStep() {
+      if (isGameOver || currentTurn === userPlayerNum || gameMode !== 'pve') return;
+      gameState = 'CPU_THINKING';
+      document.getElementById('turn-announcer').textContent = 'COMが手を選んでいます...';
+
+      const bestCol = pickComMove();
+      if (bestCol === -1) return;
+
+      // ガイド矢印を緑色に光らせて投下列を予告
+      clearGuideHighlights();
+      const targetGuide = document.getElementById(`guide-${bestCol}`);
+      if (targetGuide) targetGuide.classList.add('cpu-target');
+
+      setTimeout(() => {
+        clearGuideHighlights();
+        const targetRow = getLowestEmptyRow(grid, bestCol);
+        playDropSound();
+        grid[targetRow][bestCol] = currentTurn;
+        setTimeout(playLandSound, 280);
+
+        const winningLine = checkWin(grid, currentTurn);
+        if (winningLine) {
+          winCells = winningLine;
+          isGameOver = true;
+          gameState = 'PLAYING';
+          renderBoard();
+          updateUI();
+          recordMatch(false);
+          setTimeout(() => alert('💀 COMの勝利です...！'), 350);
+          return;
+        }
+
+        if (isDraw(grid)) {
+          isGameOver = true;
+          gameState = 'PLAYING';
+          renderBoard();
+          updateUI();
+          setTimeout(() => alert('🤝 引き分けです！'), 300);
+          return;
+        }
+
+        gameState = 'PLAYING';
+        currentTurn = userPlayerNum;
+        updateUI();
+        renderBoard();
+      }, 700);
+    }
+
+    function clearGuideHighlights() {
+      document.querySelectorAll('.guide-slot').forEach(g => g.classList.remove('cpu-target'));
     }
 
     function getLowestEmptyRow(g, col) {
@@ -699,56 +946,20 @@
       return -1;
     }
 
-    function handleComTurn() {
-      if (isGameOver || currentTurn !== 2 || gameMode !== 'pve') return;
-      isComThinking = true;
-      document.getElementById('turn-announcer').textContent = 'COMが思考中...';
-
-      const bestCol = pickComMove();
-      if (bestCol === -1) return;
-
-      const targetRow = getLowestEmptyRow(grid, bestCol);
-      playDropSound();
-      grid[targetRow][bestCol] = 2;
-
-      setTimeout(playLandSound, 280);
-
-      const winningLine = checkWin(grid, 2);
-      if (winningLine) {
-        winCells = winningLine;
-        isGameOver = true;
-        isComThinking = false;
-        renderBoard();
-        updateUI();
-        recordMatch(false);
-        setTimeout(() => alert('💀 COMの勝利です...！'), 350);
-        return;
-      }
-
-      if (isDraw(grid)) {
-        isGameOver = true;
-        isComThinking = false;
-        renderBoard();
-        updateUI();
-        setTimeout(() => alert('🤝 引き分けです！'), 300);
-        return;
-      }
-
-      isComThinking = false;
-      currentTurn = 1;
-      updateUI();
-      renderBoard();
-    }
-
     function finishGame(winner) {
       if (gameMode === 'pvp') {
         playFanfareSound();
         const winnerName = (winner === 1) ? '1P (赤)' : '2P (黄)';
         setTimeout(() => alert(`🎉 ${winnerName}の勝利です！見事な4連！`), 350);
       } else {
-        recordMatch(true);
-        playFanfareSound();
-        setTimeout(() => alert('🎉 あなたの勝利です！見事な4連！'), 350);
+        const isUserWin = (winner === userPlayerNum);
+        recordMatch(isUserWin);
+        if (isUserWin) {
+          playFanfareSound();
+          setTimeout(() => alert('🎉 あなたの勝利です！見事な4連！'), 350);
+        } else {
+          setTimeout(() => alert('💀 COMの勝利です...！'), 350);
+        }
       }
     }
 
@@ -760,15 +971,18 @@
       }
       if (validCols.length === 0) return -1;
 
+      const comColor = currentTurn;
+      const userColor = (comColor === 1) ? 2 : 1;
+
       if (difficulty === 'easy') {
         return validCols[Math.floor(Math.random() * validCols.length)];
       }
 
-      // 1手で勝てる手
+      // 1手でCOMが勝てる手
       for (const c of validCols) {
         const r = getLowestEmptyRow(grid, c);
-        grid[r][c] = 2;
-        const win = checkWin(grid, 2);
+        grid[r][c] = comColor;
+        const win = checkWin(grid, comColor);
         grid[r][c] = 0;
         if (win) return c;
       }
@@ -776,8 +990,8 @@
       // プレイヤーの勝ち手をブロック
       for (const c of validCols) {
         const r = getLowestEmptyRow(grid, c);
-        grid[r][c] = 1;
-        const win = checkWin(grid, 1);
+        grid[r][c] = userColor;
+        const win = checkWin(grid, userColor);
         grid[r][c] = 0;
         if (win) return c;
       }
@@ -791,11 +1005,11 @@
       const safeCols = [];
       for (const c of validCols) {
         const r = getLowestEmptyRow(grid, c);
-        grid[r][c] = 2;
+        grid[r][c] = comColor;
         let givesOpponentWin = false;
         if (r - 1 >= 0) {
-          grid[r - 1][c] = 1;
-          if (checkWin(grid, 1)) givesOpponentWin = true;
+          grid[r - 1][c] = userColor;
+          if (checkWin(grid, userColor)) givesOpponentWin = true;
           grid[r - 1][c] = 0;
         }
         grid[r][c] = 0;
@@ -808,7 +1022,6 @@
     }
 
     function checkWin(g, player) {
-      // 横
       for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c <= COLS - 4; c++) {
           if (g[r][c] === player && g[r][c+1] === player && g[r][c+2] === player && g[r][c+3] === player) {
@@ -816,7 +1029,6 @@
           }
         }
       }
-      // 縦
       for (let r = 0; r <= ROWS - 4; r++) {
         for (let c = 0; c < COLS; c++) {
           if (g[r][c] === player && g[r+1][c] === player && g[r+2][c] === player && g[r+3][c] === player) {
@@ -824,7 +1036,6 @@
           }
         }
       }
-      // 右下斜め
       for (let r = 0; r <= ROWS - 4; r++) {
         for (let c = 0; c <= COLS - 4; c++) {
           if (g[r][c] === player && g[r+1][c+1] === player && g[r+2][c+2] === player && g[r+3][c+3] === player) {
@@ -832,7 +1043,6 @@
           }
         }
       }
-      // 右上斜め
       for (let r = 3; r < ROWS; r++) {
         for (let c = 0; c <= COLS - 4; c++) {
           if (g[r][c] === player && g[r-1][c+1] === player && g[r-2][c+2] === player && g[r-3][c+3] === player) {
@@ -848,32 +1058,48 @@
     }
 
     function updateUI() {
-      document.getElementById('badge-red').classList.toggle('turn-active', currentTurn === 1 && !isGameOver);
-      document.getElementById('badge-yellow').classList.toggle('turn-active', currentTurn === 2 && !isGameOver);
+      const active = (gameState !== 'TITLE' && gameState !== 'DUEL');
+      document.getElementById('badge-red').classList.toggle('turn-active', currentTurn === 1 && active && !isGameOver);
+      document.getElementById('badge-yellow').classList.toggle('turn-active', currentTurn === 2 && active && !isGameOver);
 
       const label1 = document.getElementById('label-player-1');
       const label2 = document.getElementById('label-player-2');
-      const diffBadge = document.getElementById('stat-diff-badge');
 
       if (gameMode === 'pvp') {
-        label1.textContent = '1P';
-        label2.textContent = '2P';
-        diffBadge.textContent = '2人プレイ (対戦)';
+        label1.textContent = '1P (赤)';
+        label2.textContent = '2P (黄)';
       } else {
-        label1.textContent = 'あなた';
-        label2.textContent = 'COM';
-        const names = { easy: '初級', medium: '中級', hard: '上級' };
-        diffBadge.textContent = `COM: ${names[difficulty]}`;
+        label1.textContent = (userPlayerNum === 1) ? 'あなた (赤)' : 'COM (赤)';
+        label2.textContent = (userPlayerNum === 2) ? 'あなた (黄)' : 'COM (黄)';
       }
 
       if (isGameOver) {
         document.getElementById('turn-announcer').textContent = 'ゲーム終了';
-      } else if (!isComThinking) {
+      } else if (gameState === 'PLAYING') {
+        const turnColorText = currentTurn === 1 ? '赤' : '黄';
         if (gameMode === 'pvp') {
-          document.getElementById('turn-announcer').textContent = (currentTurn === 1) ? '1Pの番です (赤)' : '2Pの番です (黄)';
+          const pText = currentTurn === 1 ? '1P' : '2P';
+          document.getElementById('turn-announcer').textContent = `${pText}の番です (${turnColorText})`;
         } else {
-          document.getElementById('turn-announcer').textContent = (currentTurn === 1) ? 'あなたの番です (赤)' : 'COMの番です (黄)';
+          const isUser = (currentTurn === userPlayerNum);
+          document.getElementById('turn-announcer').textContent = isUser ? `あなたの番です (${turnColorText})` : `COMの番です (${turnColorText})`;
         }
+      }
+    }
+
+    function showPassScreen(targetPlayerName, callback) {
+      pendingPassCallback = callback;
+      const overlay = document.getElementById('pass-overlay');
+      document.getElementById('pass-target-name').textContent = `${targetPlayerName} の番です`;
+      overlay.classList.remove('hidden');
+    }
+
+    function dismissPassScreen() {
+      document.getElementById('pass-overlay').classList.add('hidden');
+      if (pendingPassCallback) {
+        const cb = pendingPassCallback;
+        pendingPassCallback = null;
+        cb();
       }
     }
 
@@ -908,26 +1134,6 @@
 
     function toggleRulesModal(show) {
       document.getElementById('modal-rules').classList.toggle('active', show);
-    }
-    function toggleSettingsModal(show) {
-      document.getElementById('modal-settings').classList.toggle('active', show);
-    }
-
-    function changeGameMode(val) {
-      gameMode = val;
-      document.getElementById('setting-com-diff').style.display = (val === 'pve') ? 'flex' : 'none';
-      toggleSettingsModal(false);
-      restartGame();
-    }
-
-    function changeDifficulty(val) {
-      difficulty = val;
-      toggleSettingsModal(false);
-      restartGame();
-    }
-
-    function restartGame() {
-      if (confirm('盤面をリセットして新しく始めますか？')) initGame();
     }
   </script>
 </body>
