@@ -166,6 +166,7 @@
     }
     .start-btn:active { transform: scale(0.95); }
 
+    /* ダイス対決カットイン */
     .duel-overlay {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -186,10 +187,11 @@
     .duel-fighter { display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .duel-name { font-size: 0.85rem; font-weight: 800; color: #ede2d5; }
     .duel-die {
-      width: 54px; height: 54px; border-radius: 12px;
+      width: 58px; height: 58px; border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.8rem; font-weight: 900;
+      font-size: 2rem; font-weight: 900;
       box-shadow: 0 8px 20px rgba(0,0,0,0.8);
+      font-feature-settings: "tnum";
     }
     .duel-die.white {
       background: linear-gradient(145deg, #ffffff 0%, #ebebeb 70%, #cccccc 100%);
@@ -199,11 +201,12 @@
       background: linear-gradient(145deg, #ff7675 0%, #d63031 70%, #962d22 100%);
       color: #ffffff; border: 2px solid #ff9f43;
     }
-    .duel-die.rolling { animation: dieTumble 0.15s infinite linear; }
-    @keyframes dieTumble {
-      0% { transform: rotate(0deg) scale(0.92); }
-      50% { transform: rotate(180deg) scale(1.05); }
-      100% { transform: rotate(360deg) scale(0.92); }
+    .duel-die.rolling {
+      animation: dieBounce 0.12s infinite alternate ease-in-out;
+    }
+    @keyframes dieBounce {
+      0% { transform: translateY(-3px) scale(0.97); }
+      100% { transform: translateY(3px) scale(1.03); }
     }
     .duel-result-text {
       font-size: 1rem; font-weight: 900; color: #fff; min-height: 24px;
@@ -230,9 +233,11 @@
           <div class="checker-icon white"></div>
           <span id="name-w">白: 残<b id="rem-w">15</b></span>
         </div>
-        <div class="bg-badge" id="badge-r">
-          <div class="checker-icon red"></div>
-          <span id="name-r">赤: 残<b id="rem-r">15</b></span>
+        <div class="badge-bar">
+          <div class="bg-badge" id="badge-r">
+            <div class="checker-icon red"></div>
+            <span id="name-r">赤: 残<b id="rem-r">15</b></span>
+          </div>
         </div>
       </div>
       <div style="display:flex; gap:8px;">
@@ -293,12 +298,12 @@
           <div class="duel-arena">
             <div class="duel-fighter">
               <div class="duel-name" id="duel-name-w">白 (YOU)</div>
-              <div class="duel-die white" id="duel-die-w">⚀</div>
+              <div class="duel-die white" id="duel-die-w">1</div>
             </div>
             <div style="font-weight:900; font-size:1.2rem; color:var(--brass-gold);">VS</div>
             <div class="duel-fighter">
               <div class="duel-name" id="duel-name-r">赤 (CPU)</div>
-              <div class="duel-die red" id="duel-die-r">⚀</div>
+              <div class="duel-die red" id="duel-die-r">1</div>
             </div>
           </div>
           <div class="duel-result-text" id="duel-result-text">先攻後攻を決定中...</div>
@@ -374,8 +379,6 @@
       } catch(e) {}
     }
 
-    const DIE_CHARS = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-
     let gameState = 'TITLE';
     let gameMode = 'cpu';
     let cpuDifficulty = 'medium';
@@ -384,7 +387,6 @@
     let bar = { W: 0, R: 0 };
     let off = { W: 0, R: 0 };
     let currentTurn = 'W';
-    let dice = [];
     let movesLeft = [];
     let selectedFrom = null;
 
@@ -449,61 +451,69 @@
       dieW.classList.add('rolling');
       dieR.classList.add('rolling');
 
+      // 数字をパラパラと切り替えるアニメーション
       let rollCount = 0;
-      const rollSoundTimer = setInterval(() => {
+      const rollTimer = setInterval(() => {
+        dieW.textContent = Math.floor(Math.random() * 6) + 1;
+        dieR.textContent = Math.floor(Math.random() * 6) + 1;
         playSound(280 + Math.random() * 80, 100);
         rollCount++;
-        if (rollCount >= 5) clearInterval(rollSoundTimer);
-      }, 140);
+        if (rollCount >= 7) {
+          clearInterval(rollTimer);
+          finalizeOpeningDuel();
+        }
+      }, 120);
+    }
+
+    function finalizeOpeningDuel() {
+      const dieW = document.getElementById('duel-die-w');
+      const dieR = document.getElementById('duel-die-r');
+      const resultText = document.getElementById('duel-result-text');
+
+      dieW.classList.remove('rolling');
+      dieR.classList.remove('rolling');
+
+      let dW = Math.floor(Math.random() * 6) + 1;
+      let dR = Math.floor(Math.random() * 6) + 1;
+
+      dieW.textContent = dW;
+      dieR.textContent = dR;
+
+      // 同点なら自動振り直し
+      if (dW === dR) {
+        resultText.textContent = `両者 [${dW}] の同点！振り直します...`;
+        setTimeout(triggerOpeningDuel, 1200);
+        return;
+      }
+
+      const winner = dW > dR ? 'W' : 'R';
+      const winnerName = (winner === 'W') ? '白' : (gameMode === 'cpu' ? 'CPU(赤)' : '赤');
+
+      playFanfare();
+      resultText.innerHTML = `🎉 <b style="color:var(--brass-gold);">${winnerName}</b> の勝利！先攻です！`;
+
+      document.getElementById('die-1').textContent = dW;
+      document.getElementById('die-2').textContent = dR;
+      document.getElementById('die-1').classList.remove('used');
+      document.getElementById('die-2').classList.remove('used');
 
       setTimeout(() => {
-        let dW = Math.floor(Math.random() * 6) + 1;
-        let dR = Math.floor(Math.random() * 6) + 1;
+        document.getElementById('duel-overlay').classList.add('hidden');
+        movesLeft = [dW, dR];
+        currentTurn = winner;
+        updateUI();
 
-        if (dW === dR) {
-          dieW.classList.remove('rolling');
-          dieR.classList.remove('rolling');
-          dieW.textContent = DIE_CHARS[dW];
-          dieR.textContent = DIE_CHARS[dR];
-          resultText.textContent = `両者 [${dW}] の同点！振り直します...`;
-          setTimeout(triggerOpeningDuel, 1200);
-          return;
+        if (winner === 'W' || gameMode === 'pvp') {
+          gameState = 'MOVING';
+          document.getElementById('announcer').textContent =
+            `${winner === 'W' ? '白' : '赤'}の先攻！出目 [${dW}, ${dR}] で駒を動かしてください`;
+        } else {
+          gameState = 'CPU_THINKING';
+          document.getElementById('announcer').textContent =
+            `CPU(赤)の先攻！出目 [${dW}, ${dR}]`;
+          setTimeout(executeCpuTurnStepByStep, 900);
         }
-
-        dieW.classList.remove('rolling');
-        dieR.classList.remove('rolling');
-        dieW.textContent = DIE_CHARS[dW];
-        dieR.textContent = DIE_CHARS[dR];
-
-        const winner = dW > dR ? 'W' : 'R';
-        const winnerName = (winner === 'W') ? '白' : (gameMode === 'cpu' ? 'CPU(赤)' : '赤');
-
-        playFanfare();
-        resultText.innerHTML = `🎉 <b style="color:var(--brass-gold);">${winnerName}</b> の勝利！先攻です！`;
-
-        document.getElementById('die-1').textContent = dW;
-        document.getElementById('die-2').textContent = dR;
-        document.getElementById('die-1').classList.remove('used');
-        document.getElementById('die-2').classList.remove('used');
-
-        setTimeout(() => {
-          duelOverlay.classList.add('hidden');
-          movesLeft = [dW, dR];
-          currentTurn = winner;
-          updateUI();
-
-          if (winner === 'W' || gameMode === 'pvp') {
-            gameState = 'MOVING';
-            document.getElementById('announcer').textContent =
-              `${winner === 'W' ? '白' : '赤'}の先攻！出目 [${dW}, ${dR}] で駒を動かしてください`;
-          } else {
-            gameState = 'CPU_THINKING';
-            document.getElementById('announcer').textContent =
-              `CPU(赤)の先攻！出目 [${dW}, ${dR}]`;
-            setTimeout(executeCpuTurnStepByStep, 900);
-          }
-        }, 1600);
-      }, 1000);
+      }, 1500);
     }
 
     function startTurn(player) {
@@ -570,7 +580,6 @@
       setTimeout(executeCpuTurnStepByStep, 900);
     }
 
-    /* === CPUの動作を人間らしいテンポで1手ずつ見せる処理 === */
     function executeCpuTurnStepByStep() {
       if (movesLeft.length === 0 || !hasAnyLegalMoves('R')) {
         document.getElementById('announcer').textContent = 'CPUの行動が終了しました';
@@ -580,7 +589,6 @@
 
       let chosenMove = null;
 
-      // 1. バーからの復帰
       if (bar.R > 0) {
         for (const d of movesLeft) {
           const target = 24 - d;
@@ -590,7 +598,6 @@
           }
         }
       } else {
-        // 2. ベアオフ
         if (canBearOff('R')) {
           for (let i = 0; i <= 5; i++) {
             if (points[i].player === 'R') {
@@ -607,7 +614,6 @@
             }
           }
         }
-        // 3. 通常前進
         if (!chosenMove) {
           let candidateMoves = [];
           for (let i = 23; i >= 0; i--) {
@@ -633,7 +639,6 @@
         return;
       }
 
-      // === 移動前の「予告ハイライト」表示 ===
       clearHighlights();
       if (chosenMove.from === 'bar') {
         document.getElementById('bar-svg-rect').classList.add('bar-cpu-from');
@@ -651,7 +656,6 @@
         if (triTo) triTo.classList.add('cpu-to');
       }
 
-      // 650ms 相手の手を見せてから駒を実際に動かす
       setTimeout(() => {
         if (chosenMove.type === 'bearoff') {
           tryExecuteBearOff(chosenMove.from, 'R');
@@ -662,7 +666,6 @@
           document.getElementById('announcer').innerHTML = `CPU: 出目[${chosenMove.die}] で移動完了${hitText}`;
         }
 
-        // 次の手に進む前に800msの余韻
         setTimeout(executeCpuTurnStepByStep, 800);
       }, 650);
     }
