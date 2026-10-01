@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>マンカラ (Mancala)</title>
+  <style>
+    :root {
+      --bg-desk: #110c08;
+      --felt-dark: #122c19;
+      --felt-light: #1c4528;
+      --board-rim: #362214;
+      --board-wood: #2a1a10;
+      --pit-depth: #150d08;
+      --brass-gold: #d4a359;
+      --brass-glow: rgba(212, 163, 89, 0.45);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-desk);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      color: #fff;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .viewport {
+      width: 100%;
+      min-height: 100%;
+      padding: calc(14px + env(safe-area-inset-top)) 8px calc(60px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: radial-gradient(circle at 50% 20%, #2b1a10 0%, var(--bg-desk) 100%);
+      position: relative;
+    }
+
+    .topbar {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+    .topbar-upper {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .tool-btn {
+      background: linear-gradient(145deg, #2c1c12 0%, #1c1109 100%);
+      border: 1.5px solid #4d3320;
+      color: var(--brass-gold);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.15);
+      transition: transform 0.12s, border-color 0.12s;
+    }
+    .tool-btn:hover { border-color: var(--brass-gold); transform: translateY(-2px); }
+    .tool-btn:active { transform: scale(0.92); }
+
+    .topbar-lower {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .score-banner {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .player-badge {
+      background: rgba(0, 0, 0, 0.65);
+      border: 1.5px solid #442d1c;
+      border-radius: 14px;
+      padding: 6px 14px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #d1c1b2;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+      position: relative;
+    }
+    .player-badge.turn-active {
+      border-color: var(--brass-gold);
+      box-shadow: 0 0 12px var(--brass-glow), inset 0 2px 5px rgba(0,0,0,0.8);
+    }
+    .mini-gem {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    }
+    .mini-gem.p1 {
+      background: radial-gradient(circle at 35% 30%, #55efc4, #00b894 70%, #00624f 100%);
+      border: 1px solid #55efc4;
+    }
+    .mini-gem.p2 {
+      background: radial-gradient(circle at 35% 30%, #ff7675, #d63031 70%, #7e1212 100%);
+      border: 1px solid #ff7675;
+    }
+    .score-val {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #fff;
+      font-feature-settings: "tnum";
+    }
+
+    .diff-badge {
+      background: rgba(0,0,0,0.6);
+      border: 1.5px solid #442d1c;
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      color: var(--brass-gold);
+      font-weight: 800;
+    }
+
+    .table-felt {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      background: radial-gradient(circle at 50% 35%, var(--felt-light) 0%, var(--felt-dark) 100%);
+      border: 8px solid var(--board-rim);
+      border-radius: 24px;
+      padding: 18px 10px 24px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.95), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 0 35px rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      touch-action: manipulation;
+    }
+
+    .turn-announcer {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: #ede2d5;
+      text-align: center;
+      min-height: 22px;
+    }
+
+    /* マンカラ木製ボード */
+    .mancala-board {
+      width: 100%;
+      background: linear-gradient(180deg, #3d2617 0%, #26160c 100%);
+      border: 4px solid #583920;
+      border-radius: 28px;
+      padding: 12px 10px;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.85), inset 0 2px 4px rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    /* 左右の大きなゴール（ストア） */
+    .mancala-store {
+      width: 58px;
+      height: 180px;
+      background: radial-gradient(ellipse at 50% 50%, #0d0704 0%, #170d07 100%);
+      border-radius: 28px;
+      box-shadow: inset 0 6px 14px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 4px;
+      position: relative;
+    }
+    .store-label {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #8c7664;
+    }
+    .store-count {
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: var(--brass-gold);
+      font-feature-settings: "tnum";
+    }
+    .store-gems {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 4px;
+      overflow: hidden;
+    }
+
+    /* 中央の6×2ポケット群 */
+    .mancala-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .pit-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    /* 各ピット（ポケット） */
+    .pit {
+      flex: 1;
+      aspect-ratio: 1;
+      max-width: 54px;
+      background: radial-gradient(circle at 50% 50%, #0d0704 0%, #1a0f08 100%);
+      border-radius: 50%;
+      box-shadow: inset 0 5px 10px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .pit.selectable:hover {
+      transform: scale(1.05);
+      box-shadow: inset 0 5px 10px rgba(0,0,0,0.95), 0 0 10px var(--brass-glow);
+    }
+    .pit.selectable:active {
+      transform: scale(0.95);
+    }
+    .pit.selectable {
+      outline: 2px dashed rgba(212, 163, 89, 0.4);
+      outline-offset: -2px;
+    }
+    .pit-count {
+      font-size: 0.88rem;
+      font-weight: 900;
+      color: #ede2d5;
+      font-feature-settings: "tnum";
+      z-index: 2;
+    }
+    .pit-gems {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 6px;
+      pointer-events: none;
+    }
+
+    /* リアルガラス石（ビーズ） */
+    .gem {
+      width: 8.5px;
+      height: 8.5px;
+      border-radius: 50%;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.7), inset 1px 1px 1px rgba(255,255,255,0.7);
+    }
+    .gem-c0 { background: radial-gradient(circle at 35% 30%, #74b9ff, #0984e3); }
+    .gem-c1 { background: radial-gradient(circle at 35% 30%, #55efc4, #00b894); }
+    .gem-c2 { background: radial-gradient(circle at 35% 30%, #ffeaa7, #fdcb6e); }
+    .gem-c3 { background: radial-gradient(circle at 35% 30%, #ff7675, #d63031); }
+    .gem-c4 { background: radial-gradient(circle at 35% 30%, #a29bfe, #6c5ce7); }
+
+    .ranking-container {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 20px;
+      background: rgba(22, 14, 9, 0.85);
+      border: 2px solid #3d2919;
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+    }
+    .ranking-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1.5px solid #4a3422;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+    .ranking-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--brass-gold);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stat-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+    .stat-box {
+      background: rgba(0,0,0,0.3);
+      padding: 8px 6px;
+      border-radius: 8px;
+    }
+    .stat-box-title {
+      font-size: 0.72rem;
+      color: #9f8f80;
+      margin-bottom: 2px;
+    }
+    .stat-box-val {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: #ede2d5;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.82);
+      backdrop-filter: blur(5px);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-sheet {
+      background: #20140c;
+      border: 3px solid #4d3320;
+      border-radius: 20px;
+      padding: 22px;
+      width: 88%;
+      max-width: 440px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.95);
+      color: #ede2d5;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-title {
+      text-align: center;
+      color: var(--brass-gold);
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    .modal-body {
+      overflow-y: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      color: #c9b9aa;
+      margin-bottom: 16px;
+      padding-right: 6px;
+    }
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #332014;
+    }
+    .theme-select {
+      background: #2c1a10;
+      color: #fff;
+      border: 1.5px solid var(--brass-gold);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      outline: none;
+    }
+    .modal-close-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(180deg, #d4a359, #aa782e);
+      border: none;
+      border-radius: 12px;
+      color: #140c06;
+      font-weight: 900;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="viewport">
+    <div class="topbar">
+      <div class="topbar-upper">
+        <div class="tool-btn" onclick="toggleSettingsModal(true)" title="設定">⚙️</div>
+        <div class="tool-btn" onclick="restartGame()" title="最初から">🔄</div>
+        <div class="tool-btn" onclick="undoMove()" title="1手戻す">↩️</div>
+        <div class="tool-btn" onclick="toggleRulesModal(true)" title="あそびかた">📖</div>
+      </div>
+
+      <div class="topbar-lower">
+        <div class="score-banner">
+          <div class="player-badge turn-active" id="badge-p1">
+            <div class="mini-gem p1"></div>
+            <span id="label-player-1">1P</span>
+            <span class="score-val" id="score-p1">0</span>
+          </div>
+          <div class="player-badge" id="badge-p2">
+            <div class="mini-gem p2"></div>
+            <span id="label-player-2">COM</span>
+            <span class="score-val" id="score-p2">0</span>
+          </div>
+        </div>
+        <div class="diff-badge" id="stat-diff-badge">COM: 中級</div>
+      </div>
+    </div>
+
+    <!-- フェルト卓 -->
+    <div class="table-felt">
+      <div class="turn-announcer" id="turn-announcer">1Pの番です</div>
+
+      <!-- マンカラボード本体 -->
+      <div class="mancala-board">
+        <!-- 2P（相手 / COM）のストア（左側） -->
+        <div class="mancala-store" id="store-p2">
+          <span class="store-label" id="store-label-p2">2P STORE</span>
+          <div class="store-gems" id="gems-13"></div>
+          <span class="store-count" id="count-13">0</span>
+        </div>
+
+        <!-- 中央のピット群 -->
+        <div class="mancala-center">
+          <!-- 相手陣地 (インデックス 12 -> 7、反時計回り上段) -->
+          <div class="pit-row" id="row-p2">
+            <div class="pit" id="pit-12" onclick="handlePitClick(12)"><span class="pit-count">4</span><div class="pit-gems"></div></div>
+            <div class="pit" id="pit-11" onclick="handlePitClick(11)"><span class="pit-count">4</span><div class="pit-gems"></div></div>
+            <div class="pit" id="pit-10" onclick="handlePitClick(10)"><span class="pit-count">4</span><div class="pit-gems"></div></div>
+            <div class="pit" id="pit-9" onclick="handlePitClick(9)"><span class="pit-count">4</span><div class="pit-gems"></div></div>
+            <div class="pit" id="pit-8" onclick="handlePitClick(8)"><span class="pit-count">4</span><div class="pit-gems"></div></div>
+            <div class="pit" id="pit-7" onclick="handlePitClick(7)"><span class="pit-count">4</span><div class="pit-gems"></div></div>
+          </div>
+
+          <!-- 自分陣地 (インデックス 0 -> 5、反時計回り下段) -->
+          <div class="pit-row" id="row-p1">
+            <div class="pit selectable" id="pit-0" onclick="handlePitClick(0)"><span class="pit-count">4</span><div class="pit-gems"></div></div>
+            <div class="pit selectable" id="pit-1" onclick="handlePitClick(1)"><span class="pit-count">4</span><div class="pit-gems"></div></div>
+            <div class="pit selectable" id="pit-2" onclick="handlePitClick(2)"><span class="pit-count">4</span><div class="pit-gems"></div></div>
+            <div class="pit selectable" id="pit-3" onclick="handlePitClick(3)"><span class="pit-count">4</span><div class="pit-gems"></div></div>
+            <div class="pit selectable" id="pit-4" onclick="handlePitClick(4)"><span class="pit-count">4</span><div class="pit-gems"></div></div>
+            <div class="pit selectable" id="pit-5" onclick="handlePitClick(5)"><span class="pit-count">4</span><div class="pit-gems"></div></div>
+          </div>
+        </div>
+
+        <!-- 1P（手前）のストア（右側） -->
+        <div class="mancala-store" id="store-p1">
+          <span class="store-label">1P STORE</span>
+          <div class="store-gems" id="gems-6"></div>
+          <span class="store-count" id="count-6">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 通算戦績ボード -->
+    <div class="ranking-container">
+      <div class="ranking-header">
+        <div class="ranking-title">📊 対COM 通算戦績</div>
+      </div>
+      <div class="stat-summary-grid">
+        <div class="stat-box">
+          <div class="stat-box-title">勝利</div>
+          <div class="stat-box-val" id="stat-wins" style="color:#2ecc71;">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">敗北</div>
+          <div class="stat-box-val" id="stat-losses" style="color:#e74c3c;">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">勝率</div>
+          <div class="stat-box-val" id="stat-winrate" style="color:var(--brass-gold);">0%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ルールモーダル -->
+  <div id="modal-rules" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">📖 マンカラのあそびかた</div>
+      <div class="modal-body">
+        <p>紀元前から親しまれる世界最古のボードゲームです。石を反時計回りに撒いていき、自分の右側のゴール（ストア）に多くの石を集めた方が勝ちとなります。</p>
+        <br>
+        <b style="color:var(--brass-gold);">【基本ルール（カラハ）】</b>
+        <ul style="padding-left:18px; margin:6px 0;">
+          <li>自分の手前6つのポケットから1つ選び、中の石をすべて取り出して、反時計回りに1個ずつポケットやストアへ撒いていきます（相手のストアはスキップ）。</li>
+          <li><b>連続手番（ボーナスターン）</b>：最後の石がちょうど<b>自分のストア</b>に入ったら、もう1回自分の手番になります！</li>
+          <li><b>横取り（キャプチャー）</b>：最後の石が<b>自分の空のポケット</b>に入り、その向かい側の相手ポケットに石があった場合、両方の石をすべて自分のストアに獲得できます！</li>
+          <li>どちらかのポケットがすべて空になったらゲーム終了。ポケットに残った石はそれぞれのプレイヤーが獲得し、ストアの合計石数で勝負が決まります。</li>
+        </ul>
+      </div>
+      <button class="modal-close-btn" onclick="toggleRulesModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <!-- 設定モーダル -->
+  <div id="modal-settings" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">⚙ 設定</div>
+      <div class="modal-body">
+        <div class="setting-item">
+          <span>対戦モード</span>
+          <select id="mode-selector" class="theme-select" onchange="changeGameMode(this.value)">
+            <option value="pve" selected>1人プレイ (vs COM)</option>
+            <option value="pvp">2人プレイ (1台で対戦)</option>
+          </select>
+        </div>
+        <div class="setting-item" id="setting-com-diff">
+          <span>COMの強さ</span>
+          <select id="diff-selector" class="theme-select" onchange="changeDifficulty(this.value)">
+            <option value="easy">初級 (気まぐれ)</option>
+            <option value="medium" selected>中級 (標準)</option>
+            <option value="hard">上級 (ボーナス・捕獲重視)</option>
+          </select>
+        </div>
+      </div>
+      <button class="modal-close-btn" onclick="toggleSettingsModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    window.addEventListener('pointerdown', () => getAudio(), { once: true });
+
+    function playSowSound(pitchMod = 0) {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        const freq = 340 + pitchMod * 25 + Math.random() * 30;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.06);
+      } catch(e) {}
+    }
+
+    function playCaptureSound() {
+      try {
+        const ctx = getAudio();
+        [580, 720, 880].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.06);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.06 + 0.15);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.06);
+          osc.stop(ctx.currentTime + idx * 0.06 + 0.16);
+        });
+      } catch(e) {}
+    }
+
+    function playVictorySound() {
+      try {
+        const ctx = getAudio();
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.08 + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.08);
+          osc.stop(ctx.currentTime + idx * 0.08 + 0.26);
+        });
+      } catch(e) {}
+    }
+
+    /* ボード定義:
+       0〜5: 1Pピット (左->右)
+       6: 1Pストア
+       7〜12: 2Pピット (右->左)
+       13: 2Pストア
+    */
+    let board = [];
+    let currentTurn = 1; // 1: 1P, 2: 2P
+    let gameMode = 'pve'; // 'pve' | 'pvp'
+    let isComThinking = false;
+    let isSowing = false;
+    let isGameOver = false;
+    let difficulty = 'medium';
+    let historyStack = [];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initGame();
+      loadStats();
+    });
+
+    function initGame() {
+      // 初期状態: 各ピットに4個、ストアは0
+      board = [4, 4, 4, 4, 4, 4, 0, 4, 4, 4, 4, 4, 4, 0];
+      currentTurn = 1;
+      isGameOver = false;
+      isComThinking = false;
+      isSowing = false;
+      historyStack = [];
+
+      updateUI();
+      renderBoard();
+    }
+
+    function saveState() {
+      historyStack.push({
+        board: [...board],
+        turn: currentTurn
+      });
+    }
+
+    function undoMove() {
+      if (isComThinking || isSowing || isGameOver) return;
+      if (gameMode === 'pve') {
+        if (historyStack.length < 2) return;
+        historyStack.pop();
+        const last = historyStack.pop();
+        board = [...last.board];
+        currentTurn = 1;
+      } else {
+        if (historyStack.length === 0) return;
+        const last = historyStack.pop();
+        board = [...last.board];
+        currentTurn = last.turn;
+      }
+      updateUI();
+      renderBoard();
+      playSowSound(0);
+    }
+
+    function renderBoard() {
+      // 各ピットとストアの表示更新
+      for (let i = 0; i < 14; i++) {
+        const count = board[i];
+        if (i === 6 || i === 13) {
+          document.getElementById(`count-${i}`).textContent = count;
+          renderGems(document.getElementById(`gems-${i}`), count, 24);
+        } else {
+          const pitEl = document.getElementById(`pit-${i}`);
+          pitEl.querySelector('.pit-count').textContent = count;
+          renderGems(pitEl.querySelector('.pit-gems'), count, 8);
+
+          // タップ可能ハイライト
+          const isP1Pit = (i >= 0 && i <= 5);
+          const isP2Pit = (i >= 7 && i <= 12);
+          const isActionable = !isGameOver && !isSowing && !isComThinking && count > 0 &&
+            ((currentTurn === 1 && isP1Pit) || (gameMode === 'pvp' && currentTurn === 2 && isP2Pit));
+
+          pitEl.classList.toggle('selectable', isActionable);
+        }
+      }
+    }
+
+    function renderGems(container, count, maxVisible) {
+      container.innerHTML = '';
+      const showCount = Math.min(count, maxVisible);
+      for (let i = 0; i < showCount; i++) {
+        const gem = document.createElement('div');
+        gem.className = `gem gem-c${i % 5}`;
+        container.appendChild(gem);
+      }
+    }
+
+    async function handlePitClick(pitIdx) {
+      if (isGameOver || isSowing || isComThinking) return;
+      if (currentTurn === 1 && (pitIdx < 0 || pitIdx > 5)) return;
+      if (currentTurn === 2 && (gameMode !== 'pvp' || pitIdx < 7 || pitIdx > 12)) return;
+      if (board[pitIdx] === 0) return;
+
+      saveState();
+      await executeSow(pitIdx, currentTurn);
+    }
+
+    async function executeSow(startPit, player) {
+      isSowing = true;
+      let hand = board[startPit];
+      board[startPit] = 0;
+      renderBoard();
+
+      let curr = startPit;
+      const myStore = player === 1 ? 6 : 13;
+      const oppStore = player === 1 ? 13 : 6;
+
+      while (hand > 0) {
+        curr = (curr + 1) % 14;
+        // 相手のストアはスキップ
+        if (curr === oppStore) continue;
+
+        board[curr]++;
+        hand--;
+        playSowSound(hand);
+        renderBoard();
+        await new Promise(r => setTimeout(r, 160));
+      }
+
+      // 横取り（キャプチャー）判定:
+      // 最後の石が自分の空ポケットに入り、向かい側の相手ポケットに石がある場合
+      const isMySide = player === 1 ? (curr >= 0 && curr <= 5) : (curr >= 7 && curr <= 12);
+      if (isMySide && board[curr] === 1 && curr !== myStore) {
+        const oppositePit = 12 - curr;
+        if (board[oppositePit] > 0) {
+          playCaptureSound();
+          const captured = board[oppositePit] + board[curr];
+          board[myStore] += captured;
+          board[oppositePit] = 0;
+          board[curr] = 0;
+          renderBoard();
+          await new Promise(r => setTimeout(r, 250));
+        }
+      }
+
+      // 終了判定
+      if (checkGameEnd()) {
+        isSowing = false;
+        resolveGameEnd();
+        return;
+      }
+
+      // 連続手番判定: 最後の石が自分のストアで終わった場合
+      if (curr === myStore) {
+        document.getElementById('turn-announcer').textContent = (player === 1 ? '1P' : '2P') + ' の連続手番です！';
+        isSowing = false;
+        renderBoard();
+        if (player === 2 && gameMode === 'pve') {
+          setTimeout(handleComTurn, 650);
+        }
+        return;
+      }
+
+      // ターン交代
+      currentTurn = player === 1 ? 2 : 1;
+      isSowing = false;
+      updateUI();
+      renderBoard();
+
+      if (currentTurn === 2 && gameMode === 'pve') {
+        setTimeout(handleComTurn, 650);
+      }
+    }
+
+    function checkGameEnd() {
+      const p1Empty = board.slice(0, 6).every(n => n === 0);
+      const p2Empty = board.slice(7, 13).every(n => n === 0);
+      return p1Empty || p2Empty;
+    }
+
+    function resolveGameEnd() {
+      isGameOver = true;
+      // 残った石をそれぞれのストアに回収
+      let p1Rem = 0;
+      for (let i = 0; i < 6; i++) {
+        p1Rem += board[i];
+        board[i] = 0;
+      }
+      board[6] += p1Rem;
+
+      let p2Rem = 0;
+      for (let i = 7; i < 13; i++) {
+        p2Rem += board[i];
+        board[i] = 0;
+      }
+      board[13] += p2Rem;
+
+      updateUI();
+      renderBoard();
+
+      const p1Total = board[6];
+      const p2Total = board[13];
+      let msg = '';
+
+      if (gameMode === 'pvp') {
+        if (p1Total > p2Total) {
+          msg = `🎉 1Pの勝利！ (${p1Total} 対 ${p2Total})`;
+          playVictorySound();
+        } else if (p2Total > p1Total) {
+          msg = `🎉 2Pの勝利！ (${p2Total} 対 ${p1Total})`;
+          playVictorySound();
+        } else {
+          msg = `🤝 引き分けです！ (${p1Total} 対 ${p2Total})`;
+        }
+      } else {
+        if (p1Total > p2Total) {
+          msg = `🎉 あなたの勝利！ (${p1Total} 対 ${p2Total})`;
+          recordMatch(true);
+          playVictorySound();
+        } else if (p2Total > p1Total) {
+          msg = `💀 COMの勝利... (${p2Total} 対 ${p1Total})`;
+          recordMatch(false);
+        } else {
+          msg = `🤝 引き分けです！ (${p1Total} 対 ${p2Total})`;
+        }
+      }
+
+      document.getElementById('turn-announcer').textContent = msg;
+      setTimeout(() => alert(msg), 300);
+    }
+
+    /* COM思考ルーチン */
+    async function handleComTurn() {
+      if (isGameOver || currentTurn !== 2 || gameMode !== 'pve') return;
+      isComThinking = true;
+      document.getElementById('turn-announcer').textContent = 'COMが思考中...';
+
+      const validPits = [];
+      for (let i = 7; i <= 12; i++) {
+        if (board[i] > 0) validPits.push(i);
+      }
+      if (validPits.length === 0) return;
+
+      let chosenPit = validPits[0];
+
+      if (difficulty === 'easy') {
+        chosenPit = validPits[Math.floor(Math.random() * validPits.length)];
+      } else if (difficulty === 'medium') {
+        // 優先度1: ストアでぴったり終わる連続手番
+        const bonusPit = validPits.find(p => (p + board[p]) === 13);
+        if (bonusPit !== undefined) {
+          chosenPit = bonusPit;
+        } else {
+          // 最多の石を撒く
+          validPits.sort((a, b) => board[b] - board[a]);
+          chosenPit = validPits[0];
+        }
+      } else {
+        // 上級: 先読み評価（連続手番 > キャプチャー > 最多石）
+        let bestScore = -999;
+        for (const p of validPits) {
+          let score = 0;
+          const stones = board[p];
+          const endPos = (p + stones) % 13; // 相手ストアスキップ簡略計算
+
+          if (p + stones === 13) score += 20; // 連続手番
+          // キャプチャー判定
+          if (endPos >= 7 && endPos <= 12 && board[endPos] === 0 && board[12 - endPos] > 0) {
+            score += 15 + board[12 - endPos];
+          }
+          score += stones;
+
+          if (score > bestScore) {
+            bestScore = score;
+            chosenPit = p;
+          }
+        }
+      }
+
+      isComThinking = false;
+      await executeSow(chosenPit, 2);
+    }
+
+    function updateUI() {
+      document.getElementById('score-p1').textContent = board[6];
+      document.getElementById('score-p2').textContent = board[13];
+
+      document.getElementById('badge-p1').classList.toggle('turn-active', currentTurn === 1 && !isGameOver);
+      document.getElementById('badge-p2').classList.toggle('turn-active', currentTurn === 2 && !isGameOver);
+
+      const label1 = document.getElementById('label-player-1');
+      const label2 = document.getElementById('label-player-2');
+      const storeLabelP2 = document.getElementById('store-label-p2');
+      const diffBadge = document.getElementById('stat-diff-badge');
+
+      if (gameMode === 'pvp') {
+        label1.textContent = '1P';
+        label2.textContent = '2P';
+        storeLabelP2.textContent = '2P STORE';
+        diffBadge.textContent = '2人プレイ (対戦)';
+      } else {
+        label1.textContent = 'あなた';
+        label2.textContent = 'COM';
+        storeLabelP2.textContent = 'COM STORE';
+        const names = { easy: '初級', medium: '中級', hard: '上級' };
+        diffBadge.textContent = `COM: ${names[difficulty]}`;
+      }
+
+      if (!isGameOver && !isSowing && !isComThinking) {
+        if (gameMode === 'pvp') {
+          document.getElementById('turn-announcer').textContent = (currentTurn === 1 ? '1P' : '2P') + ' の番です';
+        } else {
+          document.getElementById('turn-announcer').textContent = (currentTurn === 1 ? 'あなた' : 'COM') + ' の番です';
+        }
+      }
+    }
+
+    function recordMatch(isWin) {
+      if (gameMode !== 'pve') return;
+      let stats = { wins: 0, losses: 0 };
+      try {
+        stats = JSON.parse(localStorage.getItem('mancala_stats')) || stats;
+      } catch(e) {}
+
+      if (isWin) stats.wins++;
+      else stats.losses++;
+
+      try {
+        localStorage.setItem('mancala_stats', JSON.stringify(stats));
+      } catch(e) {}
+      loadStats();
+    }
+
+    function loadStats() {
+      let stats = { wins: 0, losses: 0 };
+      try {
+        stats = JSON.parse(localStorage.getItem('mancala_stats')) || stats;
+      } catch(e) {}
+
+      document.getElementById('stat-wins').textContent = stats.wins;
+      document.getElementById('stat-losses').textContent = stats.losses;
+      const total = stats.wins + stats.losses;
+      const rate = total > 0 ? Math.round((stats.wins / total) * 100) : 0;
+      document.getElementById('stat-winrate').textContent = `${rate}%`;
+    }
+
+    function toggleRulesModal(show) {
+      document.getElementById('modal-rules').classList.toggle('active', show);
+    }
+    function toggleSettingsModal(show) {
+      document.getElementById('modal-settings').classList.toggle('active', show);
+    }
+
+    function changeGameMode(val) {
+      gameMode = val;
+      document.getElementById('setting-com-diff').style.display = (val === 'pve') ? 'flex' : 'none';
+      toggleSettingsModal(false);
+      restartGame();
+    }
+
+    function changeDifficulty(val) {
+      difficulty = val;
+      toggleSettingsModal(false);
+      restartGame();
+    }
+
+    function restartGame() {
+      if (confirm('盤面をリセットして新しく始めますか？')) initGame();
+    }
+  </script>
+</body>
+</html>
