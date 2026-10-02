@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ウサギと猟犬 (Hare and Hounds)</title>
+  <style>
+    :root {
+      --bg-desk: #110c08;
+      --felt-dark: #122c19;
+      --felt-light: #1c4528;
+      --board-rim: #362214;
+      --brass-gold: #d4a359;
+      --brass-glow: rgba(212, 163, 89, 0.45);
+      --hound-color: #e74c3c;
+      --hare-color: #ffffff;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-desk);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+      color: #fff;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .viewport {
+      width: 100%;
+      min-height: 100%;
+      padding: calc(12px + env(safe-area-inset-top)) 10px calc(50px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: radial-gradient(circle at 50% 20%, #2b1a10 0%, var(--bg-desk) 100%);
+      position: relative;
+    }
+
+    .topbar {
+      width: 100%;
+      max-width: min(94vw, 440px);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 8px;
+      padding: 0 2px;
+    }
+    .topbar-upper {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .tool-btn {
+      background: linear-gradient(145deg, #2c1c12 0%, #1c1109 100%);
+      border: 1.5px solid #4d3320;
+      color: var(--brass-gold);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.15);
+      transition: transform 0.12s, border-color 0.12s;
+    }
+    .tool-btn:hover { border-color: var(--brass-gold); transform: translateY(-2px); }
+    .tool-btn:active { transform: scale(0.92); }
+
+    .topbar-lower {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2px;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .player-indicator {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .role-badge {
+      background: rgba(0, 0, 0, 0.7);
+      border: 1.5px solid #442d1c;
+      border-radius: 14px;
+      padding: 5px 12px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #d1c1b2;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .role-badge.turn-active {
+      border-color: var(--brass-gold);
+      box-shadow: 0 0 12px var(--brass-glow), inset 0 2px 5px rgba(0,0,0,0.8);
+    }
+    .piece-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    }
+    .piece-dot.hound {
+      background: radial-gradient(circle at 35% 30%, #ff7675, #c0392b);
+    }
+    .piece-dot.hare {
+      background: radial-gradient(circle at 35% 30%, #ffffff, #dcdde1);
+    }
+
+    .diff-badge {
+      background: rgba(0,0,0,0.6);
+      border: 1.5px solid #442d1c;
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      color: var(--brass-gold);
+      font-weight: 800;
+    }
+
+    /* 行動履歴バナー */
+    .action-history-bar {
+      width: 100%;
+      max-width: min(94vw, 440px);
+      background: rgba(22, 14, 9, 0.92);
+      border: 1.5px solid #6b472c;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      color: #ede2d5;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 38px;
+      margin-bottom: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+      transition: background-color 0.3s, transform 0.2s;
+    }
+    .action-history-bar.flash {
+      background: rgba(70, 42, 20, 0.95);
+      border-color: var(--brass-gold);
+      transform: scale(1.01);
+    }
+    .history-tag {
+      background: #472b18;
+      color: var(--brass-gold);
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: 0.72rem;
+      flex-shrink: 0;
+    }
+
+    .table-felt {
+      position: relative;
+      width: 100%;
+      max-width: min(94vw, 440px);
+      background: radial-gradient(circle at 50% 35%, var(--felt-light) 0%, var(--felt-dark) 100%);
+      border: 6px solid var(--board-rim);
+      border-radius: 20px;
+      padding: 16px 8px 20px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.95), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 0 35px rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      touch-action: manipulation;
+    }
+
+    .turn-announcer {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #ede2d5;
+      text-align: center;
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ボードSVGフレーム (左右マージン・パディングを見越した安全設計) */
+    .board-frame {
+      width: 100%;
+      max-width: 400px;
+      background: linear-gradient(180deg, #2b180d 0%, #1a0f08 100%);
+      border: 3px solid #583920;
+      border-radius: 18px;
+      padding: 12px 6px;
+      box-shadow: 0 14px 30px rgba(0,0,0,0.85), inset 0 2px 4px rgba(255,255,255,0.15);
+      overflow: visible;
+    }
+    #board-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      overflow: visible; /* 拡大された駒が見切れないよう設定 */
+    }
+
+    .board-line {
+      stroke: #d4a359;
+      stroke-width: 3.5;
+      stroke-linecap: round;
+      opacity: 0.85;
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,0.8));
+    }
+    .node-slot {
+      fill: #140c06;
+      stroke: #5d3f29;
+      stroke-width: 2.5;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .node-slot.highlight {
+      stroke: var(--brass-gold);
+      fill: #2f1d11;
+      filter: drop-shadow(0 0 6px var(--brass-glow));
+    }
+    .node-slot.prev-from {
+      stroke: #ff9f43;
+      stroke-dasharray: 4, 3;
+      stroke-width: 2.8;
+      animation: pulse-from 1.5s infinite alternate;
+    }
+    @keyframes pulse-from {
+      0% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    /* 駒の変形原点を中央に固定し、見切れを防ぐ */
+    .piece {
+      cursor: pointer;
+      transition: transform 0.2s ease, filter 0.2s ease;
+      transform-box: fill-box;
+      transform-origin: center center;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.7));
+    }
+    .piece.selected {
+      transform: scale(1.22);
+      filter: drop-shadow(0 0 10px var(--brass-glow));
+    }
+    .piece.com-thinking {
+      animation: com-pulse 0.6s infinite alternate ease-in-out;
+    }
+    @keyframes com-pulse {
+      0% { transform: scale(1.05); filter: drop-shadow(0 0 4px #f1c40f); }
+      100% { transform: scale(1.25); filter: drop-shadow(0 0 12px #f39c12); }
+    }
+
+    /* スタート画面 */
+    .start-screen-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: radial-gradient(circle at 50% 30%, rgba(35, 20, 12, 0.96) 0%, rgba(10, 6, 4, 0.98) 100%);
+      backdrop-filter: blur(8px);
+      z-index: 100000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .start-card {
+      background: linear-gradient(180deg, #24160d 0%, #150c07 100%);
+      border: 3px solid #5d3f29;
+      border-radius: 24px;
+      padding: 24px 18px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.9), 0 0 25px rgba(212, 163, 89, 0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .visual-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin: 10px 0 14px;
+      width: 100%;
+    }
+    .visual-token {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.4);
+      border: 1.5px solid #4a301d;
+    }
+    .visual-token .icon {
+      font-size: 2rem;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6));
+    }
+    .visual-token .label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #d1c1b2;
+    }
+    .visual-vs {
+      font-size: 1.05rem;
+      font-weight: 900;
+      color: var(--brass-gold);
+      letter-spacing: 1px;
+      font-style: italic;
+    }
+
+    .start-title {
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: var(--brass-gold);
+      text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+      letter-spacing: 1.5px;
+      text-align: center;
+    }
+    .start-subtitle {
+      font-size: 0.75rem;
+      color: #9f8c7b;
+      margin-top: 2px;
+      text-align: center;
+    }
+
+    .mode-tab-group {
+      display: flex;
+      width: 100%;
+      background: #110905;
+      padding: 4px;
+      border-radius: 12px;
+      margin: 14px 0 12px;
+      border: 1px solid #442a18;
+    }
+    .mode-tab-btn {
+      flex: 1;
+      padding: 8px 0;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #9f8c7b;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .mode-tab-btn.active {
+      background: linear-gradient(180deg, #442a18 0%, #28170c 100%);
+      color: #fff;
+      border: 1px solid var(--brass-gold);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    }
+
+    .config-box {
+      width: 100%;
+      background: rgba(0,0,0,0.3);
+      border: 1.5px solid #3c2415;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .config-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+    .config-label {
+      color: #d1c1b2;
+      font-weight: 700;
+    }
+
+    /* CPUつよさ選択ボタングループ */
+    .difficulty-group {
+      display: flex;
+      width: 100%;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .diff-btn {
+      flex: 1;
+      padding: 7px 0;
+      border-radius: 8px;
+      background: #1c1109;
+      border: 1.5px solid #4a301d;
+      color: #b09e8e;
+      font-size: 0.82rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .diff-btn.active {
+      border-color: var(--brass-gold);
+      background: #361f12;
+      color: #fff;
+      box-shadow: 0 0 8px var(--brass-glow);
+    }
+
+    .role-select-cards {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+    .role-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 6px;
+      border-radius: 12px;
+      border: 2px solid #4a301d;
+      background: #1e1109;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .role-card.selected {
+      border-color: var(--brass-gold);
+      background: #331d10;
+      box-shadow: 0 0 10px var(--brass-glow);
+    }
+    .role-card .role-icon {
+      font-size: 1.5rem;
+    }
+    .role-card .role-name {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .role-card .role-turn {
+      font-size: 0.7rem;
+      color: #b09e8e;
+    }
+
+    .start-launch-btn {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(180deg, #d4a359 0%, #aa782e 100%);
+      border: none;
+      border-radius: 14px;
+      color: #140c06;
+      font-weight: 900;
+      font-size: 1.05rem;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+      transition: transform 0.1s, filter 0.1s;
+    }
+    .start-launch-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* モーダル */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.82);
+      backdrop-filter: blur(5px);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-sheet {
+      background: #20140c;
+      border: 3px solid #4d3320;
+      border-radius: 20px;
+      padding: 22px;
+      width: 88%;
+      max-width: 440px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.95);
+      color: #ede2d5;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-title {
+      text-align: center;
+      color: var(--brass-gold);
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    .modal-body {
+      overflow-y: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      color: #c9b9aa;
+      margin-bottom: 16px;
+      padding-right: 6px;
+    }
+    .modal-close-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(180deg, #d4a359, #aa782e);
+      border: none;
+      border-radius: 12px;
+      color: #140c06;
+      font-weight: 900;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- スタート画面 -->
+  <div id="start-screen" class="start-screen-overlay">
+    <div class="start-card">
+      <div class="start-title">ウサギと猟犬</div>
+      <div class="start-subtitle">HARE AND HOUNDS</div>
+
+      <div class="visual-banner">
+        <div class="visual-token">
+          <div class="icon">🐕</div>
+          <div class="label">猟犬 (3匹)</div>
+        </div>
+        <div class="visual-vs">VS</div>
+        <div class="visual-token">
+          <div class="icon">🐇</div>
+          <div class="label">ウサギ (1羽)</div>
+        </div>
+      </div>
+
+      <div class="mode-tab-group">
+        <button type="button" class="mode-tab-btn active" id="tab-solo" onclick="selectPlayMode('solo')">ひとりで遊ぶ (CPU)</button>
+        <button type="button" class="mode-tab-btn" id="tab-duo" onclick="selectPlayMode('duo')">みんなで遊ぶ (2人)</button>
+      </div>
+
+      <!-- ひとりで遊ぶ 設定パネル -->
+      <div class="config-box" id="solo-config">
+        <!-- CPUのつよさ選択 -->
+        <div>
+          <span class="config-label">CPUのつよさ：</span>
+          <div class="difficulty-group">
+            <button type="button" class="diff-btn" id="diff-easy" onclick="selectDifficulty('easy')">初級</button>
+            <button type="button" class="diff-btn active" id="diff-normal" onclick="selectDifficulty('normal')">中級</button>
+            <button type="button" class="diff-btn" id="diff-hard" onclick="selectDifficulty('hard')">上級</button>
+          </div>
+        </div>
+
+        <div>
+          <span class="config-label">あなたの陣営：</span>
+          <div class="role-select-cards" style="margin-top:6px;">
+            <div class="role-card selected" id="card-hare" onclick="selectRole('hare')">
+              <span class="role-icon">🐇</span>
+              <span class="role-name">ウサギ</span>
+              <span class="role-turn">【後攻】逃亡側</span>
+            </div>
+            <div class="role-card" id="card-hound" onclick="selectRole('hound')">
+              <span class="role-icon">🐕</span>
+              <span class="role-name">猟犬</span>
+              <span class="role-turn">【先攻】包囲側</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:0.75rem; color:#a28e7d; text-align:center;">
+          ※ 猟犬が先攻、ウサギが後攻固定となります
+        </div>
+      </div>
+
+      <!-- みんなで遊ぶ 設定パネル -->
+      <div class="config-box" id="duo-config" style="display:none;">
+        <div class="config-row">
+          <span class="config-label">遊ぶ人数：</span>
+          <span style="color:var(--brass-gold); font-weight:800;">2人 (1台交代プレイ)</span>
+        </div>
+        <div class="config-row" style="font-size:0.78rem; color:#baa593; line-height:1.4;">
+          1Pが猟犬(先攻)、2Pがウサギ(後攻)を担当して端末を交互に操作します。
+        </div>
+      </div>
+
+      <button class="start-launch-btn" onclick="startAppGame()">ゲーム開始</button>
+    </div>
+  </div>
+
+  <!-- ゲーム本体画面 -->
+  <div class="viewport">
+    <div class="topbar">
+      <div class="topbar-upper">
+        <div class="tool-btn" onclick="openStartScreen()" title="スタート画面に戻る">🏠</div>
+        <div class="tool-btn" onclick="initGame()" title="最初から">🔄</div>
+        <div class="tool-btn" onclick="undoMove()" title="1手戻す">↩️</div>
+        <div class="tool-btn" onclick="toggleRulesModal(true)" title="あそびかた">📖</div>
+      </div>
+
+      <div class="topbar-lower">
+        <div class="player-indicator">
+          <div class="role-badge" id="badge-hound">
+            <div class="piece-dot hound"></div>
+            <span id="label-hound">猟犬 (3匹)</span>
+          </div>
+          <div class="role-badge" id="badge-hare">
+            <div class="piece-dot hare"></div>
+            <span id="label-hare">ウサギ</span>
+          </div>
+        </div>
+        <div class="diff-badge" id="mode-badge">1人プレイ (ウサギ・中級)</div>
+      </div>
+    </div>
+
+    <!-- 行動履歴バナー -->
+    <div class="action-history-bar" id="history-bar">
+      <span class="history-tag">行動履歴</span>
+      <span id="history-text">ゲームを開始してください</span>
+    </div>
+
+    <!-- フェルト卓 -->
+    <div class="table-felt">
+      <div class="turn-announcer" id="turn-announcer">ゲーム準備中...</div>
+
+      <div class="board-frame">
+        <!-- viewBoxをマージン分拡張 (-15 -10 370 200) して端の駒拡大時も見切れないように自動調整 -->
+        <svg id="board-svg" viewBox="-15 -10 370 200">
+          <defs>
+            <radialGradient id="houndGrad" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#ff7675"/>
+              <stop offset="70%" stop-color="#d63031"/>
+              <stop offset="100%" stop-color="#7e1212"/>
+            </radialGradient>
+            <radialGradient id="hareGrad" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="70%" stop-color="#dfe6e9"/>
+              <stop offset="100%" stop-color="#b2bec3"/>
+            </radialGradient>
+          </defs>
+          <g id="lines-layer"></g>
+          <g id="nodes-layer"></g>
+          <g id="pieces-layer"></g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ルールモーダル -->
+  <div id="modal-rules" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">📖 ウサギと猟犬のあそびかた</div>
+      <div class="modal-body">
+        <p>中世ヨーロッパから親しまれる、非対称の2人対戦思考ボードゲームです。</p>
+        <br>
+        <b style="color:var(--brass-gold);">【基本ルール】</b>
+        <ul style="padding-left:18px; margin:6px 0;">
+          <li><b>先手：猟犬（赤駒3つ）</b>、<b>後手：ウサギ（白駒1つ）</b>です。</li>
+          <li>線で結ばれた隣の空いているマスへ1マスずつ交互に移動します。</li>
+          <li><b>猟犬の制約</b>：猟犬は<b>「前または上下」にしか進めず、左側（後退）へ戻ることはできません</b>。</li>
+          <li><b>ウサギの動き</b>：ウサギは前後左右、すべての隣接マスへ自由に移動できます。</li>
+          <li><b>勝利条件</b>：
+            <ul style="padding-left:14px; margin-top:4px;">
+              <li>🐇 <b>ウサギの勝ち</b>：すべての猟犬より左側へすり抜けて脱出するか、猟犬が動けなくなった場合。</li>
+              <li>🐕 <b>猟犬の勝ち</b>：ウサギを隅や間に追い詰めて、一切動けなくした場合。</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <button class="modal-close-btn" onclick="toggleRulesModal(false)">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    window.addEventListener('pointerdown', () => getAudio(), { once: true });
+
+    function playMoveSound() {
+      try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.06);
+      } catch(e) {}
+    }
+
+    function playVictorySound() {
+      try {
+        const ctx = getAudio();
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.08 + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.08);
+          osc.stop(ctx.currentTime + idx * 0.08 + 0.26);
+        });
+      } catch(e) {}
+    }
+
+    const NODES = [
+      { id: 0, x: 40, y: 90, label: "左端" },
+      { id: 1, x: 110, y: 30, label: "左上" }, { id: 2, x: 110, y: 90, label: "左中" }, { id: 3, x: 110, y: 150, label: "左下" },
+      { id: 4, x: 170, y: 30, label: "中央上" }, { id: 5, x: 170, y: 90, label: "中央" }, { id: 6, x: 170, y: 150, label: "中央下" },
+      { id: 7, x: 230, y: 30, label: "右上" }, { id: 8, x: 230, y: 90, label: "右中" }, { id: 9, x: 230, y: 150, label: "右下" },
+      { id: 10, x: 300, y: 90, label: "右端" }
+    ];
+
+    const ADJACENCY = {
+      0: [1, 2, 3],
+      1: [0, 2, 4, 5],
+      2: [0, 1, 3, 5],
+      3: [0, 2, 5, 6],
+      4: [1, 5, 7],
+      5: [1, 2, 3, 4, 6, 7, 8, 9],
+      6: [3, 5, 9],
+      7: [4, 5, 8, 10],
+      8: [5, 7, 9, 10],
+      9: [5, 6, 8, 10],
+      10: [7, 8, 9]
+    };
+
+    let gameMode = 'pve-hare';
+    let cpuDifficulty = 'normal'; // 'easy' | 'normal' | 'hard'
+    let currentTurn = 'hound';
+    let hounds = [0, 1, 3];
+    let hare = 10;
+    let selectedPiece = null;
+    let isGameOver = false;
+    let historyStack = [];
+    let isGameRunning = false;
+    let isComThinking = false;
+    let prevMoveFromNode = null;
+
+    let startScreenMode = 'solo';
+    let startSelectedRole = 'hare';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      buildBoardGraph();
+      renderPieces();
+    });
+
+    function selectPlayMode(mode) {
+      startScreenMode = mode;
+      document.getElementById('tab-solo').classList.toggle('active', mode === 'solo');
+      document.getElementById('tab-duo').classList.toggle('active', mode === 'duo');
+      document.getElementById('solo-config').style.display = (mode === 'solo') ? 'flex' : 'none';
+      document.getElementById('duo-config').style.display = (mode === 'duo') ? 'flex' : 'none';
+    }
+
+    function selectDifficulty(diff) {
+      cpuDifficulty = diff;
+      document.getElementById('diff-easy').classList.toggle('active', diff === 'easy');
+      document.getElementById('diff-normal').classList.toggle('active', diff === 'normal');
+      document.getElementById('diff-hard').classList.toggle('active', diff === 'hard');
+    }
+
+    function selectRole(role) {
+      startSelectedRole = role;
+      document.getElementById('card-hare').classList.toggle('selected', role === 'hare');
+      document.getElementById('card-hound').classList.toggle('selected', role === 'hound');
+    }
+
+    function startAppGame() {
+      if (startScreenMode === 'solo') {
+        gameMode = (startSelectedRole === 'hare') ? 'pve-hare' : 'pve-hound';
+      } else {
+        gameMode = 'pvp';
+      }
+      document.getElementById('start-screen').style.display = 'none';
+      isGameRunning = true;
+      prevMoveFromNode = null;
+      document.getElementById('history-text').textContent = 'ゲーム開始！ 猟犬(先攻)の手番です';
+      initGame();
+    }
+
+    function openStartScreen() {
+      isGameRunning = false;
+      isComThinking = false;
+      document.getElementById('start-screen').style.display = 'flex';
+    }
+
+    function initGame() {
+      hounds = [0, 1, 3];
+      hare = 10;
+      currentTurn = 'hound';
+      selectedPiece = null;
+      isGameOver = false;
+      isComThinking = false;
+      prevMoveFromNode = null;
+      historyStack = [];
+
+      updateUI();
+      renderPieces();
+
+      if (isGameRunning && isComTurn()) {
+        scheduleComTurn();
+      }
+    }
+
+    function saveState() {
+      historyStack.push({
+        hounds: [...hounds],
+        hare,
+        currentTurn,
+        prevMoveFromNode,
+        historyText: document.getElementById('history-text').textContent
+      });
+    }
+
+    function undoMove() {
+      if (!isGameRunning || isGameOver || isComThinking) return;
+      if (gameMode.startsWith('pve')) {
+        if (historyStack.length < 2) return;
+        historyStack.pop();
+        const last = historyStack.pop();
+        restoreState(last);
+      } else {
+        if (historyStack.length === 0) return;
+        const last = historyStack.pop();
+        restoreState(last);
+      }
+      playMoveSound();
+    }
+
+    function restoreState(s) {
+      hounds = [...s.hounds];
+      hare = s.hare;
+      currentTurn = s.currentTurn;
+      prevMoveFromNode = s.prevMoveFromNode;
+      selectedPiece = null;
+      isGameOver = false;
+      isComThinking = false;
+      if (s.historyText) {
+        document.getElementById('history-text').textContent = s.historyText;
+      }
+      updateUI();
+      renderPieces();
+    }
+
+    function buildBoardGraph() {
+      const linesLayer = document.getElementById('lines-layer');
+      const nodesLayer = document.getElementById('nodes-layer');
+      linesLayer.innerHTML = '';
+      nodesLayer.innerHTML = '';
+
+      const added = new Set();
+      for (const u in ADJACENCY) {
+        ADJACENCY[u].forEach(v => {
+          const key = Math.min(u, v) + '-' + Math.max(u, v);
+          if (!added.has(key)) {
+            added.add(key);
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', NODES[u].x);
+            line.setAttribute('y1', NODES[u].y);
+            line.setAttribute('x2', NODES[v].x);
+            line.setAttribute('y2', NODES[v].y);
+            line.setAttribute('class', 'board-line');
+            linesLayer.appendChild(line);
+          }
+        });
+      }
+
+      NODES.forEach(n => {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', n.x);
+        circle.setAttribute('cy', n.y);
+        circle.setAttribute('r', 12);
+        circle.setAttribute('class', 'node-slot');
+        circle.setAttribute('id', `slot-${n.id}`);
+        circle.onclick = () => handleSlotClick(n.id);
+        nodesLayer.appendChild(circle);
+      });
+    }
+
+    function renderPieces(comMovingPiece = null) {
+      const piecesLayer = document.getElementById('pieces-layer');
+      piecesLayer.innerHTML = '';
+
+      document.querySelectorAll('.node-slot').forEach(s => {
+        s.classList.remove('highlight');
+        s.classList.remove('prev-from');
+      });
+
+      if (prevMoveFromNode !== null) {
+        const prevSlot = document.getElementById(`slot-${prevMoveFromNode}`);
+        if (prevSlot) prevSlot.classList.add('prev-from');
+      }
+
+      // 猟犬 (3匹)
+      hounds.forEach((pos, idx) => {
+        const n = NODES[pos];
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const isSelected = selectedPiece && selectedPiece.type === 'hound' && selectedPiece.idx === idx;
+        const isComTarget = comMovingPiece && comMovingPiece.type === 'hound' && comMovingPiece.idx === idx;
+        
+        let cls = 'piece';
+        if (isSelected) cls += ' selected';
+        if (isComTarget) cls += ' com-thinking';
+        g.setAttribute('class', cls);
+        g.onclick = () => handlePieceClick('hound', idx);
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', n.x);
+        circle.setAttribute('cy', n.y);
+        circle.setAttribute('r', 11);
+        circle.setAttribute('fill', 'url(#houndGrad)');
+        circle.setAttribute('stroke', isComTarget ? '#f1c40f' : '#fff');
+        circle.setAttribute('stroke-width', isComTarget ? '2.5' : '1.5');
+        g.appendChild(circle);
+        piecesLayer.appendChild(g);
+      });
+
+      // ウサギ
+      const hareNode = NODES[hare];
+      const gHare = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      const isHareSelected = selectedPiece && selectedPiece.type === 'hare';
+      const isHareComTarget = comMovingPiece && comMovingPiece.type === 'hare';
+
+      let hareCls = 'piece';
+      if (isHareSelected) hareCls += ' selected';
+      if (isHareComTarget) hareCls += ' com-thinking';
+      gHare.setAttribute('class', hareCls);
+      gHare.onclick = () => handlePieceClick('hare', 0);
+
+      const circleHare = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circleHare.setAttribute('cx', hareNode.x);
+      circleHare.setAttribute('cy', hareNode.y);
+      circleHare.setAttribute('r', 11);
+      circleHare.setAttribute('fill', 'url(#hareGrad)');
+      circleHare.setAttribute('stroke', isHareComTarget ? '#f1c40f' : '#d4a359');
+      circleHare.setAttribute('stroke-width', isHareComTarget ? '3' : '2');
+      gHare.appendChild(circleHare);
+      piecesLayer.appendChild(gHare);
+
+      if (selectedPiece && isGameRunning && !isComThinking) {
+        const moves = getLegalMoves(selectedPiece);
+        moves.forEach(toId => {
+          const slot = document.getElementById(`slot-${toId}`);
+          if (slot) slot.classList.add('highlight');
+        });
+      }
+    }
+
+    function handlePieceClick(type, idx) {
+      if (!isGameRunning || isGameOver || isComTurn() || isComThinking) return;
+      if (currentTurn !== type) return;
+
+      selectedPiece = { type, idx };
+      renderPieces();
+    }
+
+    function handleSlotClick(slotId) {
+      if (!isGameRunning || isGameOver || !selectedPiece || isComTurn() || isComThinking) return;
+
+      const legalMoves = getLegalMoves(selectedPiece);
+      if (legalMoves.includes(slotId)) {
+        saveState();
+        executeMove(selectedPiece, slotId, false);
+      }
+    }
+
+    function executeMove(piece, toId, isCom = false) {
+      playMoveSound();
+      const fromId = (piece.type === 'hound') ? hounds[piece.idx] : hare;
+      const pieceName = (piece.type === 'hound') ? `猟犬${piece.idx + 1}` : 'ウサギ';
+      const fromLabel = NODES[fromId].label;
+      const toLabel = NODES[toId].label;
+
+      prevMoveFromNode = fromId;
+
+      const actorPrefix = isCom ? '【CPU】' : '【あなた】';
+      const icon = (piece.type === 'hound') ? '🐕' : '🐇';
+      const bar = document.getElementById('history-bar');
+      document.getElementById('history-text').textContent = 
+        `${actorPrefix}${icon} ${pieceName} が「${fromLabel}」から「${toLabel}」へ移動`;
+      
+      bar.classList.add('flash');
+      setTimeout(() => bar.classList.remove('flash'), 500);
+
+      if (piece.type === 'hound') {
+        hounds[piece.idx] = toId;
+        currentTurn = 'hare';
+      } else {
+        hare = toId;
+        currentTurn = 'hound';
+      }
+
+      selectedPiece = null;
+      updateUI();
+      renderPieces();
+
+      if (checkGameOver()) return;
+
+      if (isComTurn()) {
+        scheduleComTurn();
+      }
+    }
+
+    function getLegalMoves(piece) {
+      const fromId = (piece.type === 'hound') ? hounds[piece.idx] : hare;
+      const neighbors = ADJACENCY[fromId];
+      const occupied = [...hounds, hare];
+
+      return neighbors.filter(toId => {
+        if (occupied.includes(toId)) return false;
+        if (piece.type === 'hound') {
+          if (NODES[toId].x < NODES[fromId].x) return false;
+        }
+        return true;
+      });
+    }
+
+    function isComTurn() {
+      if (!isGameRunning) return true;
+      if (gameMode === 'pve-hare' && currentTurn === 'hound') return true;
+      if (gameMode === 'pve-hound' && currentTurn === 'hare') return true;
+      return false;
+    }
+
+    function checkGameOver() {
+      const minHoundX = Math.min(...hounds.map(h => NODES[h].x));
+      if (NODES[hare].x <= minHoundX) {
+        resolveVictory('hare', 'ウサギが猟犬の包囲を突破して脱出しました！');
+        return true;
+      }
+
+      const hareMoves = getLegalMoves({ type: 'hare', idx: 0 });
+      if (hareMoves.length === 0) {
+        resolveVictory('hound', '猟犬がウサギを完全に追い詰めました！');
+        return true;
+      }
+
+      let anyHoundMove = false;
+      for (let i = 0; i < 3; i++) {
+        if (getLegalMoves({ type: 'hound', idx: i }).length > 0) {
+          anyHoundMove = true;
+          break;
+        }
+      }
+      if (!anyHoundMove) {
+        resolveVictory('hare', '猟犬が前進できなくなりました！');
+        return true;
+      }
+
+      return false;
+    }
+
+    function resolveVictory(winner, desc) {
+      isGameOver = true;
+      isComThinking = false;
+      playVictorySound();
+      const winnerName = (winner === 'hare') ? 'ウサギ' : '猟犬';
+      document.getElementById('turn-announcer').textContent = `🎉 ${winnerName} の勝利！`;
+      setTimeout(() => alert(`🎉 ${winnerName} の勝利！\n${desc}`), 250);
+    }
+
+    function scheduleComTurn() {
+      isComThinking = true;
+      document.getElementById('turn-announcer').textContent = '💭 CPUが考え中...';
+
+      setTimeout(() => {
+        if (!isGameRunning || isGameOver) return;
+        decideAndExecuteComMove();
+      }, 750);
+    }
+
+    /* 難易度を加味したCOM手決定ルーチン */
+    function decideAndExecuteComMove() {
+      let chosenMove = null;
+
+      if (currentTurn === 'hound') {
+        const allMoves = [];
+        for (let i = 0; i < 3; i++) {
+          const legal = getLegalMoves({ type: 'hound', idx: i });
+          legal.forEach(to => allMoves.push({ idx: i, to }));
+        }
+        if (allMoves.length === 0) { isComThinking = false; return; }
+
+        if (cpuDifficulty === 'easy' && Math.random() < 0.45) {
+          // 初級: 45%の確率で完全ランダム手
+          chosenMove = { piece: { type: 'hound', idx: allMoves[Math.floor(Math.random() * allMoves.length)].idx }, toId: allMoves[Math.floor(Math.random() * allMoves.length)].to };
+        } else {
+          // 評価関数でソート
+          allMoves.sort((a, b) => {
+            const testA = [...hounds]; testA[a.idx] = a.to;
+            const testB = [...hounds]; testB[b.idx] = b.to;
+            const scoreA = evaluateHoundsState(testA, hare, cpuDifficulty === 'hard');
+            const scoreB = evaluateHoundsState(testB, hare, cpuDifficulty === 'hard');
+            return scoreA - scoreB;
+          });
+
+          if (cpuDifficulty === 'normal' && allMoves.length > 1 && Math.random() < 0.25) {
+            // 中級: 25%の確率で2番目の手
+            chosenMove = { piece: { type: 'hound', idx: allMoves[1].idx }, toId: allMoves[1].to };
+          } else {
+            // 上級または最善手
+            chosenMove = { piece: { type: 'hound', idx: allMoves[0].idx }, toId: allMoves[0].to };
+          }
+        }
+      } else {
+        const moves = getLegalMoves({ type: 'hare', idx: 0 });
+        if (moves.length === 0) { isComThinking = false; return; }
+
+        if (cpuDifficulty === 'easy' && Math.random() < 0.4) {
+          // 初級: ランダムに逃げる
+          chosenMove = { piece: { type: 'hare', idx: 0 }, toId: moves[Math.floor(Math.random() * moves.length)] };
+        } else {
+          // 左側(脱出方向)かつ猟犬からの距離を重視
+          moves.sort((a, b) => {
+            const scoreA = evaluateHareMove(a, hounds, cpuDifficulty === 'hard');
+            const scoreB = evaluateHareMove(b, hounds, cpuDifficulty === 'hard');
+            return scoreA - scoreB; // 小さい(左かつ安全)ほど優位
+          });
+          chosenMove = { piece: { type: 'hare', idx: 0 }, toId: moves[0] };
+        }
+      }
+
+      // 予告ハイライト
+      renderPieces(chosenMove.piece);
+      const targetSlot = document.getElementById(`slot-${chosenMove.toId}`);
+      if (targetSlot) targetSlot.classList.add('highlight');
+
+      const pieceName = (chosenMove.piece.type === 'hound') ? `猟犬${chosenMove.piece.idx + 1}` : 'ウサギ';
+      document.getElementById('turn-announcer').textContent = `👀 CPUが ${pieceName} を動かします...`;
+
+      setTimeout(() => {
+        if (!isGameRunning || isGameOver) return;
+        isComThinking = false;
+        executeMove(chosenMove.piece, chosenMove.toId, true);
+      }, 600);
+    }
+
+    // 猟犬の評価関数
+    function evaluateHoundsState(houndsArr, harePos, isHard = false) {
+      const hareNode = NODES[harePos];
+      let totalDist = 0;
+      let minHoundX = 999;
+      houndsArr.forEach(h => {
+        const hn = NODES[h];
+        totalDist += Math.abs(hn.x - hareNode.x) + Math.abs(hn.y - hareNode.y);
+        if (hn.x < minHoundX) minHoundX = hn.x;
+      });
+
+      // ウサギにすり抜けられたら致命傷
+      if (hareNode.x <= minHoundX) totalDist += 8000;
+
+      // 上級は「ウサギの合法手の数（包囲度）」も厳密に最小化
+      if (isHard) {
+        const dummyOccupied = [...houndsArr, harePos];
+        let hareEscapeOptions = 0;
+        ADJACENCY[harePos].forEach(toId => {
+          if (!dummyOccupied.includes(toId)) hareEscapeOptions++;
+        });
+        totalDist += hareEscapeOptions * 150;
+      }
+      return totalDist;
+    }
+
+    // ウサギの評価関数
+    function evaluateHareMove(nodeId, houndsArr, isHard = false) {
+      const n = NODES[nodeId];
+      // 基本はX座標が小さい(左へ脱出)ほど好ましい
+      let score = n.x * 10;
+      
+      // 猟犬に近すぎるマスは避ける
+      let distToNearestHound = 999;
+      houndsArr.forEach(h => {
+        const d = Math.hypot(n.x - NODES[h].x, n.y - NODES[h].y);
+        if (d < distToNearestHound) distToNearestHound = d;
+      });
+      score -= distToNearestHound * 1.5;
+
+      // 上級は逃げ道が塞がれる行き止まりを回避
+      if (isHard) {
+        const futureMoves = ADJACENCY[nodeId].filter(to => !houndsArr.includes(to));
+        score -= futureMoves.length * 20;
+      }
+      return score;
+    }
+
+    function updateUI() {
+      document.getElementById('badge-hound').classList.toggle('turn-active', currentTurn === 'hound' && !isGameOver);
+      document.getElementById('badge-hare').classList.toggle('turn-active', currentTurn === 'hare' && !isGameOver);
+
+      const modeBadge = document.getElementById('mode-badge');
+      if (gameMode === 'pvp') {
+        modeBadge.textContent = '2人対戦 (1台で対戦)';
+      } else {
+        const diffText = cpuDifficulty === 'easy' ? '初級' : (cpuDifficulty === 'hard' ? '上級' : '中級');
+        const roleText = gameMode === 'pve-hare' ? 'ウサギ' : '猟犬';
+        modeBadge.textContent = `1人プレイ (${roleText}・${diffText})`;
+      }
+
+      if (!isGameOver && !isComThinking) {
+        document.getElementById('turn-announcer').textContent =
+          (currentTurn === 'hound' ? '🐕 猟犬 (先攻)' : '🐇 ウサギ (後攻)') + ' の手番です';
+      }
+    }
+
+    function toggleRulesModal(show) {
+      document.getElementById('modal-rules').classList.toggle('active', show);
+    }
+  </script>
+</body>
+</html>
